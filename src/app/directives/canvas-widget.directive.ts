@@ -1,14 +1,4 @@
-import {
-  AfterViewInit,
-  Directive,
-  ElementRef,
-  HostBinding,
-  HostListener,
-  inject,
-  input,
-  PLATFORM_ID,
-  Renderer2
-} from '@angular/core';
+import {AfterViewInit, Directive, ElementRef, HostBinding, HostListener, inject, input, Renderer2} from '@angular/core';
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
 
 import {CanvasService, ResizePosition} from "../services/canvas.service";

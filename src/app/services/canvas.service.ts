@@ -32,9 +32,9 @@ export class CanvasService {
   public canvasEl: HTMLElement | null = null;
   public canvasWrapperEl: HTMLElement | null = null;
 
-  public canvasState = inject(CanvasStateService);
-  public widgetsState = inject(CanvasWidgetStateService);
-  private mathService = inject(MathService);
+  public readonly canvasState = inject(CanvasStateService);
+  public readonly widgetsState = inject(CanvasWidgetStateService);
+  private readonly mathService = inject(MathService);
 
   public canManageCanvas = signal(false);
   public canExitBorders = signal(false);
@@ -64,8 +64,7 @@ export class CanvasService {
   private readonly mouseDiffX = signal(0);
   private readonly mouseDiffY = signal(0);
 
-
-  private renderer: Renderer2 = inject(RendererFactory2).createRenderer(null, null);
+  private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(null, null);
 
   public init({
                 canvas,
@@ -176,7 +175,6 @@ export class CanvasService {
   }
 
   // endregion
-
 
   // region CANVAS DRAG
   public canvasDragStart({el, event}: { el: HTMLElement, event: MouseEvent }) {
@@ -433,7 +431,12 @@ export class CanvasService {
       newSnappedY = Math.round(newY / this.snapSize()) * this.snapSize();
     }
 
-    const mouseDiffX = event.clientX - (this.canSnapToGrid() ? (newX - newSnappedX) * this.zoom() : 0) - canvasX;
+    let mouseDiffX = event.clientX - (this.canSnapToGrid() ? (newX - newSnappedX) * this.zoom() : 0) - canvasX;
+    if (mouseDiffX > canvasWidth) {
+      mouseDiffX = canvasWidth;
+    }
+    console.log(`event.clientX |${event.clientX}| - (this.canSnapToGrid() |${this.canSnapToGrid()}| ? (newX |${newX}| - newSnappedX |${newSnappedX}|) * this.zoom() |${this.zoom()}| : 0) - canvasX |${canvasX}|`)
+
     const mouseDiffY = event.clientY - (this.canSnapToGrid() ? (newY - newSnappedY) * this.zoom() : 0) - canvasY;
 
     let newLeft = left;
@@ -445,11 +448,12 @@ export class CanvasService {
       // TODO: check min width/height = snapSize or 1
       case "right":
         newWidth = (width + (this.canSnapToGrid() ? newSnappedX : newX));
-        // if (newWidth >= 800) {
-        //   console.warn({newWidth, width, newSnappedX, newX, style: el.style})
+        // console.log("RIGHT resize", {newWidth, width, newSnappedX, newX});
+        // if (newWidth >= 600) {
+        //   console.warn({newWidth, width, newSnappedX, newX, mouseDiffX, style: el.style})
         //   debugger;
         // } else {
-        //   console.log({newWidth, width, newSnappedX, newX,})
+        //   console.log({newWidth, width, newSnappedX, newX, mouseDiffX});
         // }
         break;
       case "bottom":
@@ -493,14 +497,12 @@ export class CanvasService {
       if (isOutLeft) {
         if (parseFloat(el.style.left) !== 0) {
           el.style.left = `${0}px`;
-          el.style.width = `${newWidth}px`;
+          el.style.width = `${newWidth + newX}px`;
           this.mouseDiffX.set(mouseDiffX);
         }
       } else {
         if (parseFloat(el.style.left) + parseFloat(el.style.width) !== canvasWidth) {
-          console.log(el.style.left, el.style.width, canvasWidth);
-          el.style.left = `${((canvasWidth ?? 0) - parseFloat(el.style.width)) / this.zoom()}px`;
-          el.style.width = `${parseFloat(el.style.left) + parseFloat(el.style.width)}px`;
+          el.style.width = `${((canvasWidth ?? 0) / this.zoom() - parseFloat(el.style.left))}px`;
           this.mouseDiffX.set(mouseDiffX);
         }
       }
@@ -515,13 +517,12 @@ export class CanvasService {
       if (isOutTop) {
         if (parseFloat(el.style.top) !== 0) {
           el.style.top = `${0}px`;
-          el.style.height = `${newHeight}px`;
+          el.style.height = `${newHeight + newY}px`;
           this.mouseDiffY.set(mouseDiffY);
         }
       } else {
         if (parseFloat(el.style.top) + parseFloat(el.style.height) !== canvasHeight) {
-          el.style.top = `${((canvasHeight ?? 0) - height) / this.zoom()}px`;
-          el.style.height = `${parseFloat(el.style.top) + parseFloat(el.style.height)}px`;
+          el.style.height = `${((canvasHeight ?? 0) / this.zoom() - parseFloat(el.style.top))}px`;
           this.mouseDiffY.set(mouseDiffY);
         }
       }
