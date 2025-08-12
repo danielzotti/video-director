@@ -1,0 +1,16 @@
+import {DecimalPipe} from "@angular/common";
+import {Component, ElementRef, inject, input} from '@angular/core';
+
+@Component({
+  selector: 'app-widget',
+  standalone: true,
+  imports: [DecimalPipe],
+  templateUrl: './widget.component.html',
+  styleUrl: './widget.component.scss'
+})
+export class WidgetComponent {
+  elRef = inject(ElementRef);
+
+  activeDebug = input(false);
+
+}

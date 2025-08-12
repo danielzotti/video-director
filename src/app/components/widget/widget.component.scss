@@ -1,0 +1,34 @@
+:host {
+  //position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-content: center;
+  justify-items: center;
+  justify-content: center;
+  text-align: center;
+  //min-width: 20px;
+  //min-height: 20px;
+  //outline: 1px solid black;
+  border:1px solid black;
+  //user-select: none;
+  //resize: both;
+  //overflow: hidden;
+
+
+  &:hover {
+    //outline: 2px solid var(--accent-color);
+  }
+
+  &.app-canvas-widget {
+    cursor: move;
+    //background-color: red;
+  }
+
+  &.app-canvas-widget-dragging {
+    //outline: 3px solid var(--accent-color);
+  }
+
+  //& > * {
+  //  pointer-events: none; // This is an hack! It should be managed in the component's logic
+  //}
+}

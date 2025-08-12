@@ -1,0 +1,54 @@
+<!--<h2>Create stream</h2>-->
+<!--<div class="create-buttons">-->
+<!--  <button class="btn-primary" (click)="newWebcamStream()">New webcam</button>-->
+<!--  <button class="btn-primary" (click)="newCaptureStream()">New capture</button>-->
+<!--</div>-->
+
+<div>Dragging: {{ canvasService.isDraggingWidget() ? "Yes" : "No" }}, Resizing: {{ canvasService.isResizingWidget() ? "Yes" : "No" }}, Selected
+  widget: {{ canvasService.selectedWidgetId() ?? "None" }}, Mouse Position: x: {{ mousePosition.x }},
+  y: {{ mousePosition.y }}
+</div>
+
+@if (canvasService.canManageCanvas()) {
+
+  <div class="canvas-zoom">
+    <button (click)="canvasService.canvasZoomOut()">-</button>
+    <button (click)="canvasService.canvasZoomReset()">{{ canvasService.zoom() | number:'0.2' }}</button>
+    <button (click)="canvasService.canvasZoomIn()">+</button>
+    <span> | </span>
+    <button (click)="canvasService.canvasCenter()">Center</button>
+    <select (change)="changeSnapSize($event)" [value]="canvasService.snapSize()">
+      @for (snapSize of canvasService.snapSizeList(); track snapSize) {
+        <option [value]="snapSize" [selected]="snapSize === canvasService.snapSize()">{{ snapSize }}</option>
+      }
+    </select>
+  </div>
+}
+
+<div class="canvas-wrapper" #canvasWrapper>
+
+  <div class="canvas"
+       appCanvas
+       [appCanvasWrapper]="canvasWrapper"
+  >
+    @for (item of widgetList(); track item.uuid) {
+      <!--<div>
+        <h6>{{ item.uuid }} - {{ item.type }} [{{ item.mediaStream?.active ? "active" : "inactive" }}]</h6>
+        <div>
+          <button (click)="stopStreamItem(item)">Stop</button>
+          <button (click)="takeScreenshot(item)">Screenshot</button>
+        </div>
+        <app-video-stream [item]="item" class="stream-preview"></app-video-stream>
+        <pre><strong>Settings:</strong>{{ item.settings | json }}</pre>
+        <pre><strong>Capabilities:</strong>{{ item.mediaStream?.getVideoTracks()?.[0]?.getCapabilities() | json }}</pre>
+        <pre><strong>Constraints:</strong>{{ item.constraints | json }}</pre>
+      </div>-->
+      <app-widget [appCanvasWidget]="item" [activeDebug]="true" class="widget">
+        <div><b>uuid {{ item.uuid }}</b></div>
+      </app-widget>
+    } @empty {
+      <p><em>No items.</em></p>
+    }
+    <div class="canvas-info">x: {{canvasService.left()}}, y: {{canvasService.top()}}</div>
+  </div>
+</div>
