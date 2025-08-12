@@ -222,7 +222,6 @@ export class CanvasService {
     const newX = Math.round(parseFloat(el.style.left) + (event.clientX - this.mouseDiffX() - wrapperX));
     const newY = Math.round(parseFloat(el.style.top) + (event.clientY - this.mouseDiffY() - wrapperY));
 
-    // console.log("[CanvasService] canvasDrag", {newX, newY, canvasX, canvasY});
     this.mouseDiffX.set(event.clientX - wrapperX);
     this.mouseDiffY.set(event.clientY - wrapperY);
     el.style.top = `${newY}px`;
@@ -414,7 +413,6 @@ export class CanvasService {
       height: canvasHeight
     } = this.canvasEl?.getBoundingClientRect() ?? {x: 0, y: 0, width: 0, height: 0};
 
-    // const {width, height, left, top} = el.getBoundingClientRect() ?? {width: 0, height: 0};
     const left = parseFloat(el.style.left);
     const top = parseFloat(el.style.top);
     const width = parseFloat(el.style.width);
@@ -430,46 +428,61 @@ export class CanvasService {
       newSnappedX = Math.round(newX / this.snapSize()) * this.snapSize();
       newSnappedY = Math.round(newY / this.snapSize()) * this.snapSize();
     }
-
     let mouseDiffX = event.clientX - (this.canSnapToGrid() ? (newX - newSnappedX) * this.zoom() : 0) - canvasX;
     if (mouseDiffX > canvasWidth) {
       mouseDiffX = canvasWidth;
     }
-    console.log(`event.clientX |${event.clientX}| - (this.canSnapToGrid() |${this.canSnapToGrid()}| ? (newX |${newX}| - newSnappedX |${newSnappedX}|) * this.zoom() |${this.zoom()}| : 0) - canvasX |${canvasX}|`)
+    if (mouseDiffX < this.snapSize()) {
+      mouseDiffX = this.snapSize();
+    }
 
-    const mouseDiffY = event.clientY - (this.canSnapToGrid() ? (newY - newSnappedY) * this.zoom() : 0) - canvasY;
+    // console.log(`event.clientX |${event.clientX}| - (this.canSnapToGrid() |${this.canSnapToGrid()}| ? (newX |${newX}| - newSnappedX |${newSnappedX}|) * this.zoom() |${this.zoom()}| : 0) - canvasX |${canvasX}|`)
+
+    let mouseDiffY = event.clientY - (this.canSnapToGrid() ? (newY - newSnappedY) * this.zoom() : 0) - canvasY;
+    if (mouseDiffY > canvasHeight) {
+      mouseDiffY = canvasHeight;
+    }
+    if (mouseDiffY < this.snapSize()) {
+      mouseDiffY = this.snapSize();
+    }
 
     let newLeft = left;
     let newTop = top;
     let newWidth = width;
     let newHeight = height;
-
     switch (this.widgetResizingPosition()) {
       // TODO: check min width/height = snapSize or 1
       case "right":
         newWidth = (width + (this.canSnapToGrid() ? newSnappedX : newX));
-        // console.log("RIGHT resize", {newWidth, width, newSnappedX, newX});
-        // if (newWidth >= 600) {
-        //   console.warn({newWidth, width, newSnappedX, newX, mouseDiffX, style: el.style})
-        //   debugger;
-        // } else {
-        //   console.log({newWidth, width, newSnappedX, newX, mouseDiffX});
-        // }
+        if (newWidth < this.snapSize()) {
+          newWidth = this.snapSize();
+        }
         break;
       case "bottom":
         newHeight = (height + (this.canSnapToGrid() ? newSnappedY : newY));
+        if (newHeight < this.snapSize()) {
+          newHeight = this.snapSize();
+        }
         break;
       case "left": {
-        const normalLeft = parseFloat(el.style.left) + newX; //
+        const normalLeft = parseFloat(el.style.left) + newX;
         const snappedLeft = Math.round(normalLeft / this.snapSize()) * this.snapSize();
         newWidth = (width - (this.canSnapToGrid() ? newSnappedX : newX));
+        if (newWidth < this.snapSize()) {
+          newWidth = this.snapSize() - (this.canSnapToGrid() ? newSnappedX : newX);
+          break;
+        }
         newLeft = (this.canSnapToGrid() ? snappedLeft : normalLeft);
         break;
       }
       case "top": {
-        const normalTop = parseFloat(el.style.top) + newY; //
+        const normalTop = parseFloat(el.style.top) + newY;
         const snappedTop = Math.round(normalTop / this.snapSize()) * this.snapSize();
         newHeight = (height - (this.canSnapToGrid() ? newSnappedY : newY));
+        if (newHeight < this.snapSize()) {
+          newHeight = this.snapSize() - (this.canSnapToGrid() ? newSnappedY : newY);
+          break;
+        }
         newTop = (this.canSnapToGrid() ? snappedTop : normalTop);
         break;
       }
@@ -489,8 +502,6 @@ export class CanvasService {
     const isOutRight = this.widgetResizingPosition() === "right" && (newLeft + newWidth) > ((canvasWidth ?? 0)) / this.zoom();
     const isOutTop = this.widgetResizingPosition() === "top" && newTop < 0;
     const isOutBottom = this.widgetResizingPosition() === "bottom" && (newTop + newHeight) > ((canvasHeight ?? 0)) / this.zoom();
-
-    // console.log({mouseDiffX, newX, newWidth})
 
     // OUT LEFT - RIGHT
     if (isOutLeft || isOutRight) {
