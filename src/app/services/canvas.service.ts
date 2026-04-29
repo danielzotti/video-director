@@ -188,7 +188,7 @@ export class CanvasService {
       return;
     }
 
-    const canPan = event.button === 1 || (event.button === 0 && this.isSpacePressed());
+    const canPan = event.button === 1 || event.button === 0;
     if (!canPan) {
       return;
     }
@@ -227,7 +227,7 @@ export class CanvasService {
   }
 
   public widgetDragStart({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
-    if (event.button !== 0 || !this.canvasEl) {
+    if (event.button !== 0 || !this.canvasEl || this.isSpacePressed()) {
       return;
     }
 
@@ -312,7 +312,7 @@ export class CanvasService {
     event: MouseEvent,
     position: ResizePosition
   }) {
-    if (event.button !== 0 || !this.canResizeWidget()) {
+    if (event.button !== 0 || !this.canResizeWidget() || this.isSpacePressed()) {
       return;
     }
 
