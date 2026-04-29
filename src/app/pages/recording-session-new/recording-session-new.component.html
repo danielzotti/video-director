@@ -17,6 +17,9 @@
     <button (click)="canvasService.canvasZoomIn()">+</button>
     <span> | </span>
     <button (click)="canvasService.canvasCenter()">Center</button>
+    <button (click)="canvasService.setSnapToObjects(!canvasService.canSnapToObjects())">
+      Snap objects: {{ canvasService.canSnapToObjects() ? 'ON' : 'OFF' }}
+    </button>
     <select (change)="changeSnapSize($event)" [value]="canvasService.snapSize()">
       @for (snapSize of canvasService.snapSizeList(); track snapSize) {
         <option [value]="snapSize" [selected]="snapSize === canvasService.snapSize()">{{ snapSize }}</option>
@@ -30,7 +33,15 @@
   <div class="canvas"
        appCanvas
        [canvasWrapper]="canvasWrapper"
+       [allowSnapToObjects]="canvasService.canSnapToObjects()"
   >
+    @if (canvasService.objectSnapGuides().x !== undefined) {
+      <div class="canvas-guide canvas-guide-x" [style.left.px]="canvasService.objectSnapGuides().x"></div>
+    }
+    @if (canvasService.objectSnapGuides().y !== undefined) {
+      <div class="canvas-guide canvas-guide-y" [style.top.px]="canvasService.objectSnapGuides().y"></div>
+    }
+
     @for (item of widgetList(); track item.uuid) {
       <!--<div>
         <h6>{{ item.uuid }} - {{ item.type }} [{{ item.mediaStream?.active ? "active" : "inactive" }}]</h6>

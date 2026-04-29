@@ -29,6 +29,7 @@ export class CanvasDirective implements OnInit {
     elementClass = 'app-canvas';
 
     canvasWrapper = input<HTMLElement | null>(null);
+    allowSnapToObjects = input(true);
 
     ngOnInit(): void {
         const w = 1280;
@@ -39,6 +40,7 @@ export class CanvasDirective implements OnInit {
             canvas: this.canvasElementRef.nativeElement,
             canvasWrapper: this.canvasWrapper() ?? undefined,
             allowSnapToGrid: true,
+            allowSnapToObjects: this.allowSnapToObjects(),
             snapSize,
             width: w,
             height: h,

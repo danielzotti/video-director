@@ -1,6 +1,6 @@
 import {computed, inject, Injectable, Renderer2, RendererFactory2, signal} from '@angular/core';
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
-import {Point2D, Rect2D} from '../models/geometry.models';
+import {AxisGuides, Point2D, Rect2D} from '../models/geometry.models';
 import {CanvasStateService} from './canvas-state.service';
 import {CanvasWidgetStateService} from './canvas-widget-state.service';
 import {MathService} from './math.service';
@@ -59,6 +59,7 @@ export class CanvasService {
     public isSpacePressed = signal(false);
     public widgetResizingPosition = signal<ResizePosition | null>(null);
     public selectedWidgetId = signal<string | null>(null);
+    public objectSnapGuides = signal<AxisGuides>({});
 
     public zoom = signal(1);
     public width = signal(800);
@@ -172,6 +173,13 @@ export class CanvasService {
         this.resetWidgetToSnapSize();
     }
 
+    public setSnapToObjects(value: boolean) {
+        this.canSnapToObjects.set(value);
+        if (!value) {
+            this.objectSnapGuides.set({});
+        }
+    }
+
     public resetWidgetToSnapSize() {
         const snap = this.snapSize();
 
@@ -248,6 +256,8 @@ export class CanvasService {
             x: pointerCanvas.x - widget.x,
             y: pointerCanvas.y - widget.y,
         };
+
+        this.objectSnapGuides.set({});
     }
 
     public widgetDrag({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
@@ -267,12 +277,16 @@ export class CanvasService {
 
         if (this.canSnapToObjects()) {
             const siblings = this.widgetsState.list().filter((item) => item.uuid !== widget.uuid);
-            next = snapWidgetPositionToObjects({
+            const snapResult = snapWidgetPositionToObjects({
                 position: next,
                 moving: {width: widget.width, height: widget.height},
                 siblings,
                 distance: this.objectSnapDistance / this.zoom(),
-            }).point;
+            });
+            next = snapResult.point;
+            this.objectSnapGuides.set(snapResult.guides);
+        } else {
+            this.objectSnapGuides.set({});
         }
 
         if (!this.canExitBorders()) {
@@ -297,6 +311,7 @@ export class CanvasService {
         this.isDraggingWidget.set(false);
         this.selectedWidgetId.set(null);
         this.widgetDragOffset = null;
+        this.objectSnapGuides.set({});
 
         const stateWidget = this.widgetsState.getById(widget.uuid);
         if (!stateWidget) {

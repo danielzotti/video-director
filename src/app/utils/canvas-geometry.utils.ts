@@ -66,6 +66,34 @@ const buildEdges = (rect: Rect2D) => ({
   bottom: rect.y + rect.height,
 });
 
+const buildAxisPairs = ({
+  movingStart,
+  movingCenter,
+  movingEnd,
+  siblingStart,
+  siblingCenter,
+  siblingEnd,
+  movingSize,
+}: {
+  movingStart: number;
+  movingCenter: number;
+  movingEnd: number;
+  siblingStart: number;
+  siblingCenter: number;
+  siblingEnd: number;
+  movingSize: number;
+}) => [
+  {movingValue: movingStart, siblingValue: siblingStart, corrected: siblingStart},
+  {movingValue: movingStart, siblingValue: siblingCenter, corrected: siblingCenter},
+  {movingValue: movingStart, siblingValue: siblingEnd, corrected: siblingEnd},
+  {movingValue: movingCenter, siblingValue: siblingStart, corrected: siblingStart - movingSize / 2},
+  {movingValue: movingCenter, siblingValue: siblingCenter, corrected: siblingCenter - movingSize / 2},
+  {movingValue: movingCenter, siblingValue: siblingEnd, corrected: siblingEnd - movingSize / 2},
+  {movingValue: movingEnd, siblingValue: siblingStart, corrected: siblingStart - movingSize},
+  {movingValue: movingEnd, siblingValue: siblingCenter, corrected: siblingCenter - movingSize},
+  {movingValue: movingEnd, siblingValue: siblingEnd, corrected: siblingEnd - movingSize},
+];
+
 export const snapWidgetPositionToObjects = ({
   position,
   moving,
@@ -95,13 +123,15 @@ export const snapWidgetPositionToObjects = ({
   for (const sibling of siblings) {
     const siblingEdges = buildEdges(sibling);
 
-    const xPairs = [
-      {movingValue: movingEdges.left, siblingValue: siblingEdges.left, corrected: siblingEdges.left},
-      {movingValue: movingEdges.left, siblingValue: siblingEdges.right, corrected: siblingEdges.right},
-      {movingValue: movingEdges.centerX, siblingValue: siblingEdges.centerX, corrected: siblingEdges.centerX - moving.width / 2},
-      {movingValue: movingEdges.right, siblingValue: siblingEdges.left, corrected: siblingEdges.left - moving.width},
-      {movingValue: movingEdges.right, siblingValue: siblingEdges.right, corrected: siblingEdges.right - moving.width},
-    ];
+    const xPairs = buildAxisPairs({
+      movingStart: movingEdges.left,
+      movingCenter: movingEdges.centerX,
+      movingEnd: movingEdges.right,
+      siblingStart: siblingEdges.left,
+      siblingCenter: siblingEdges.centerX,
+      siblingEnd: siblingEdges.right,
+      movingSize: moving.width,
+    });
 
     for (const pair of xPairs) {
       const diff = Math.abs(pair.movingValue - pair.siblingValue);
@@ -112,13 +142,15 @@ export const snapWidgetPositionToObjects = ({
       }
     }
 
-    const yPairs = [
-      {movingValue: movingEdges.top, siblingValue: siblingEdges.top, corrected: siblingEdges.top},
-      {movingValue: movingEdges.top, siblingValue: siblingEdges.bottom, corrected: siblingEdges.bottom},
-      {movingValue: movingEdges.centerY, siblingValue: siblingEdges.centerY, corrected: siblingEdges.centerY - moving.height / 2},
-      {movingValue: movingEdges.bottom, siblingValue: siblingEdges.top, corrected: siblingEdges.top - moving.height},
-      {movingValue: movingEdges.bottom, siblingValue: siblingEdges.bottom, corrected: siblingEdges.bottom - moving.height},
-    ];
+    const yPairs = buildAxisPairs({
+      movingStart: movingEdges.top,
+      movingCenter: movingEdges.centerY,
+      movingEnd: movingEdges.bottom,
+      siblingStart: siblingEdges.top,
+      siblingCenter: siblingEdges.centerY,
+      siblingEnd: siblingEdges.bottom,
+      movingSize: moving.height,
+    });
 
     for (const pair of yPairs) {
       const diff = Math.abs(pair.movingValue - pair.siblingValue);

@@ -36,3 +36,24 @@
   color: gray;
   z-index: 10;
 }
+
+.canvas-guide {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9;
+  background-color: #0ea5e9;
+  opacity: 0.9;
+}
+
+.canvas-guide-x {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.canvas-guide-y {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
