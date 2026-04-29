@@ -5,8 +5,6 @@ import {Injectable} from '@angular/core';
 })
 export class MathService {
 
-  constructor() {
-  }
 
   public greatestCommonDivisor(a: number, b: number): number {
     if (b === 0) {

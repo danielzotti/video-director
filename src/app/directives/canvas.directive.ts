@@ -26,7 +26,7 @@ export class CanvasDirective implements OnInit {
   @HostBinding('class')
   elementClass = 'app-canvas';
 
-  canvasWrapper = input<HTMLElement | null>(null, {alias: 'appCanvasWrapper'});
+  canvasWrapper = input<HTMLElement | null>(null);
 
   constructor() {
     effect(() => {

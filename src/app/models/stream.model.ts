@@ -12,4 +12,4 @@ export interface StreamStateItem {
   // isAudioEnabled: boolean;
 }
 
-export type StreamStateList = Array<StreamStateItem>;
+export type StreamStateList = StreamStateItem[];

@@ -49,7 +49,8 @@ export class StreamStateService {
   }
 
   public removeStream({uuid}: { uuid: string; }) {
-    const {[uuid]: _, ...newState} = this.state();
+    const newState = {...this.state()};
+    delete newState[uuid];
     this.state.set(newState);
   }
 

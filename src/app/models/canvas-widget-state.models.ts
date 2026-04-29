@@ -1,5 +1,5 @@
 export type WidgetState = Record<string, WidgetStateItem>;
-export type WidgetStateList = Array<WidgetStateItem>;
+export type WidgetStateList = WidgetStateItem[];
 
 export interface WidgetStateItemPosition  {
   x: number;

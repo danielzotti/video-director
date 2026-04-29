@@ -1,15 +1,16 @@
-import {Directive, ElementRef, input} from '@angular/core';
+import {Directive, ElementRef, inject} from '@angular/core';
 
 @Directive({
-  selector: '[app-video]',
+  selector: '[appVideo]',
   standalone: true
 })
 export class VideoDirective {
 
+  private readonly elRef = inject(ElementRef<HTMLVideoElement>);
   public element: HTMLVideoElement;
 
-  constructor(elRef: ElementRef) {
-    this.element = elRef.nativeElement;
+  constructor() {
+    this.element = this.elRef.nativeElement;
   }
 
 }
