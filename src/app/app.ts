@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
 import {HeaderComponent} from './layout/header/header.component';
 
@@ -6,7 +6,8 @@ import {HeaderComponent} from './layout/header/header.component';
   selector: 'app-root',
   imports: [RouterOutlet, HeaderComponent],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
   protected title = 'video-director';

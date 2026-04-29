@@ -1,9 +1,9 @@
+import {Point2D, Rect2D} from './geometry.models';
+
 export type WidgetState = Record<string, WidgetStateItem>;
 export type WidgetStateList = WidgetStateItem[];
 
-export interface WidgetStateItemPosition  {
-  x: number;
-  y: number;
+export interface WidgetStateItemPosition extends Point2D {
   z: number;
 }
 
@@ -12,8 +12,7 @@ export interface WidgetStateItemSize {
   height: number;
 }
 
-export interface WidgetStateItemSizeAndPosition extends WidgetStateItemPosition, WidgetStateItemSize {
-}
+export interface WidgetStateItemSizeAndPosition extends WidgetStateItemPosition, WidgetStateItemSize {}
 
 export interface WidgetStateItemStyle {
   background: string;
@@ -21,6 +20,7 @@ export interface WidgetStateItemStyle {
   borderWidth: string;
 }
 
-export interface WidgetStateItem extends WidgetStateItemSizeAndPosition, Partial<WidgetStateItemStyle> {
+export interface WidgetStateItem extends Rect2D, Partial<WidgetStateItemStyle> {
   uuid: string;
+  z: number;
 }

@@ -1,8 +1,18 @@
 import {computed, inject, Injectable, Renderer2, RendererFactory2, signal} from '@angular/core';
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
+import {Point2D, Rect2D} from '../models/geometry.models';
 import {CanvasStateService} from './canvas-state.service';
 import {CanvasWidgetStateService} from './canvas-widget-state.service';
 import {MathService} from './math.service';
+import {
+  canvasToScreenPoint,
+  clampRectInsideCanvas,
+  clampWidgetPosition,
+  resizeRectFromHandle,
+  screenToCanvasPoint,
+  snapPointToGrid,
+  snapWidgetPositionToObjects,
+} from '../utils/canvas-geometry.utils';
 
 export interface CanvasServiceInitModel {
   canvas: HTMLElement;
@@ -16,8 +26,7 @@ export interface CanvasServiceInitModel {
   zoom?: number;
 }
 
-export type ResizePosition = "top" | "right" | "bottom" | "left";
-
+export type ResizePosition = 'top' | 'right' | 'bottom' | 'left';
 
 @Injectable({
   providedIn: 'root'
@@ -39,532 +48,419 @@ export class CanvasService {
   public canManageCanvas = signal(false);
   public canExitBorders = signal(false);
   public canSnapToGrid = signal(false);
+  public canSnapToObjects = signal(true);
   public canResizeWidget = signal(false);
 
   public isDraggingCanvas = signal(false);
   public isDraggingWidget = signal(false);
   public isResizingWidget = signal(false);
+  public isSpacePressed = signal(false);
   public widgetResizingPosition = signal<ResizePosition | null>(null);
   public selectedWidgetId = signal<string | null>(null);
 
   public zoom = signal(1);
-
   public width = signal(800);
   public height = signal(600);
   public top = signal(0);
   public left = signal(0);
-
   public snapSize = signal(1);
 
-  public snapSizeList = computed(() => {
-    return this.mathService.divisorsInCommon(this.width(), this.height()) ?? 1;
-  })
+  public readonly snapSizeList = computed<number[]>(() => {
+    return this.mathService.divisorsInCommon(this.width(), this.height()) ?? [1];
+  });
 
+  private readonly objectSnapDistance = 8;
 
-  private readonly mouseDiffX = signal(0);
-  private readonly mouseDiffY = signal(0);
+  private canvasDragStartPointer: Point2D | null = null;
+  private canvasDragStartOffset: Point2D | null = null;
+  private widgetDragOffset: Point2D | null = null;
+  private resizeStartPointer: Point2D | null = null;
+  private resizeStartRect: Rect2D | null = null;
 
   private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(null, null);
 
   public init({
-                canvas,
-                canvasWrapper,
-                allowExitBorders = false,
-                allowSnapToGrid = true,
-                width = 800,
-                height = 600,
-                snapSize = 1,
-                allowWidgetResize = true,
-                zoom = 1
-              }: CanvasServiceInitModel) {
+    canvas,
+    canvasWrapper,
+    allowExitBorders = false,
+    allowSnapToGrid = true,
+    width = 800,
+    height = 600,
+    snapSize = 1,
+    allowWidgetResize = true,
+    zoom = 1,
+  }: CanvasServiceInitModel) {
     this.canvasEl = canvas;
-
-    this.renderer.setStyle(this.canvasEl, "left", `${0}px`);
-    this.renderer.setStyle(this.canvasEl, "top", `${0}px`);
-    this.renderer.setStyle(this.canvasEl, "width", `${width}px`);
-    this.renderer.setStyle(this.canvasEl, "height", `${height}px`);
-    this.renderer.setStyle(this.canvasEl, "transform", `scale(${zoom})`);
-    this.renderer.setStyle(this.canvasEl, "transformOrigin", 'center center');
-
     this.canvasWrapperEl = canvasWrapper ?? null;
-    if (this.canvasWrapperEl) {
-      this.canManageCanvas.set(true);
-      this.renderer.setStyle(this.canvasWrapperEl, "overflow", 'hidden');
-      this.renderer.setStyle(this.canvasWrapperEl, "transformOrigin", 'center center');
-    }
-    this.canSnapToGrid.set(allowSnapToGrid);
-    this.snapSize.set(allowSnapToGrid ? snapSize : 1);
 
+    this.canManageCanvas.set(!!this.canvasWrapperEl);
     this.canExitBorders.set(allowExitBorders);
+    this.canSnapToGrid.set(allowSnapToGrid);
     this.canResizeWidget.set(allowWidgetResize);
 
     this.width.set(width);
     this.height.set(height);
-    this.zoom.set(zoom);
+    this.zoom.set(this.clampZoom(zoom));
+    this.snapSize.set(allowSnapToGrid ? Math.max(1, snapSize) : 1);
+
+    this.renderer.setStyle(this.canvasEl, 'position', 'relative');
+    this.renderer.setStyle(this.canvasEl, 'top', '0px');
+    this.renderer.setStyle(this.canvasEl, 'left', '0px');
+    this.renderer.setStyle(this.canvasEl, 'width', `${width}px`);
+    this.renderer.setStyle(this.canvasEl, 'height', `${height}px`);
+    this.renderer.setStyle(this.canvasEl, 'transform', `scale(${this.zoom()})`);
+    this.renderer.setStyle(this.canvasEl, 'transformOrigin', 'top left');
+
+    if (this.canvasWrapperEl) {
+      this.renderer.setStyle(this.canvasWrapperEl, 'overflow', 'hidden');
+    }
+
     if (allowSnapToGrid) {
       this.resetWidgetToSnapSize();
     }
+
     this.canvasCenter();
   }
 
-  // region CANVAS ZOOM
+  public setSpacePressed(pressed: boolean) {
+    this.isSpacePressed.set(pressed);
+  }
+
   public canvasResize({width, height}: { width?: number; height?: number; }) {
-    if (width) {
+    if (typeof width === 'number') {
       this.width.set(width);
     }
-    if (height) {
+    if (typeof height === 'number') {
       this.height.set(height);
     }
   }
 
-  public canvasZoomIn(value?: number) {
-    if (value) {
-      this.zoom.update((z) => z < 3 ? Math.min(Math.round((z + value) * 100) / 100, 3) : 3);
-      return;
-    }
-    this.zoom.update((z) => z < 3 ? Math.min(z + 0.25, 3) : z);
+  public canvasZoomIn(value?: number, focalPoint?: Point2D) {
+    this.canvasZoomBy(value ?? 0.25, focalPoint);
   }
 
-  public canvasZoomOut(value?: number) {
-    if (value) {
-      this.zoom.update((z) => z > 0.25 ? Math.max(Math.round((z - value) * 100) / 100, 0.25) : z);
-      return;
-    }
-    this.zoom.update((z) => z > 0.25 ? Math.max(z - 0.25, 0.25) : 0.25);
+  public canvasZoomOut(value?: number, focalPoint?: Point2D) {
+    this.canvasZoomBy(-(value ?? 0.25), focalPoint);
   }
 
   public canvasZoomReset() {
     this.zoom.set(1);
+    this.canvasCenter();
   }
 
   public canvasCenter() {
     if (!this.canvasWrapperEl) {
       this.top.set(0);
       this.left.set(0);
-      this.canvasZoomReset();
       return;
     }
 
-    const {width: canvasWrapperWidth, height: canvasWrapperHeight} = this.canvasWrapperEl.getBoundingClientRect();
-    const {width: canvasWidth, height: canvasHeight} = this.canvasEl!.getBoundingClientRect();
-    const centerX = (canvasWrapperWidth - canvasWidth / this.zoom()) / 2;
-    const centerY = (canvasWrapperHeight - canvasHeight / this.zoom()) / 2;
-    this.top.set(centerY);
-    this.left.set(centerX);
+    const wrapperRect = this.canvasWrapperEl.getBoundingClientRect();
+    const centerX = (wrapperRect.width - this.width() * this.zoom()) / 2;
+    const centerY = (wrapperRect.height - this.height() * this.zoom()) / 2;
+
+    this.left.set(Math.round(centerX));
+    this.top.set(Math.round(centerY));
   }
 
-  // endregion
-
-  // region CANVAS SNAP SIZE
   public setSnapSize(value: number) {
-    this.snapSize.set(value);
-    this.resetWidgetToSnapSize()
+    this.snapSize.set(Math.max(1, value));
+    this.resetWidgetToSnapSize();
   }
 
   public resetWidgetToSnapSize() {
-    const snapSize = this.snapSize();
-    this.widgetsState.list().forEach((widget) => {
-      const newWidget = structuredClone(widget);
+    const snap = this.snapSize();
 
-      newWidget.x = Math.round(widget.x / snapSize) * snapSize;
-      newWidget.y = Math.round(widget.y / snapSize) * snapSize;
-      newWidget.width = (Math.round(widget.width / snapSize) * snapSize) || snapSize;
-      newWidget.height = (Math.round(widget.height / snapSize) * snapSize) || snapSize;
-      this.widgetsState.update(newWidget);
-    });
+    for (const widget of this.widgetsState.list()) {
+      const snapped = snapPointToGrid({point: {x: widget.x, y: widget.y}, snap});
+      this.widgetsState.update({
+        ...widget,
+        x: snapped.x,
+        y: snapped.y,
+        width: Math.max(snap, Math.round(widget.width / snap) * snap),
+        height: Math.max(snap, Math.round(widget.height / snap) * snap),
+      });
+    }
   }
 
-  // endregion
-
-  // region CANVAS DRAG
   public canvasDragStart({el, event}: { el: HTMLElement, event: MouseEvent }) {
     if (!this.canvasEl || !this.canvasWrapperEl) {
       return;
     }
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.button !== 0) {
-      // 0: Main button pressed, usually the left button or the un-initialized state
-      // 1: Auxiliary button pressed, usually the wheel button or the middle button (if present)
-      // 2: Secondary button pressed, usually the right button
-      // 3: Fourth button, typically the Browser Back button
-      // 4: Fifth button, typically the Browser Forward button
+
+    const canPan = event.button === 1 || (event.button === 0 && this.isSpacePressed());
+    if (!canPan) {
       return;
     }
+
+    event.preventDefault();
+    event.stopPropagation();
 
     this.isDraggingCanvas.set(true);
     el.classList.add(this.CANVAS_DRAGGING_CLASS);
 
-    const {
-      top: wrapperY = 0,
-      left: wrapperX = 0,
-    } = this.canvasWrapperEl.getBoundingClientRect();
-
-    const diffX = (event.clientX - wrapperX);
-    const diffY = (event.clientY - wrapperY);
-    this.mouseDiffX.set(diffX);
-    this.mouseDiffY.set(diffY);
+    this.canvasDragStartPointer = {x: event.clientX, y: event.clientY};
+    this.canvasDragStartOffset = {x: this.left(), y: this.top()};
   }
 
   public canvasDrag({el, event}: { el: HTMLElement, event: MouseEvent }) {
-    if (!el.classList.contains(this.CANVAS_DRAGGING_CLASS)) {
-      return;
-    }
-    if (!this.canvasEl || !this.canvasWrapperEl) {
+    if (!el.classList.contains(this.CANVAS_DRAGGING_CLASS) || !this.canvasDragStartPointer || !this.canvasDragStartOffset) {
       return;
     }
 
-    const {
-      x: wrapperX,
-      y: wrapperY,
-    } = this.canvasWrapperEl.getBoundingClientRect() ?? {x: 0, y: 0};
+    const dx = event.clientX - this.canvasDragStartPointer.x;
+    const dy = event.clientY - this.canvasDragStartPointer.y;
 
-    const newX = Math.round(parseFloat(el.style.left) + (event.clientX - this.mouseDiffX() - wrapperX));
-    const newY = Math.round(parseFloat(el.style.top) + (event.clientY - this.mouseDiffY() - wrapperY));
-
-    this.mouseDiffX.set(event.clientX - wrapperX);
-    this.mouseDiffY.set(event.clientY - wrapperY);
-    el.style.top = `${newY}px`;
-    el.style.left = `${newX}px`;
-    this.top.set(newY);
-    this.left.set(newX);
+    this.left.set(Math.round(this.canvasDragStartOffset.x + dx));
+    this.top.set(Math.round(this.canvasDragStartOffset.y + dy));
   }
 
   public canvasDragEnd({el}: { el: HTMLElement, event?: MouseEvent }) {
-    if (!this.canvasEl) {
-      return;
-    }
     if (!el.classList.contains(this.CANVAS_DRAGGING_CLASS)) {
       return;
     }
+
     el.classList.remove(this.CANVAS_DRAGGING_CLASS);
     this.isDraggingCanvas.set(false);
+    this.canvasDragStartPointer = null;
+    this.canvasDragStartOffset = null;
   }
 
-  // endregion
-
-  // region WIDGET DRAG
   public widgetDragStart({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.button !== 0) {
-      // 0: Main button pressed, usually the left button or the un-initialized state
-      // 1: Auxiliary button pressed, usually the wheel button or the middle button (if present)
-      // 2: Secondary button pressed, usually the right button
-      // 3: Fourth button, typically the Browser Back button
-      // 4: Fifth button, typically the Browser Forward button
+    if (event.button !== 0 || !this.canvasEl) {
       return;
     }
+
+    event.preventDefault();
+    event.stopPropagation();
 
     this.isDraggingWidget.set(true);
     this.selectedWidgetId.set(widget.uuid);
     el.classList.add(this.WIDGET_DRAGGING_CLASS);
-    el.style.zIndex = "9999";
+    el.style.zIndex = '9999';
 
-    const {
-      top: canvasY = 0,
-      left: canvasX = 0,
-    } = this.canvasEl?.getBoundingClientRect() ?? {canvasX: 0, canvasY: 0};
-
-    const diffX = (event.clientX - canvasX);
-    const diffY = (event.clientY - canvasY);
-    this.mouseDiffX.set(diffX);
-    this.mouseDiffY.set(diffY);
+    const pointerCanvas = this.getPointerCanvasPoint(event);
+    this.widgetDragOffset = {
+      x: pointerCanvas.x - widget.x,
+      y: pointerCanvas.y - widget.y,
+    };
   }
 
-  public widgetDrag({el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
-    if (!this.canvasEl) {
-      console.log("[CanvasService] no canvas");
+  public widgetDrag({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
+    if (!el.classList.contains(this.WIDGET_DRAGGING_CLASS) || !this.widgetDragOffset) {
       return;
     }
-    if (!el.classList.contains(this.WIDGET_DRAGGING_CLASS)) {
-      return;
-    }
-    // if (target.id !== el.id) {
-    //   console.log("[CanvasService] different target")
-    // }
-    const {
-      x: canvasX,
-      y: canvasY,
-      width: canvasWidth,
-      height: canvasHeight
-    } = this.canvasEl?.getBoundingClientRect() ?? {x: 0, y: 0, width: 0, height: 0};
 
-    const {width, height} = el.getBoundingClientRect() ?? {width: 0, height: 0};
-
-    const newX = parseFloat(el.style.left) + (event.clientX - this.mouseDiffX() - canvasX) / this.zoom();
-    const newY = parseFloat(el.style.top) + (event.clientY - this.mouseDiffY() - canvasY) / this.zoom();
-
-    let newSnappedX = 0;
-    let newSnappedY = 0;
+    const pointerCanvas = this.getPointerCanvasPoint(event);
+    let next = {
+      x: pointerCanvas.x - this.widgetDragOffset.x,
+      y: pointerCanvas.y - this.widgetDragOffset.y,
+    };
 
     if (this.canSnapToGrid()) {
-      newSnappedX = Math.round(newX / this.snapSize()) * this.snapSize();
-      newSnappedY = Math.round(newY / this.snapSize()) * this.snapSize();
+      next = snapPointToGrid({point: next, snap: this.snapSize()});
     }
 
-    const mouseDiffX = event.clientX - (this.canSnapToGrid() ? (newX - newSnappedX) * this.zoom() : 0) - canvasX;
-    const mouseDiffY = event.clientY - (this.canSnapToGrid() ? (newY - newSnappedY) * this.zoom() : 0) - canvasY;
-
-    if (this.canExitBorders()) {
-      el.style.left = `${this.canSnapToGrid() ? newSnappedX : newX}px`;
-      el.style.top = `${this.canSnapToGrid() ? newSnappedY : newY}px`;
-      this.mouseDiffX.set(mouseDiffX);
-      this.mouseDiffY.set(mouseDiffY);
-      return;
+    if (this.canSnapToObjects()) {
+      const siblings = this.widgetsState.list().filter((item) => item.uuid !== widget.uuid);
+      next = snapWidgetPositionToObjects({
+        position: next,
+        moving: {width: widget.width, height: widget.height},
+        siblings,
+        distance: this.objectSnapDistance / this.zoom(),
+      }).point;
     }
 
-    const isOutLeft = this.canSnapToGrid() ? newSnappedX <= 0 : newX <= 0;
-    const isOutRight = this.canSnapToGrid() ? newSnappedX >= ((canvasWidth ?? 0) - width) / this.zoom() : newX >= ((canvasWidth ?? 0) - width) / this.zoom()
-    const isOutTop = this.canSnapToGrid() ? newSnappedY <= 0 : newY <= 0;
-    const isOutBottom = this.canSnapToGrid() ? newSnappedY >= ((canvasHeight ?? 0) - height) / this.zoom() : newY >= ((canvasHeight ?? 0) - height) / this.zoom();
-
-    // OUT LEFT - RIGHT
-    if (isOutLeft || isOutRight) {
-      if (isOutLeft) {
-        el.style.left = `${0}px`;
-      } else {
-        el.style.left = `${((canvasWidth ?? 0) - width) / this.zoom()}px`;
-      }
-    } else {
-      el.style.left = `${this.canSnapToGrid() ? newSnappedX : newX}px`;
-      this.mouseDiffX.set(mouseDiffX);
+    if (!this.canExitBorders()) {
+      next = clampWidgetPosition({
+        position: next,
+        widget: {width: widget.width, height: widget.height},
+        canvas: {width: this.width(), height: this.height()},
+      });
     }
 
-    // OUT TOP - BOTTOM
-    if (isOutTop || isOutBottom) {
-      if (isOutTop) {
-        el.style.top = `${0}px`;
-      } else {
-        el.style.top = `${((canvasHeight ?? 0) - height) / this.zoom()}px`;
-      }
-    } else {
-      el.style.top = `${this.canSnapToGrid() ? newSnappedY : newY}px`;
-      this.mouseDiffY.set(mouseDiffY);
-    }
+    el.style.left = `${next.x}px`;
+    el.style.top = `${next.y}px`;
   }
 
   public widgetDragEnd({widget, el}: { widget: WidgetStateItem, el: HTMLElement, event?: MouseEvent }) {
     if (!el.classList.contains(this.WIDGET_DRAGGING_CLASS)) {
       return;
     }
+
     el.classList.remove(this.WIDGET_DRAGGING_CLASS);
     el.style.zIndex = widget.z.toString();
     this.isDraggingWidget.set(false);
     this.selectedWidgetId.set(null);
+    this.widgetDragOffset = null;
 
-    // UPDATE STATE
+    const stateWidget = this.widgetsState.getById(widget.uuid);
+    if (!stateWidget) {
+      return;
+    }
+
     this.widgetsState.update({
-      ...this.widgetsState.getById(widget.uuid),
-      x: parseInt(el.style.left),
-      y: parseInt(el.style.top),
+      ...stateWidget,
+      x: Number.parseFloat(el.style.left) || 0,
+      y: Number.parseFloat(el.style.top) || 0,
     });
   }
 
-  // endregion
-
-  // region WIDGET RESIZE
   public widgetResizeStart({widget, el, event, position}: {
     widget: WidgetStateItem,
     el: HTMLElement,
     event: MouseEvent,
     position: ResizePosition
   }) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.button !== 0) {
-      // 0: Main button pressed, usually the left button or the un-initialized state
-      // 1: Auxiliary button pressed, usually the wheel button or the middle button (if present)
-      // 2: Secondary button pressed, usually the right button
-      // 3: Fourth button, typically the Browser Back button
-      // 4: Fifth button, typically the Browser Forward button
+    if (event.button !== 0 || !this.canResizeWidget()) {
       return;
     }
+
+    event.preventDefault();
+    event.stopPropagation();
+
     this.isResizingWidget.set(true);
     this.widgetResizingPosition.set(position);
     this.selectedWidgetId.set(widget.uuid);
     el.classList.add(this.WIDGET_RESIZING_CLASS);
-    el.style.zIndex = "9999";
+    el.style.zIndex = '9999';
 
-    console.log("START resize", this.widgetResizingPosition());
-    const {
-      top: canvasY = 0,
-      left: canvasX = 0,
-    } = this.canvasEl?.getBoundingClientRect() ?? {canvasX: 0, canvasY: 0};
-
-    const diffX = (event.clientX - canvasX);
-    const diffY = (event.clientY - canvasY);
-    this.mouseDiffX.set(diffX);
-    this.mouseDiffY.set(diffY);
+    this.resizeStartPointer = this.getPointerCanvasPoint(event);
+    this.resizeStartRect = {
+      x: Number.parseFloat(el.style.left),
+      y: Number.parseFloat(el.style.top),
+      width: Number.parseFloat(el.style.width),
+      height: Number.parseFloat(el.style.height),
+    };
   }
 
   public widgetResize({el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
-    if (!this.canvasEl) {
-      console.log("[CanvasService] no canvas");
+    if (!el.classList.contains(this.WIDGET_RESIZING_CLASS) || !this.resizeStartPointer || !this.resizeStartRect) {
       return;
     }
-    if (!el.classList.contains(this.WIDGET_RESIZING_CLASS)) {
+
+    const position = this.widgetResizingPosition();
+    if (!position) {
       return;
     }
-    const {
-      x: canvasX,
-      y: canvasY,
-      width: canvasWidth,
-      height: canvasHeight
-    } = this.canvasEl?.getBoundingClientRect() ?? {x: 0, y: 0, width: 0, height: 0};
 
-    const left = parseFloat(el.style.left);
-    const top = parseFloat(el.style.top);
-    const width = parseFloat(el.style.width);
-    const height = parseFloat(el.style.height);
+    const pointerCanvas = this.getPointerCanvasPoint(event);
+    const delta = {
+      x: pointerCanvas.x - this.resizeStartPointer.x,
+      y: pointerCanvas.y - this.resizeStartPointer.y,
+    };
 
-    const newX = (event.clientX - this.mouseDiffX() - canvasX) / this.zoom();
-    const newY = (event.clientY - this.mouseDiffY() - canvasY) / this.zoom();
-
-    let newSnappedX = 0;
-    let newSnappedY = 0;
+    let nextRect = resizeRectFromHandle({
+      rect: this.resizeStartRect,
+      handle: position,
+      delta,
+      min: {width: this.snapSize(), height: this.snapSize()},
+    });
 
     if (this.canSnapToGrid()) {
-      newSnappedX = Math.round(newX / this.snapSize()) * this.snapSize();
-      newSnappedY = Math.round(newY / this.snapSize()) * this.snapSize();
-    }
-    let mouseDiffX = event.clientX - (this.canSnapToGrid() ? (newX - newSnappedX) * this.zoom() : 0) - canvasX;
-    if (mouseDiffX > canvasWidth) {
-      mouseDiffX = canvasWidth;
-    }
-    if (mouseDiffX < this.snapSize()) {
-      mouseDiffX = this.snapSize();
-    }
-
-    // console.log(`event.clientX |${event.clientX}| - (this.canSnapToGrid() |${this.canSnapToGrid()}| ? (newX |${newX}| - newSnappedX |${newSnappedX}|) * this.zoom() |${this.zoom()}| : 0) - canvasX |${canvasX}|`)
-
-    let mouseDiffY = event.clientY - (this.canSnapToGrid() ? (newY - newSnappedY) * this.zoom() : 0) - canvasY;
-    if (mouseDiffY > canvasHeight) {
-      mouseDiffY = canvasHeight;
-    }
-    if (mouseDiffY < this.snapSize()) {
-      mouseDiffY = this.snapSize();
+      const snappedPosition = snapPointToGrid({point: {x: nextRect.x, y: nextRect.y}, snap: this.snapSize()});
+      nextRect = {
+        ...nextRect,
+        x: snappedPosition.x,
+        y: snappedPosition.y,
+        width: Math.max(this.snapSize(), Math.round(nextRect.width / this.snapSize()) * this.snapSize()),
+        height: Math.max(this.snapSize(), Math.round(nextRect.height / this.snapSize()) * this.snapSize()),
+      };
     }
 
-    let newLeft = left;
-    let newTop = top;
-    let newWidth = width;
-    let newHeight = height;
-    switch (this.widgetResizingPosition()) {
-      // TODO: check min width/height = snapSize or 1
-      case "right":
-        newWidth = (width + (this.canSnapToGrid() ? newSnappedX : newX));
-        if (newWidth < this.snapSize()) {
-          newWidth = this.snapSize();
-        }
-        break;
-      case "bottom":
-        newHeight = (height + (this.canSnapToGrid() ? newSnappedY : newY));
-        if (newHeight < this.snapSize()) {
-          newHeight = this.snapSize();
-        }
-        break;
-      case "left": {
-        const normalLeft = parseFloat(el.style.left) + newX;
-        const snappedLeft = Math.round(normalLeft / this.snapSize()) * this.snapSize();
-        newWidth = (width - (this.canSnapToGrid() ? newSnappedX : newX));
-        if (newWidth < this.snapSize()) {
-          newWidth = this.snapSize() - (this.canSnapToGrid() ? newSnappedX : newX);
-          break;
-        }
-        newLeft = (this.canSnapToGrid() ? snappedLeft : normalLeft);
-        break;
-      }
-      case "top": {
-        const normalTop = parseFloat(el.style.top) + newY;
-        const snappedTop = Math.round(normalTop / this.snapSize()) * this.snapSize();
-        newHeight = (height - (this.canSnapToGrid() ? newSnappedY : newY));
-        if (newHeight < this.snapSize()) {
-          newHeight = this.snapSize() - (this.canSnapToGrid() ? newSnappedY : newY);
-          break;
-        }
-        newTop = (this.canSnapToGrid() ? snappedTop : normalTop);
-        break;
-      }
-    }
-    if (this.canExitBorders()) {
-      el.style.width = `${newWidth}px`;
-      el.style.left = `${newLeft}px`;
-      el.style.height = `${newHeight}px`;
-      el.style.top = `${newTop}px`;
-
-      this.mouseDiffX.set(mouseDiffX);
-      this.mouseDiffY.set(mouseDiffY);
-      return;
+    if (!this.canExitBorders()) {
+      nextRect = clampRectInsideCanvas({
+        rect: nextRect,
+        canvas: {width: this.width(), height: this.height()},
+      });
     }
 
-    const isOutLeft = this.widgetResizingPosition() === "left" && newLeft < 0;
-    const isOutRight = this.widgetResizingPosition() === "right" && (newLeft + newWidth) > ((canvasWidth ?? 0)) / this.zoom();
-    const isOutTop = this.widgetResizingPosition() === "top" && newTop < 0;
-    const isOutBottom = this.widgetResizingPosition() === "bottom" && (newTop + newHeight) > ((canvasHeight ?? 0)) / this.zoom();
-
-    // OUT LEFT - RIGHT
-    if (isOutLeft || isOutRight) {
-      if (isOutLeft) {
-        if (parseFloat(el.style.left) !== 0) {
-          el.style.left = `${0}px`;
-          el.style.width = `${newWidth + newX}px`;
-          this.mouseDiffX.set(mouseDiffX);
-        }
-      } else {
-        if (parseFloat(el.style.left) + parseFloat(el.style.width) !== canvasWidth) {
-          el.style.width = `${((canvasWidth ?? 0) / this.zoom() - parseFloat(el.style.left))}px`;
-          this.mouseDiffX.set(mouseDiffX);
-        }
-      }
-    } else {
-      el.style.width = `${newWidth}px`;
-      el.style.left = `${newLeft}px`;
-      this.mouseDiffX.set(mouseDiffX);
-    }
-
-    // OUT TOP - BOTTOM
-    if (isOutTop || isOutBottom) {
-      if (isOutTop) {
-        if (parseFloat(el.style.top) !== 0) {
-          el.style.top = `${0}px`;
-          el.style.height = `${newHeight + newY}px`;
-          this.mouseDiffY.set(mouseDiffY);
-        }
-      } else {
-        if (parseFloat(el.style.top) + parseFloat(el.style.height) !== canvasHeight) {
-          el.style.height = `${((canvasHeight ?? 0) / this.zoom() - parseFloat(el.style.top))}px`;
-          this.mouseDiffY.set(mouseDiffY);
-        }
-      }
-    } else {
-      el.style.height = `${newHeight}px`;
-      el.style.top = `${newTop}px`;
-      this.mouseDiffY.set(mouseDiffY);
-    }
+    el.style.width = `${nextRect.width}px`;
+    el.style.height = `${nextRect.height}px`;
+    el.style.left = `${nextRect.x}px`;
+    el.style.top = `${nextRect.y}px`;
   }
 
   public widgetResizeEnd({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event?: MouseEvent }) {
     event?.stopPropagation();
+
     if (!el.classList.contains(this.WIDGET_RESIZING_CLASS)) {
       return;
     }
-    console.log("END resize", this.widgetResizingPosition());
+
     el.classList.remove(this.WIDGET_RESIZING_CLASS);
     el.style.zIndex = widget.z.toString();
     this.isResizingWidget.set(false);
     this.widgetResizingPosition.set(null);
     this.selectedWidgetId.set(null);
+    this.resizeStartPointer = null;
+    this.resizeStartRect = null;
 
-    // UPDATE STATE
+    const stateWidget = this.widgetsState.getById(widget.uuid);
+    if (!stateWidget) {
+      return;
+    }
+
     this.widgetsState.update({
-      ...this.widgetsState.getById(widget.uuid),
-      width: parseInt(el.style.width),
-      height: parseInt(el.style.height),
-      x: parseInt(el.style.left),
-      y: parseInt(el.style.top),
+      ...stateWidget,
+      width: Number.parseFloat(el.style.width) || this.snapSize(),
+      height: Number.parseFloat(el.style.height) || this.snapSize(),
+      x: Number.parseFloat(el.style.left) || 0,
+      y: Number.parseFloat(el.style.top) || 0,
     });
   }
 
-  // endregion
+  private canvasZoomBy(delta: number, focalPoint?: Point2D) {
+    const oldZoom = this.zoom();
+    const nextZoom = this.clampZoom(Math.round((oldZoom + delta) * 100) / 100);
+
+    if (oldZoom === nextZoom || !this.canvasEl) {
+      return;
+    }
+
+    if (!focalPoint || !this.canvasWrapperEl) {
+      this.zoom.set(nextZoom);
+      return;
+    }
+
+    const canvasRect = this.canvasEl.getBoundingClientRect();
+    const wrapperRect = this.canvasWrapperEl.getBoundingClientRect();
+
+    const canvasPoint = screenToCanvasPoint({
+      screen: focalPoint,
+      canvasOffset: {x: canvasRect.left, y: canvasRect.top},
+      zoom: oldZoom,
+    });
+
+    const nextCanvasScreen = canvasToScreenPoint({
+      canvas: canvasPoint,
+      canvasOffset: {x: 0, y: 0},
+      zoom: nextZoom,
+    });
+
+    const newLeft = focalPoint.x - nextCanvasScreen.x - wrapperRect.left;
+    const newTop = focalPoint.y - nextCanvasScreen.y - wrapperRect.top;
+
+    this.zoom.set(nextZoom);
+    this.left.set(Math.round(newLeft));
+    this.top.set(Math.round(newTop));
+  }
+
+  private clampZoom(value: number): number {
+    return Math.max(0.25, Math.min(3, value));
+  }
+
+  private getPointerCanvasPoint(event: MouseEvent): Point2D {
+    if (!this.canvasEl) {
+      return {x: 0, y: 0};
+    }
+
+    const canvasRect = this.canvasEl.getBoundingClientRect();
+
+    return screenToCanvasPoint({
+      screen: {x: event.clientX, y: event.clientY},
+      canvasOffset: {x: canvasRect.left, y: canvasRect.top},
+      zoom: this.zoom(),
+    });
+  }
 }

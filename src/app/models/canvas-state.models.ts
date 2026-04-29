@@ -1,18 +1,8 @@
-export interface CanvasState extends CanvasStatePosition, CanvasStateSize {
+import {Point2D, Size2D} from './geometry.models';
+
+export interface CanvasState extends Point2D, Size2D {
   uuid?: string;
   zoom: number;
 }
 
-export interface CanvasStatePosition {
-  x: number;
-  y: number;
-}
-
-export interface CanvasStateSize {
-  width: number;
-  height: number;
-}
-
-export interface CanvasStateSizeAndPosition extends CanvasStatePosition, CanvasStateSize {
-
-}
+export interface CanvasStateSizeAndPosition extends Point2D, Size2D {}

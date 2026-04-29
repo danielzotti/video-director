@@ -1,13 +1,13 @@
-import {DecimalPipe} from "@angular/common";
-import {Component, computed, effect, ElementRef, HostListener, inject, ViewChild} from '@angular/core';
+import {DecimalPipe} from '@angular/common';
+import {ChangeDetectionStrategy, Component, computed, effect, HostListener, inject} from '@angular/core';
 import {v4 as uuid} from 'uuid';
-import {WidgetComponent} from "../../components/widget/widget.component";
-import {CanvasWidgetDirective} from "../../directives/canvas-widget.directive";
-import {CanvasDirective} from "../../directives/canvas.directive";
-import {StreamStateItem} from "../../models/stream.model";
-import {CanvasWidgetStateService} from "../../services/canvas-widget-state.service";
-import {CanvasService} from "../../services/canvas.service";
-import {StreamStateService} from "../../services/stream-state.service";
+import {WidgetComponent} from '../../components/widget/widget.component';
+import {CanvasWidgetDirective} from '../../directives/canvas-widget.directive';
+import {CanvasDirective} from '../../directives/canvas.directive';
+import {StreamStateItem} from '../../models/stream.model';
+import {CanvasWidgetStateService} from '../../services/canvas-widget-state.service';
+import {CanvasService} from '../../services/canvas.service';
+import {StreamStateService} from '../../services/stream-state.service';
 
 @Component({
   selector: 'app-recording-session-new',
@@ -19,7 +19,8 @@ import {StreamStateService} from "../../services/stream-state.service";
     DecimalPipe,
   ],
   templateUrl: './recording-session-new.component.html',
-  styleUrl: './recording-session-new.component.scss'
+  styleUrl: './recording-session-new.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecordingSessionNewComponent {
   mousePosition = {x: 0, y: 0};
@@ -28,19 +29,14 @@ export class RecordingSessionNewComponent {
   widgetStateService = inject(CanvasWidgetStateService);
   public canvasService = inject(CanvasService);
 
-  streamList = computed(() => this.streamStateService.list()); //.filter((item) => !!item.mediaStream?.active));
-  widgetList = computed(() => this.widgetStateService.list()); //.filter((item) => !!item.mediaStream?.active));
+  streamList = computed(() => this.streamStateService.list());
+  widgetList = computed(() => this.widgetStateService.list());
 
   lastUpdate = computed(() => this.streamStateService.lastUpdate());
 
-  @ViewChild('canvas')
-  private readonly canvas!: ElementRef<HTMLDivElement>;
-
   constructor() {
     effect(() => {
-      // This is needed to detect when the video track is stopped by the user through the browser stop button
       this.lastUpdate();
-      // console.log(this.streamStateService.list()[0]?.mediaStream?.getVideoTracks()?.[0]?.getSettings());
     });
   }
 
@@ -50,22 +46,24 @@ export class RecordingSessionNewComponent {
   }
 
   async newWebcamStream() {
-    alert("TODO: newWebcamStream")
+    alert('TODO: newWebcamStream');
   }
 
   async newCaptureStream() {
     const mediaStream = await navigator.mediaDevices.getDisplayMedia({
       video: {
-        displaySurface: "window",
+        displaySurface: 'window',
       },
       audio: false,
     });
+
     const stream: StreamStateItem = {
       uuid: uuid(),
-      type: "screen",
+      type: 'screen',
       mediaStream
-    }
-    this.streamStateService.addStream(stream)
+    };
+
+    this.streamStateService.addStream(stream);
   }
 
   stopStreamItem(item: StreamStateItem) {
@@ -81,26 +79,21 @@ export class RecordingSessionNewComponent {
       return;
     }
 
-    // const aspectRatio = video.clientWidth / video.clientHeight;
-    // const imageWidth = aspectRatio > 1 ? item.settings?.width ?? 1000 : item.settings?.height ?? 1000;
-    // const imageWidth = 1000;
-    // canvas.width = imageWidth;
-    // canvas.height = imageWidth / aspectRatio;
     canvas.width = (item.mediaStream?.getVideoTracks()?.[0]?.getSettings().width ?? 100);
     canvas.height = (item.mediaStream?.getVideoTracks()?.[0]?.getSettings().height ?? 100);
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataURI = canvas.toDataURL('image/png'); // can also use 'image/jpg'
+    const dataURI = canvas.toDataURL('image/png');
 
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = dataURI;
-    a.download = `Image${item.mediaStream?.id ? item.mediaStream?.id : ''}.png`;
+    a.download = `Image${item.mediaStream?.id ? item.mediaStream.id : ''}.png`;
     a.click();
-
   }
 
   changeSnapSize(event: Event) {
-    const snapSize = (event.target as unknown as { value: string })?.value;
-    this.canvasService.setSnapSize(+snapSize || 1)
+    const target = event.target as HTMLSelectElement | null;
+    const snapSize = Number(target?.value ?? '1');
+    this.canvasService.setSnapSize(snapSize || 1);
   }
 }
