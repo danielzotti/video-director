@@ -28,7 +28,15 @@ export interface CanvasServiceInitModel {
     zoom?: number;
 }
 
-export type ResizePosition = 'top' | 'right' | 'bottom' | 'left';
+export type ResizePosition =
+    | 'top'
+    | 'right'
+    | 'bottom'
+    | 'left'
+    | 'top-left'
+    | 'top-right'
+    | 'bottom-right'
+    | 'bottom-left';
 
 @Injectable({
     providedIn: 'root'

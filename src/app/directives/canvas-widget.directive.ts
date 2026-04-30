@@ -22,6 +22,10 @@ export class CanvasWidgetDirective implements AfterViewInit {
     this.addResizer({position: 'right'});
     this.addResizer({position: 'top'});
     this.addResizer({position: 'bottom'});
+    this.addResizer({position: 'top-left'});
+    this.addResizer({position: 'top-right'});
+    this.addResizer({position: 'bottom-right'});
+    this.addResizer({position: 'bottom-left'});
   }
 
   @HostBinding('class')
@@ -105,6 +109,10 @@ export class CanvasWidgetDirective implements AfterViewInit {
   }) {
 
     const resizerSize = 5; // TODO: should be customizable
+    const edgeHandleSize = 10 * resizerSize;
+    const cornerHandleSize = 2 * resizerSize;
+    const edgeOffset = -Math.floor(resizerSize / 4);
+    const cornerOffset = -Math.floor(resizerSize / 2);
     const resizer = this.renderer.createElement('div');
 
     // TODO: remove this section
@@ -119,21 +127,46 @@ export class CanvasWidgetDirective implements AfterViewInit {
     switch (position) {
       case "top":
       case "bottom":
-        this.renderer.setStyle(resizer, "width", `${10 * resizerSize}px`);
+        this.renderer.setStyle(resizer, "width", `${edgeHandleSize}px`);
         this.renderer.setStyle(resizer, "height", `${resizerSize}px`);
-        this.renderer.setStyle(resizer, position, `-${Math.floor(resizerSize / 4)}px`);
+        this.renderer.setStyle(resizer, position, `${edgeOffset}px`);
         this.renderer.setStyle(resizer, "transform", `translate(-50%, 0%)`);
         this.renderer.setStyle(resizer, "left", "50%");
         this.renderer.setStyle(resizer, "cursor", "ns-resize");
         break;
       case "right":
       case "left":
-        this.renderer.setStyle(resizer, "height", `${10 * resizerSize}px`);
+        this.renderer.setStyle(resizer, "height", `${edgeHandleSize}px`);
         this.renderer.setStyle(resizer, "width", `${resizerSize}px`);
-        this.renderer.setStyle(resizer, position, `-${Math.floor(resizerSize / 4)}px`);
+        this.renderer.setStyle(resizer, position, `${edgeOffset}px`);
         this.renderer.setStyle(resizer, "transform", `translate(0%, -50%)`);
         this.renderer.setStyle(resizer, "top", "50%");
         this.renderer.setStyle(resizer, "cursor", "ew-resize");
+        break;
+      case 'top-left':
+      case 'top-right':
+      case 'bottom-right':
+      case 'bottom-left':
+        this.renderer.setStyle(resizer, 'width', `${cornerHandleSize}px`);
+        this.renderer.setStyle(resizer, 'height', `${cornerHandleSize}px`);
+        this.renderer.setStyle(resizer, 'transform', 'none');
+        if (position.includes('top')) {
+          this.renderer.setStyle(resizer, 'top', `${cornerOffset}px`);
+        }
+        if (position.includes('bottom')) {
+          this.renderer.setStyle(resizer, 'bottom', `${cornerOffset}px`);
+        }
+        if (position.includes('left')) {
+          this.renderer.setStyle(resizer, 'left', `${cornerOffset}px`);
+        }
+        if (position.includes('right')) {
+          this.renderer.setStyle(resizer, 'right', `${cornerOffset}px`);
+        }
+        this.renderer.setStyle(
+          resizer,
+          'cursor',
+          position === 'top-left' || position === 'bottom-right' ? 'nwse-resize' : 'nesw-resize'
+        );
         break;
     }
 

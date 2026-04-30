@@ -175,33 +175,32 @@ export const resizeRectFromHandle = ({
   min,
 }: {
   rect: Rect2D;
-  handle: 'top' | 'right' | 'bottom' | 'left';
+  handle: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
   delta: Point2D;
   min: Size2D;
 }): Rect2D => {
   const next: Rect2D = {...rect};
 
-  switch (handle) {
-    case 'right':
-      next.width = Math.max(min.width, rect.width + delta.x);
-      break;
-    case 'bottom':
-      next.height = Math.max(min.height, rect.height + delta.y);
-      break;
-    case 'left': {
-      const nextX = rect.x + delta.x;
-      const maxX = rect.x + rect.width - min.width;
-      next.x = Math.min(nextX, maxX);
-      next.width = Math.max(min.width, rect.width - (next.x - rect.x));
-      break;
-    }
-    case 'top': {
-      const nextY = rect.y + delta.y;
-      const maxY = rect.y + rect.height - min.height;
-      next.y = Math.min(nextY, maxY);
-      next.height = Math.max(min.height, rect.height - (next.y - rect.y));
-      break;
-    }
+  if (handle.includes('right')) {
+    next.width = Math.max(min.width, rect.width + delta.x);
+  }
+
+  if (handle.includes('bottom')) {
+    next.height = Math.max(min.height, rect.height + delta.y);
+  }
+
+  if (handle.includes('left')) {
+    const nextX = rect.x + delta.x;
+    const maxX = rect.x + rect.width - min.width;
+    next.x = Math.min(nextX, maxX);
+    next.width = Math.max(min.width, rect.width - (next.x - rect.x));
+  }
+
+  if (handle.includes('top')) {
+    const nextY = rect.y + delta.y;
+    const maxY = rect.y + rect.height - min.height;
+    next.y = Math.min(nextY, maxY);
+    next.height = Math.max(min.height, rect.height - (next.y - rect.y));
   }
 
   return next;
@@ -215,7 +214,7 @@ export const snapResizedRectByHandle = ({
   min,
 }: {
   rect: Rect2D;
-  handle: 'top' | 'right' | 'bottom' | 'left';
+  handle: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
   initialRect: Rect2D;
   snap: number;
   min: Size2D;
@@ -227,38 +226,29 @@ export const snapResizedRectByHandle = ({
   const right = initialRect.x + initialRect.width;
   const bottom = initialRect.y + initialRect.height;
 
-  switch (handle) {
-    case 'top': {
-      const snappedTop = roundToStep(rect.y, snap);
-      return {
-        ...rect,
-        y: snappedTop,
-        height: Math.max(min.height, bottom - snappedTop),
-      };
-    }
-    case 'bottom': {
-      const snappedHeight = Math.max(min.height, roundToStep(rect.height, snap));
-      return {
-        ...rect,
-        height: snappedHeight,
-      };
-    }
-    case 'left': {
-      const snappedLeft = roundToStep(rect.x, snap);
-      return {
-        ...rect,
-        x: snappedLeft,
-        width: Math.max(min.width, right - snappedLeft),
-      };
-    }
-    case 'right': {
-      const snappedWidth = Math.max(min.width, roundToStep(rect.width, snap));
-      return {
-        ...rect,
-        width: snappedWidth,
-      };
-    }
+  const next: Rect2D = {...rect};
+
+  if (handle.includes('top')) {
+    const snappedTop = roundToStep(next.y, snap);
+    next.y = snappedTop;
+    next.height = Math.max(min.height, bottom - snappedTop);
   }
+
+  if (handle.includes('bottom')) {
+    next.height = Math.max(min.height, roundToStep(next.height, snap));
+  }
+
+  if (handle.includes('left')) {
+    const snappedLeft = roundToStep(next.x, snap);
+    next.x = snappedLeft;
+    next.width = Math.max(min.width, right - snappedLeft);
+  }
+
+  if (handle.includes('right')) {
+    next.width = Math.max(min.width, roundToStep(next.width, snap));
+  }
+
+  return next;
 };
 
 export const clampResizedRectByHandle = ({
@@ -269,7 +259,7 @@ export const clampResizedRectByHandle = ({
   min,
 }: {
   rect: Rect2D;
-  handle: 'top' | 'right' | 'bottom' | 'left';
+  handle: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
   initialRect: Rect2D;
   canvas: Size2D;
   min: Size2D;
@@ -277,42 +267,35 @@ export const clampResizedRectByHandle = ({
   const right = initialRect.x + initialRect.width;
   const bottom = initialRect.y + initialRect.height;
 
-  switch (handle) {
-    case 'top': {
-      const top = clamp(rect.y, 0, bottom - min.height);
-      return {
-        ...rect,
-        y: top,
-        height: Math.max(min.height, bottom - top),
-      };
-    }
-    case 'bottom': {
-      const top = clamp(rect.y, 0, Math.max(0, canvas.height - min.height));
-      const clampedBottom = clamp(top + rect.height, top + min.height, canvas.height);
-      return {
-        ...rect,
-        y: top,
-        height: Math.max(min.height, clampedBottom - top),
-      };
-    }
-    case 'left': {
-      const left = clamp(rect.x, 0, right - min.width);
-      return {
-        ...rect,
-        x: left,
-        width: Math.max(min.width, right - left),
-      };
-    }
-    case 'right': {
-      const left = clamp(rect.x, 0, Math.max(0, canvas.width - min.width));
-      const clampedRight = clamp(left + rect.width, left + min.width, canvas.width);
-      return {
-        ...rect,
-        x: left,
-        width: Math.max(min.width, clampedRight - left),
-      };
-    }
+  const next: Rect2D = {...rect};
+
+  if (handle.includes('top')) {
+    const top = clamp(next.y, 0, bottom - min.height);
+    next.y = top;
+    next.height = Math.max(min.height, bottom - top);
   }
+
+  if (handle.includes('bottom')) {
+    const top = clamp(next.y, 0, Math.max(0, canvas.height - min.height));
+    const clampedBottom = clamp(top + next.height, top + min.height, canvas.height);
+    next.y = top;
+    next.height = Math.max(min.height, clampedBottom - top);
+  }
+
+  if (handle.includes('left')) {
+    const left = clamp(next.x, 0, right - min.width);
+    next.x = left;
+    next.width = Math.max(min.width, right - left);
+  }
+
+  if (handle.includes('right')) {
+    const left = clamp(next.x, 0, Math.max(0, canvas.width - min.width));
+    const clampedRight = clamp(left + next.width, left + min.width, canvas.width);
+    next.x = left;
+    next.width = Math.max(min.width, clampedRight - left);
+  }
+
+  return next;
 };
 
 export const clampRectInsideCanvas = ({rect, canvas}: { rect: Rect2D; canvas: Size2D; }): Rect2D => ({
