@@ -113,6 +113,8 @@ export class CanvasDirective implements OnInit {
             return;
         }
 
+        this.canvasService.handleGlobalPointerMove(event);
+
         this.canvasService.canvasDrag({
             el: this.canvasElementRef.nativeElement,
             event
@@ -128,6 +130,8 @@ export class CanvasDirective implements OnInit {
         if (!this.canvasWrapper()) {
             return;
         }
+
+        this.canvasService.handleGlobalPointerUp(event);
 
         this.canvasService.canvasDragEnd({
             el: this.canvasElementRef.nativeElement,

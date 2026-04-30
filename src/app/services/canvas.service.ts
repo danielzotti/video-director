@@ -75,6 +75,7 @@ export class CanvasService {
 
     private canvasDragStartPointer: Point2D | null = null;
     private canvasDragStartOffset: Point2D | null = null;
+    private activeWidgetEl: HTMLElement | null = null;
     private widgetDragOffset: Point2D | null = null;
     private resizeStartPointer: Point2D | null = null;
     private resizeStartRect: Rect2D | null = null;
@@ -240,6 +241,72 @@ export class CanvasService {
         this.canvasDragStartOffset = null;
     }
 
+    public handleGlobalPointerMove(event: MouseEvent) {
+        if (this.isDraggingWidget()) {
+            const widgetId = this.selectedWidgetId();
+            const widget = widgetId ? this.widgetsState.getById(widgetId) : null;
+
+            if (!widget || !this.activeWidgetEl) {
+                return;
+            }
+
+            this.widgetDrag({
+                widget,
+                el: this.activeWidgetEl,
+                event,
+            });
+            return;
+        }
+
+        if (this.isResizingWidget()) {
+            const widgetId = this.selectedWidgetId();
+            const widget = widgetId ? this.widgetsState.getById(widgetId) : null;
+
+            if (!widget || !this.activeWidgetEl) {
+                return;
+            }
+
+            this.widgetResize({
+                widget,
+                el: this.activeWidgetEl,
+                event,
+            });
+        }
+    }
+
+    public handleGlobalPointerUp(event: MouseEvent) {
+        if (this.isDraggingWidget()) {
+            const widgetId = this.selectedWidgetId();
+            const widget = widgetId ? this.widgetsState.getById(widgetId) : null;
+
+            if (!widget || !this.activeWidgetEl) {
+                return;
+            }
+
+            this.widgetDragEnd({
+                widget,
+                el: this.activeWidgetEl,
+                event,
+            });
+            return;
+        }
+
+        if (this.isResizingWidget()) {
+            const widgetId = this.selectedWidgetId();
+            const widget = widgetId ? this.widgetsState.getById(widgetId) : null;
+
+            if (!widget || !this.activeWidgetEl) {
+                return;
+            }
+
+            this.widgetResizeEnd({
+                widget,
+                el: this.activeWidgetEl,
+                event,
+            });
+        }
+    }
+
     public widgetDragStart({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
         if (event.button !== 0 || !this.canvasEl || this.isSpacePressed()) {
             return;
@@ -250,6 +317,7 @@ export class CanvasService {
 
         this.isDraggingWidget.set(true);
         this.selectedWidgetId.set(widget.uuid);
+        this.activeWidgetEl = el;
         el.classList.add(this.WIDGET_DRAGGING_CLASS);
         el.style.zIndex = '9999';
 
@@ -312,6 +380,7 @@ export class CanvasService {
         el.style.zIndex = widget.z.toString();
         this.isDraggingWidget.set(false);
         this.selectedWidgetId.set(null);
+        this.activeWidgetEl = null;
         this.widgetDragOffset = null;
         this.objectSnapGuides.set({});
 
@@ -343,6 +412,7 @@ export class CanvasService {
         this.isResizingWidget.set(true);
         this.widgetResizingPosition.set(position);
         this.selectedWidgetId.set(widget.uuid);
+        this.activeWidgetEl = el;
         el.classList.add(this.WIDGET_RESIZING_CLASS);
         el.style.zIndex = '9999';
 
@@ -416,6 +486,7 @@ export class CanvasService {
         this.isResizingWidget.set(false);
         this.widgetResizingPosition.set(null);
         this.selectedWidgetId.set(null);
+        this.activeWidgetEl = null;
         this.resizeStartPointer = null;
         this.resizeStartRect = null;
 

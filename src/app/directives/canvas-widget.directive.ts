@@ -68,47 +68,6 @@ export class CanvasWidgetDirective implements AfterViewInit {
     })
   }
 
-  @HostListener('window:mousemove', ['$event'])
-  onMouseMove(event: MouseEvent) {
-    if (this.canvasService.isDraggingWidget()) {
-      this.canvasService.widgetDrag({
-        widget: this.widget(),
-        el: this.elRef.nativeElement,
-        event
-      });
-      return;
-    }
-
-    if (this.canvasService.isResizingWidget()) {
-      this.canvasService.widgetResize({
-        widget: this.widget(),
-        el: this.elRef.nativeElement,
-        event
-      });
-    }
-
-  }
-
-  @HostListener('window:mouseup', ['$event'])
-  onMouseUp(event: MouseEvent) {
-    if (this.canvasService.isDraggingWidget()) {
-      this.canvasService.widgetDragEnd({
-        widget: this.widget(),
-        el: this.elRef.nativeElement,
-        event
-      });
-      return;
-    }
-    if (this.canvasService.isResizingWidget()) {
-      // console.log("XXXXXX resize end");
-      this.canvasService.widgetResizeEnd({
-        widget: this.widget(),
-        el: this.elRef.nativeElement,
-        event
-      });
-      return;
-    }
-  }
 
   private addResizer({
                        position
