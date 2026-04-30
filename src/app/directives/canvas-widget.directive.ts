@@ -59,8 +59,8 @@ export class CanvasWidgetDirective implements AfterViewInit {
   // @HostBinding('attr.draggable') draggable = 'true';
   // @HostBinding('attr.resizable') resizable = 'resizable';
 
-  @HostListener('mousedown', ['$event'])
-  onMouseDown(event: MouseEvent) {
+  @HostListener('pointerdown', ['$event'])
+  onPointerDown(event: PointerEvent) {
     this.canvasService.widgetDragStart({
       widget: this.widget(),
       el: this.elRef.nativeElement,
@@ -133,7 +133,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
         break;
     }
 
-    this.renderer.listen(resizer, 'mousedown', (event: MouseEvent) => {
+    this.renderer.listen(resizer, 'pointerdown', (event: PointerEvent) => {
       this.canvasService.widgetResizeStart({
         widget: this.widget(),
         el: this.elRef.nativeElement,

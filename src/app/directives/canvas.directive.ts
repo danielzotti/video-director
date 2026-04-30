@@ -89,8 +89,8 @@ export class CanvasDirective implements OnInit {
         this.updateCanvasAreaCursor();
     }
 
-    @HostListener('window:mousedown', ['$event'])
-    onMouseDown(event: MouseEvent) {
+    @HostListener('window:pointerdown', ['$event'])
+    onPointerDown(event: PointerEvent) {
         this.syncPointerInsideArea(event.target);
 
         if (!this.isPanTarget(event.target)) {
@@ -105,8 +105,8 @@ export class CanvasDirective implements OnInit {
         this.updateCanvasAreaCursor();
     }
 
-    @HostListener('window:mousemove', ['$event'])
-    onMouseMove(event: MouseEvent) {
+    @HostListener('window:pointermove', ['$event'])
+    onPointerMove(event: PointerEvent) {
         this.syncPointerInsideArea(event.target);
 
         if (!this.canvasWrapper()) {
@@ -123,8 +123,26 @@ export class CanvasDirective implements OnInit {
         this.updateCanvasAreaCursor();
     }
 
-    @HostListener('window:mouseup', ['$event'])
-    onMouseUp(event: MouseEvent) {
+    @HostListener('window:pointerup', ['$event'])
+    onPointerUp(event: PointerEvent) {
+        this.syncPointerInsideArea(event.target);
+
+        if (!this.canvasWrapper()) {
+            return;
+        }
+
+        this.canvasService.handleGlobalPointerUp(event);
+
+        this.canvasService.canvasDragEnd({
+            el: this.canvasElementRef.nativeElement,
+            event
+        });
+
+        this.updateCanvasAreaCursor();
+    }
+
+    @HostListener('window:pointercancel', ['$event'])
+    onPointerCancel(event: PointerEvent) {
         this.syncPointerInsideArea(event.target);
 
         if (!this.canvasWrapper()) {

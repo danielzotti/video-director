@@ -2,16 +2,13 @@ import {computed, inject, Injectable, Renderer2, RendererFactory2, signal} from 
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
 import {AxisGuides, Point2D, Rect2D, ResizeHandle} from '../models/geometry.models';
 import {CanvasWidgetStateService} from './canvas-widget-state.service';
+import {CanvasWidgetDragService} from './canvas-widget-drag.service';
+import {CanvasWidgetResizeService} from './canvas-widget-resize.service';
 import {CanvasViewportService} from './canvas-viewport.service';
 import {MathService} from './math.service';
 import {
-    clampResizedRectByHandle,
-    clampWidgetPosition,
-    resizeRectFromHandle,
     screenToCanvasPoint,
     snapPointToGrid,
-    snapResizedRectByHandle,
-    snapWidgetPositionToObjects,
 } from '../utils/canvas-geometry.utils';
 
 export interface CanvasServiceInitModel {
@@ -28,6 +25,7 @@ export interface CanvasServiceInitModel {
 }
 
 export type ResizePosition = ResizeHandle;
+type PointerLikeEvent = MouseEvent | PointerEvent;
 
 @Injectable({
     providedIn: 'root'
@@ -43,6 +41,8 @@ export class CanvasService {
     public canvasWrapperEl: HTMLElement | null = null;
 
     public readonly widgetsState = inject(CanvasWidgetStateService);
+    private readonly widgetDragService = inject(CanvasWidgetDragService);
+    private readonly widgetResizeService = inject(CanvasWidgetResizeService);
     private readonly viewportService = inject(CanvasViewportService);
     private readonly mathService = inject(MathService);
 
@@ -198,7 +198,7 @@ export class CanvasService {
         }
     }
 
-    public canvasDragStart({el, event}: { el: HTMLElement, event: MouseEvent }) {
+    public canvasDragStart({el, event}: { el: HTMLElement, event: PointerLikeEvent }) {
         if (!this.canvasEl || !this.canvasWrapperEl) {
             return;
         }
@@ -218,7 +218,7 @@ export class CanvasService {
         this.canvasDragStartOffset = {x: this.left(), y: this.top()};
     }
 
-    public canvasDrag({el, event}: { el: HTMLElement, event: MouseEvent }) {
+    public canvasDrag({el, event}: { el: HTMLElement, event: PointerLikeEvent }) {
         if (!el.classList.contains(this.CANVAS_DRAGGING_CLASS) || !this.canvasDragStartPointer || !this.canvasDragStartOffset) {
             return;
         }
@@ -230,7 +230,7 @@ export class CanvasService {
         this.top.set(Math.round(this.canvasDragStartOffset.y + dy));
     }
 
-    public canvasDragEnd({el}: { el: HTMLElement, event?: MouseEvent }) {
+    public canvasDragEnd({el}: { el: HTMLElement, event?: PointerLikeEvent }) {
         if (!el.classList.contains(this.CANVAS_DRAGGING_CLASS)) {
             return;
         }
@@ -241,7 +241,7 @@ export class CanvasService {
         this.canvasDragStartOffset = null;
     }
 
-    public handleGlobalPointerMove(event: MouseEvent) {
+    public handleGlobalPointerMove(event: PointerLikeEvent) {
         if (this.isDraggingWidget()) {
             const widgetId = this.selectedWidgetId();
             const widget = widgetId ? this.widgetsState.getById(widgetId) : null;
@@ -274,7 +274,7 @@ export class CanvasService {
         }
     }
 
-    public handleGlobalPointerUp(event: MouseEvent) {
+    public handleGlobalPointerUp(event: PointerLikeEvent) {
         if (this.isDraggingWidget()) {
             const widgetId = this.selectedWidgetId();
             const widget = widgetId ? this.widgetsState.getById(widgetId) : null;
@@ -307,7 +307,7 @@ export class CanvasService {
         }
     }
 
-    public widgetDragStart({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
+    public widgetDragStart({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: PointerLikeEvent }) {
         if (event.button !== 0 || !this.canvasEl || this.isSpacePressed()) {
             return;
         }
@@ -322,56 +322,43 @@ export class CanvasService {
         el.style.zIndex = '9999';
 
         const pointerCanvas = this.getPointerCanvasPoint(event);
-        this.widgetDragOffset = {
-            x: pointerCanvas.x - widget.x,
-            y: pointerCanvas.y - widget.y,
-        };
+        this.widgetDragOffset = this.widgetDragService.createDragOffset({
+            pointerCanvas,
+            widget,
+        });
 
         this.objectSnapGuides.set({});
     }
 
-    public widgetDrag({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
+    public widgetDrag({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: PointerLikeEvent }) {
         if (!el.classList.contains(this.WIDGET_DRAGGING_CLASS) || !this.widgetDragOffset) {
             return;
         }
 
         const pointerCanvas = this.getPointerCanvasPoint(event);
-        let next = {
-            x: pointerCanvas.x - this.widgetDragOffset.x,
-            y: pointerCanvas.y - this.widgetDragOffset.y,
-        };
+        const siblings = this.widgetsState.list().filter((item) => item.uuid !== widget.uuid);
+        const moveResult = this.widgetDragService.computeNextPosition({
+            pointerCanvas,
+            dragOffset: this.widgetDragOffset,
+            widget,
+            siblings,
+            snapToGrid: this.canSnapToGrid(),
+            snapSize: this.snapSize(),
+            snapToObjects: this.canSnapToObjects(),
+            objectSnapDistance: this.objectSnapDistance,
+            zoom: this.zoom(),
+            canExitBorders: this.canExitBorders(),
+            canvas: {width: this.width(), height: this.height()},
+        });
 
-        if (this.canSnapToGrid()) {
-            next = snapPointToGrid({point: next, snap: this.snapSize()});
-        }
-
-        if (this.canSnapToObjects()) {
-            const siblings = this.widgetsState.list().filter((item) => item.uuid !== widget.uuid);
-            const snapResult = snapWidgetPositionToObjects({
-                position: next,
-                moving: {width: widget.width, height: widget.height},
-                siblings,
-                distance: this.objectSnapDistance / this.zoom(),
-            });
-            next = snapResult.point;
-            this.objectSnapGuides.set(snapResult.guides);
-        } else {
-            this.objectSnapGuides.set({});
-        }
-
-        if (!this.canExitBorders()) {
-            next = clampWidgetPosition({
-                position: next,
-                widget: {width: widget.width, height: widget.height},
-                canvas: {width: this.width(), height: this.height()},
-            });
-        }
+        const next = moveResult.point;
+        this.objectSnapGuides.set(this.canSnapToObjects() ? moveResult.guides : {});
 
         el.style.left = `${next.x}px`;
         el.style.top = `${next.y}px`;
     }
 
-    public widgetDragEnd({widget, el}: { widget: WidgetStateItem, el: HTMLElement, event?: MouseEvent }) {
+    public widgetDragEnd({widget, el}: { widget: WidgetStateItem, el: HTMLElement, event?: PointerLikeEvent }) {
         if (!el.classList.contains(this.WIDGET_DRAGGING_CLASS)) {
             return;
         }
@@ -391,15 +378,14 @@ export class CanvasService {
 
         this.widgetsState.update({
             ...stateWidget,
-            x: Number.parseFloat(el.style.left) || 0,
-            y: Number.parseFloat(el.style.top) || 0,
+            ...this.widgetDragService.readElementPosition(el),
         });
     }
 
     public widgetResizeStart({widget, el, event, position}: {
         widget: WidgetStateItem,
         el: HTMLElement,
-        event: MouseEvent,
+        event: PointerLikeEvent,
         position: ResizePosition
     }) {
         if (event.button !== 0 || !this.canResizeWidget() || this.isSpacePressed()) {
@@ -417,15 +403,13 @@ export class CanvasService {
         el.style.zIndex = '9999';
 
         this.resizeStartPointer = this.getPointerCanvasPoint(event);
-        this.resizeStartRect = {
-            x: Number.parseFloat(el.style.left),
-            y: Number.parseFloat(el.style.top),
-            width: Number.parseFloat(el.style.width),
-            height: Number.parseFloat(el.style.height),
-        };
+        this.resizeStartRect = this.widgetResizeService.readElementRect(el, {
+            width: this.snapSize(),
+            height: this.snapSize(),
+        });
     }
 
-    public widgetResize({el, event}: { widget: WidgetStateItem, el: HTMLElement, event: MouseEvent }) {
+    public widgetResize({el, event}: { widget: WidgetStateItem, el: HTMLElement, event: PointerLikeEvent }) {
         if (!el.classList.contains(this.WIDGET_RESIZING_CLASS) || !this.resizeStartPointer || !this.resizeStartRect) {
             return;
         }
@@ -441,32 +425,16 @@ export class CanvasService {
             y: pointerCanvas.y - this.resizeStartPointer.y,
         };
 
-        let nextRect = resizeRectFromHandle({
-            rect: this.resizeStartRect,
+        const nextRect = this.widgetResizeService.computeNextRect({
             handle: position,
+            initialRect: this.resizeStartRect,
             delta,
             min: {width: this.snapSize(), height: this.snapSize()},
+            snapToGrid: this.canSnapToGrid(),
+            snapSize: this.snapSize(),
+            canExitBorders: this.canExitBorders(),
+            canvas: {width: this.width(), height: this.height()},
         });
-
-        if (this.canSnapToGrid()) {
-            nextRect = snapResizedRectByHandle({
-                rect: nextRect,
-                handle: position,
-                initialRect: this.resizeStartRect,
-                snap: this.snapSize(),
-                min: {width: this.snapSize(), height: this.snapSize()},
-            });
-        }
-
-        if (!this.canExitBorders()) {
-            nextRect = clampResizedRectByHandle({
-                rect: nextRect,
-                handle: position,
-                initialRect: this.resizeStartRect,
-                canvas: {width: this.width(), height: this.height()},
-                min: {width: this.snapSize(), height: this.snapSize()},
-            });
-        }
 
         el.style.width = `${nextRect.width}px`;
         el.style.height = `${nextRect.height}px`;
@@ -474,7 +442,7 @@ export class CanvasService {
         el.style.top = `${nextRect.y}px`;
     }
 
-    public widgetResizeEnd({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event?: MouseEvent }) {
+    public widgetResizeEnd({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event?: PointerLikeEvent }) {
         event?.stopPropagation();
 
         if (!el.classList.contains(this.WIDGET_RESIZING_CLASS)) {
@@ -495,12 +463,17 @@ export class CanvasService {
             return;
         }
 
+        const rect = this.widgetResizeService.readElementRect(el, {
+            width: this.snapSize(),
+            height: this.snapSize(),
+        });
+
         this.widgetsState.update({
             ...stateWidget,
-            width: Number.parseFloat(el.style.width) || this.snapSize(),
-            height: Number.parseFloat(el.style.height) || this.snapSize(),
-            x: Number.parseFloat(el.style.left) || 0,
-            y: Number.parseFloat(el.style.top) || 0,
+            width: rect.width,
+            height: rect.height,
+            x: rect.x,
+            y: rect.y,
         });
     }
 
@@ -533,7 +506,7 @@ export class CanvasService {
         this.top.set(next.top);
     }
 
-    private getPointerCanvasPoint(event: MouseEvent): Point2D {
+    private getPointerCanvasPoint(event: PointerLikeEvent): Point2D {
         if (!this.canvasEl) {
             return {x: 0, y: 0};
         }
