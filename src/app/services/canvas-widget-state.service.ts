@@ -60,8 +60,8 @@ export class CanvasWidgetStateService {
   public add(widget: WidgetStateItem) {
     const newWidget: WidgetStateItem = {
       ...widget,
-      ...(!widget.x && {x: 0}),
-      ...(!widget.y && {y: 0}),
+      x: widget.x ?? 0,
+      y: widget.y ?? 0,
       ...(!widget.uuid && {uuid: uuid()}),
     }
 

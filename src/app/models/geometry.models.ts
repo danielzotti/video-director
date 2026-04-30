@@ -10,6 +10,16 @@ export interface Size2D {
 
 export interface Rect2D extends Point2D, Size2D {}
 
+export type ResizeHandle =
+  | 'top'
+  | 'right'
+  | 'bottom'
+  | 'left'
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-right'
+  | 'bottom-left';
+
 export interface AxisGuides {
   x?: number;
   y?: number;

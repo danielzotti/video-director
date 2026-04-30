@@ -1,11 +1,10 @@
 import {computed, inject, Injectable, Renderer2, RendererFactory2, signal} from '@angular/core';
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
-import {AxisGuides, Point2D, Rect2D} from '../models/geometry.models';
-import {CanvasStateService} from './canvas-state.service';
+import {AxisGuides, Point2D, Rect2D, ResizeHandle} from '../models/geometry.models';
 import {CanvasWidgetStateService} from './canvas-widget-state.service';
+import {CanvasViewportService} from './canvas-viewport.service';
 import {MathService} from './math.service';
 import {
-    canvasToScreenPoint,
     clampResizedRectByHandle,
     clampWidgetPosition,
     resizeRectFromHandle,
@@ -28,15 +27,7 @@ export interface CanvasServiceInitModel {
     zoom?: number;
 }
 
-export type ResizePosition =
-    | 'top'
-    | 'right'
-    | 'bottom'
-    | 'left'
-    | 'top-left'
-    | 'top-right'
-    | 'bottom-right'
-    | 'bottom-left';
+export type ResizePosition = ResizeHandle;
 
 @Injectable({
     providedIn: 'root'
@@ -51,8 +42,8 @@ export class CanvasService {
     public canvasEl: HTMLElement | null = null;
     public canvasWrapperEl: HTMLElement | null = null;
 
-    public readonly canvasState = inject(CanvasStateService);
     public readonly widgetsState = inject(CanvasWidgetStateService);
+    private readonly viewportService = inject(CanvasViewportService);
     private readonly mathService = inject(MathService);
 
     public canManageCanvas = signal(false);
@@ -113,7 +104,7 @@ export class CanvasService {
 
         this.width.set(width);
         this.height.set(height);
-        this.zoom.set(this.clampZoom(zoom));
+        this.zoom.set(this.viewportService.clampZoom(zoom));
         this.snapSize.set(allowSnapToGrid ? Math.max(1, snapSize) : 1);
 
         this.renderer.setStyle(this.canvasEl, 'position', 'relative');
@@ -169,11 +160,14 @@ export class CanvasService {
         }
 
         const wrapperRect = this.canvasWrapperEl.getBoundingClientRect();
-        const centerX = (wrapperRect.width - this.width() * this.zoom()) / 2;
-        const centerY = (wrapperRect.height - this.height() * this.zoom()) / 2;
+        const center = this.viewportService.centerCanvas({
+            wrapper: {width: wrapperRect.width, height: wrapperRect.height},
+            canvas: {width: this.width(), height: this.height()},
+            zoom: this.zoom(),
+        });
 
-        this.left.set(Math.round(centerX));
-        this.top.set(Math.round(centerY));
+        this.left.set(center.x);
+        this.top.set(center.y);
     }
 
     public setSnapSize(value: number) {
@@ -441,7 +435,7 @@ export class CanvasService {
 
     private canvasZoomBy(delta: number, focalPoint?: Point2D) {
         const oldZoom = this.zoom();
-        const nextZoom = this.clampZoom(Math.round((oldZoom + delta) * 100) / 100);
+        const nextZoom = this.viewportService.clampZoom(Math.round((oldZoom + delta) * 100) / 100);
 
         if (oldZoom === nextZoom || !this.canvasEl) {
             return;
@@ -455,28 +449,17 @@ export class CanvasService {
         const canvasRect = this.canvasEl.getBoundingClientRect();
         const wrapperRect = this.canvasWrapperEl.getBoundingClientRect();
 
-        const canvasPoint = screenToCanvasPoint({
-            screen: focalPoint,
+        const next = this.viewportService.zoomFromFocalPoint({
+            delta,
+            oldZoom,
+            focalPoint,
             canvasOffset: {x: canvasRect.left, y: canvasRect.top},
-            zoom: oldZoom,
+            wrapperOffset: {x: wrapperRect.left, y: wrapperRect.top},
         });
 
-        const nextCanvasScreen = canvasToScreenPoint({
-            canvas: canvasPoint,
-            canvasOffset: {x: 0, y: 0},
-            zoom: nextZoom,
-        });
-
-        const newLeft = focalPoint.x - nextCanvasScreen.x - wrapperRect.left;
-        const newTop = focalPoint.y - nextCanvasScreen.y - wrapperRect.top;
-
-        this.zoom.set(nextZoom);
-        this.left.set(Math.round(newLeft));
-        this.top.set(Math.round(newTop));
-    }
-
-    private clampZoom(value: number): number {
-        return Math.max(0.25, Math.min(3, value));
+        this.zoom.set(next.zoom);
+        this.left.set(next.left);
+        this.top.set(next.top);
     }
 
     private getPointerCanvasPoint(event: MouseEvent): Point2D {

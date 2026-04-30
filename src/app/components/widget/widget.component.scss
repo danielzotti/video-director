@@ -28,6 +28,11 @@
     //outline: 3px solid var(--accent-color);
   }
 
+  .app-canvas-widget-resizer {
+    background-color: red;
+    z-index: 2;
+  }
+
   //& > * {
   //  pointer-events: none; // This is an hack! It should be managed in the component's logic
   //}

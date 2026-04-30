@@ -1,4 +1,4 @@
-import {Point2D, Rect2D, Size2D, SnapResult} from '../models/geometry.models';
+import {Point2D, Rect2D, ResizeHandle, Size2D, SnapResult} from '../models/geometry.models';
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
 
 const roundToStep = (value: number, step: number): number => Math.round(value / step) * step;
@@ -175,7 +175,7 @@ export const resizeRectFromHandle = ({
   min,
 }: {
   rect: Rect2D;
-  handle: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
+  handle: ResizeHandle;
   delta: Point2D;
   min: Size2D;
 }): Rect2D => {
@@ -214,7 +214,7 @@ export const snapResizedRectByHandle = ({
   min,
 }: {
   rect: Rect2D;
-  handle: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
+  handle: ResizeHandle;
   initialRect: Rect2D;
   snap: number;
   min: Size2D;
@@ -259,7 +259,7 @@ export const clampResizedRectByHandle = ({
   min,
 }: {
   rect: Rect2D;
-  handle: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
+  handle: ResizeHandle;
   initialRect: Rect2D;
   canvas: Size2D;
   min: Size2D;

@@ -1,7 +1,5 @@
 <ng-content></ng-content>
 @if (activeDebug()) {
   <div>x: {{ elRef.nativeElement.style?.left }}, y: {{ elRef.nativeElement.style?.top }}</div>
-  <div>{{ elRef.nativeElement.getBoundingClientRect().width | number:'1.0-0' }}
-    x {{ elRef.nativeElement.getBoundingClientRect().height | number:'1.0-0' }}
-  </div>
+  <div>{{ elRef.nativeElement.style?.width }} x {{ elRef.nativeElement.style?.height }}</div>
 }

@@ -5,8 +5,7 @@
 <!--</div>-->
 
 <div>Dragging: {{ canvasService.isDraggingWidget() ? "Yes" : "No" }}, Resizing: {{ canvasService.isResizingWidget() ? "Yes" : "No" }}, Selected
-  widget: {{ canvasService.selectedWidgetId() ?? "None" }}, Mouse Position: x: {{ mousePosition.x }},
-  y: {{ mousePosition.y }}
+  widget: {{ canvasService.selectedWidgetId() ?? "None" }}
 </div>
 
 @if (canvasService.canManageCanvas()) {
@@ -54,7 +53,7 @@
         <pre><strong>Capabilities:</strong>{{ item.mediaStream?.getVideoTracks()?.[0]?.getCapabilities() | json }}</pre>
         <pre><strong>Constraints:</strong>{{ item.constraints | json }}</pre>
       </div>-->
-      <app-widget [appCanvasWidget]="item" [activeDebug]="true" class="widget">
+      <app-widget [appCanvasWidget]="item" [activeDebug]="false" class="widget">
         <div><b>uuid {{ item.uuid }}</b></div>
       </app-widget>
     } @empty {

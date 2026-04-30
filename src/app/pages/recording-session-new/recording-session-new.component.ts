@@ -1,5 +1,5 @@
 import {DecimalPipe} from '@angular/common';
-import {ChangeDetectionStrategy, Component, computed, effect, HostListener, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject} from '@angular/core';
 import {v4 as uuid} from 'uuid';
 import {WidgetComponent} from '../../components/widget/widget.component';
 import {CanvasWidgetDirective} from '../../directives/canvas-widget.directive';
@@ -23,8 +23,6 @@ import {StreamStateService} from '../../services/stream-state.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecordingSessionNewComponent {
-  mousePosition = {x: 0, y: 0};
-
   streamStateService = inject(StreamStateService);
   widgetStateService = inject(CanvasWidgetStateService);
   public canvasService = inject(CanvasService);
@@ -40,10 +38,6 @@ export class RecordingSessionNewComponent {
     });
   }
 
-  @HostListener('window:mousemove', ['$event'])
-  onMouseMove(event: MouseEvent) {
-    this.mousePosition = {x: event.clientX, y: event.clientY};
-  }
 
   async newWebcamStream() {
     alert('TODO: newWebcamStream');

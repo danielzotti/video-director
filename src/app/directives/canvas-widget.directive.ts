@@ -8,6 +8,19 @@ import {CanvasService, ResizePosition} from "../services/canvas.service";
   standalone: true
 })
 export class CanvasWidgetDirective implements AfterViewInit {
+  private static readonly RESIZE_HANDLES: ResizePosition[] = [
+    'left',
+    'right',
+    'top',
+    'bottom',
+    'top-left',
+    'top-right',
+    'bottom-right',
+    'bottom-left',
+  ];
+  private static readonly BASE_RESIZER_SIZE = 5;
+  private static readonly EDGE_HANDLE_MULTIPLIER = 10;
+  private static readonly CORNER_HANDLE_MULTIPLIER = 2;
 
   private readonly renderer = inject(Renderer2);
   private readonly elRef = inject(ElementRef<HTMLElement>);
@@ -18,14 +31,9 @@ export class CanvasWidgetDirective implements AfterViewInit {
   widget = input.required<WidgetStateItem>({alias: 'appCanvasWidget'});
 
   ngAfterViewInit() {
-    this.addResizer({position: 'left'});
-    this.addResizer({position: 'right'});
-    this.addResizer({position: 'top'});
-    this.addResizer({position: 'bottom'});
-    this.addResizer({position: 'top-left'});
-    this.addResizer({position: 'top-right'});
-    this.addResizer({position: 'bottom-right'});
-    this.addResizer({position: 'bottom-left'});
+    for (const position of CanvasWidgetDirective.RESIZE_HANDLES) {
+      this.addResizer({position});
+    }
   }
 
   @HostBinding('class')
@@ -108,17 +116,13 @@ export class CanvasWidgetDirective implements AfterViewInit {
     position: ResizePosition;
   }) {
 
-    const resizerSize = 5; // TODO: should be customizable
-    const edgeHandleSize = 10 * resizerSize;
-    const cornerHandleSize = 2 * resizerSize;
+    const resizerSize = CanvasWidgetDirective.BASE_RESIZER_SIZE;
+    const edgeHandleSize = CanvasWidgetDirective.EDGE_HANDLE_MULTIPLIER * resizerSize;
+    const cornerHandleSize = CanvasWidgetDirective.CORNER_HANDLE_MULTIPLIER * resizerSize;
     const edgeOffset = -Math.floor(resizerSize / 4);
     const cornerOffset = -Math.floor(resizerSize / 2);
     const resizer = this.renderer.createElement('div');
 
-    // TODO: remove this section
-    this.renderer.setStyle(resizer, "background-color", "red");
-    // const text = this.renderer.createText(position);
-    // this.renderer.appendChild(resizer, text);
 
     this.renderer.setStyle(resizer, "position", "absolute");
     this.renderer.addClass(resizer, `${this.canvasService.WIDGET_RESIZER_CLASS}`);
