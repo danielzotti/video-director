@@ -168,6 +168,58 @@ export const snapWidgetPositionToObjects = ({
   };
 };
 
+export const snapWidgetPositionToCanvasBorders = ({
+  position,
+  widget,
+  canvas,
+  distance,
+}: {
+  position: Point2D;
+  widget: Size2D;
+  canvas: Size2D;
+  distance: number;
+}): SnapResult => {
+  let snapX = position.x;
+  let snapY = position.y;
+  let bestDiffX = distance + 1;
+  let bestDiffY = distance + 1;
+  const guides: SnapResult['guides'] = {};
+
+  const leftDiff = Math.abs(position.x);
+  if (leftDiff <= distance && leftDiff < bestDiffX) {
+    bestDiffX = leftDiff;
+    snapX = 0;
+    guides.x = 0;
+  }
+
+  const right = position.x + widget.width;
+  const rightDiff = Math.abs(canvas.width - right);
+  if (rightDiff <= distance && rightDiff < bestDiffX) {
+    bestDiffX = rightDiff;
+    snapX = canvas.width - widget.width;
+    guides.x = canvas.width;
+  }
+
+  const topDiff = Math.abs(position.y);
+  if (topDiff <= distance && topDiff < bestDiffY) {
+    bestDiffY = topDiff;
+    snapY = 0;
+    guides.y = 0;
+  }
+
+  const bottom = position.y + widget.height;
+  const bottomDiff = Math.abs(canvas.height - bottom);
+  if (bottomDiff <= distance && bottomDiff < bestDiffY) {
+    snapY = canvas.height - widget.height;
+    guides.y = canvas.height;
+  }
+
+  return {
+    point: {x: snapX, y: snapY},
+    guides,
+  };
+};
+
 export const resizeRectFromHandle = ({
   rect,
   handle,

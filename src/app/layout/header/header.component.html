@@ -1,4 +1,86 @@
 <nav>
   <a routerLink="/" routerLinkActive="active">Home</a>
   <a routerLink="/recording-sessions" routerLinkActive="active">Recording Sessions</a>
+
+  @if (canvasService.canManageCanvas()) {
+    <div class="canvas-controls">
+      <button (click)="canvasService.canvasZoomOut()">-</button>
+      <button (click)="canvasService.canvasZoomReset()">{{ canvasService.zoom() | number:'0.2' }}</button>
+      <button (click)="canvasService.canvasZoomIn()">+</button>
+      <button (click)="canvasService.canvasCenter()">Center</button>
+
+      <label>
+        Snap size
+        <select (change)="changeSnapSize($event)" [value]="canvasService.snapSize()">
+          @for (snapSize of canvasService.snapSizeList(); track snapSize) {
+            <option [value]="snapSize" [selected]="snapSize === canvasService.snapSize()">{{ snapSize }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          [checked]="canvasService.canExitBorders()"
+          (change)="canvasService.setExitBorders(!canvasService.canExitBorders())"
+        />
+        allowExitBorders
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          [checked]="canvasService.canSnapToGrid()"
+          (change)="canvasService.setSnapToGrid(!canvasService.canSnapToGrid())"
+        />
+        allowSnapToGrid
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          [checked]="canvasService.canSnapToObjects()"
+          (change)="canvasService.setSnapToObjects(!canvasService.canSnapToObjects())"
+        />
+        allowSnapToObjects
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          [checked]="canvasService.canSnapToBorder()"
+          (change)="canvasService.setSnapToBorder(!canvasService.canSnapToBorder())"
+        />
+        allowSnapToBorder
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          [checked]="canvasService.canResizeWidget()"
+          (change)="canvasService.setWidgetResize(!canvasService.canResizeWidget())"
+        />
+        allowWidgetResize
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          [checked]="canvasService.debugMode()"
+          (change)="canvasService.setDebugMode(!canvasService.debugMode())"
+        />
+        debugMode
+      </label>
+
+      @if (canvasService.debugMode()) {
+        <div class="live-status">
+          <span>zoom {{ canvasService.zoom() | number:'0.2' }}</span>
+          <span>offset {{ canvasService.left() }}, {{ canvasService.top() }}</span>
+          <span>selected {{ canvasService.selectedWidgetId() ?? 'None' }}</span>
+          <span>drag {{ canvasService.isDraggingWidget() ? 'ON' : 'OFF' }}</span>
+          <span>resize {{ canvasService.isResizingWidget() ? 'ON' : 'OFF' }}</span>
+        </div>
+      }
+    </div>
+  }
 </nav>

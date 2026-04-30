@@ -17,6 +17,7 @@ export interface CanvasServiceInitModel {
     allowExitBorders?: boolean;
     allowSnapToGrid?: boolean;
     allowSnapToObjects?: boolean;
+    allowSnapToBorder?: boolean;
     allowWidgetResize?: boolean;
     width?: number;
     height?: number;
@@ -50,7 +51,9 @@ export class CanvasService {
     public canExitBorders = signal(false);
     public canSnapToGrid = signal(false);
     public canSnapToObjects = signal(true);
+    public canSnapToBorder = signal(false);
     public canResizeWidget = signal(false);
+    public debugMode = signal(true);
 
     public isDraggingCanvas = signal(false);
     public isDraggingWidget = signal(false);
@@ -72,6 +75,7 @@ export class CanvasService {
     });
 
     private readonly objectSnapDistance = 8;
+    private readonly borderSnapDistance = 8;
 
     private canvasDragStartPointer: Point2D | null = null;
     private canvasDragStartOffset: Point2D | null = null;
@@ -88,6 +92,7 @@ export class CanvasService {
                     allowExitBorders = false,
                     allowSnapToGrid = true,
                     allowSnapToObjects = false,
+                    allowSnapToBorder = false,
                     width = 800,
                     height = 600,
                     snapSize = 1,
@@ -101,6 +106,7 @@ export class CanvasService {
         this.canExitBorders.set(allowExitBorders);
         this.canSnapToGrid.set(allowSnapToGrid);
         this.canSnapToObjects.set(allowSnapToObjects);
+        this.canSnapToBorder.set(allowSnapToBorder);
         this.canResizeWidget.set(allowWidgetResize);
 
         this.width.set(width);
@@ -176,11 +182,43 @@ export class CanvasService {
         this.resetWidgetToSnapSize();
     }
 
+    public setExitBorders(value: boolean) {
+        this.canExitBorders.set(value);
+    }
+
+    public setSnapToGrid(value: boolean) {
+        this.canSnapToGrid.set(value);
+
+        if (value) {
+            this.resetWidgetToSnapSize();
+            return;
+        }
+
+        if (this.canSnapToObjects()) {
+            this.objectSnapGuides.set({});
+        }
+    }
+
     public setSnapToObjects(value: boolean) {
         this.canSnapToObjects.set(value);
         if (!value) {
             this.objectSnapGuides.set({});
         }
+    }
+
+    public setSnapToBorder(value: boolean) {
+        this.canSnapToBorder.set(value);
+        if (!value) {
+            this.objectSnapGuides.set({});
+        }
+    }
+
+    public setWidgetResize(value: boolean) {
+        this.canResizeWidget.set(value);
+    }
+
+    public setDebugMode(value: boolean) {
+        this.debugMode.set(value);
     }
 
     public resetWidgetToSnapSize() {
@@ -346,13 +384,15 @@ export class CanvasService {
             snapSize: this.snapSize(),
             snapToObjects: this.canSnapToObjects(),
             objectSnapDistance: this.objectSnapDistance,
+            snapToBorder: this.canSnapToBorder(),
+            borderSnapDistance: this.borderSnapDistance,
             zoom: this.zoom(),
             canExitBorders: this.canExitBorders(),
             canvas: {width: this.width(), height: this.height()},
         });
 
         const next = moveResult.point;
-        this.objectSnapGuides.set(this.canSnapToObjects() ? moveResult.guides : {});
+        this.objectSnapGuides.set(this.canSnapToObjects() || this.canSnapToBorder() ? moveResult.guides : {});
 
         el.style.left = `${next.x}px`;
         el.style.top = `${next.y}px`;

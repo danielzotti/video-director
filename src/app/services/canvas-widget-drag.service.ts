@@ -1,7 +1,12 @@
 import {Injectable} from '@angular/core';
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
 import {AxisGuides, Point2D, Size2D} from '../models/geometry.models';
-import {clampWidgetPosition, snapPointToGrid, snapWidgetPositionToObjects} from '../utils/canvas-geometry.utils';
+import {
+  clampWidgetPosition,
+  snapPointToGrid,
+  snapWidgetPositionToCanvasBorders,
+  snapWidgetPositionToObjects,
+} from '../utils/canvas-geometry.utils';
 
 @Injectable({
   providedIn: 'root',
@@ -29,6 +34,8 @@ export class CanvasWidgetDragService {
     snapSize,
     snapToObjects,
     objectSnapDistance,
+    snapToBorder,
+    borderSnapDistance,
     zoom,
     canExitBorders,
     canvas,
@@ -41,6 +48,8 @@ export class CanvasWidgetDragService {
     snapSize: number;
     snapToObjects: boolean;
     objectSnapDistance: number;
+    snapToBorder: boolean;
+    borderSnapDistance: number;
     zoom: number;
     canExitBorders: boolean;
     canvas: Size2D;
@@ -64,6 +73,20 @@ export class CanvasWidgetDragService {
       });
       next = snapResult.point;
       guides = snapResult.guides;
+    }
+
+    if (snapToBorder) {
+      const borderSnap = snapWidgetPositionToCanvasBorders({
+        position: next,
+        widget: {width: widget.width, height: widget.height},
+        canvas,
+        distance: borderSnapDistance / zoom,
+      });
+      next = borderSnap.point;
+      guides = {
+        x: borderSnap.guides.x ?? guides.x,
+        y: borderSnap.guides.y ?? guides.y,
+      };
     }
 
     if (!canExitBorders) {

@@ -8,31 +8,13 @@
   widget: {{ canvasService.selectedWidgetId() ?? "None" }}
 </div>
 
-@if (canvasService.canManageCanvas()) {
-
-  <div class="canvas-zoom">
-    <button (click)="canvasService.canvasZoomOut()">-</button>
-    <button (click)="canvasService.canvasZoomReset()">{{ canvasService.zoom() | number:'0.2' }}</button>
-    <button (click)="canvasService.canvasZoomIn()">+</button>
-    <span> | </span>
-    <button (click)="canvasService.canvasCenter()">Center</button>
-    <button (click)="canvasService.setSnapToObjects(!canvasService.canSnapToObjects())">
-      Snap objects: {{ canvasService.canSnapToObjects() ? 'ON' : 'OFF' }}
-    </button>
-    <select (change)="changeSnapSize($event)" [value]="canvasService.snapSize()">
-      @for (snapSize of canvasService.snapSizeList(); track snapSize) {
-        <option [value]="snapSize" [selected]="snapSize === canvasService.snapSize()">{{ snapSize }}</option>
-      }
-    </select>
-  </div>
-}
-
 <div class="canvas-wrapper" #canvasWrapper>
 
   <div class="canvas"
        appCanvas
        [canvasWrapper]="canvasWrapper"
        [allowSnapToObjects]="canvasService.canSnapToObjects()"
+       [allowSnapToBorder]="canvasService.canSnapToBorder()"
   >
     @if (canvasService.objectSnapGuides().x !== undefined) {
       <div class="canvas-guide canvas-guide-x" [style.left.px]="canvasService.objectSnapGuides().x"></div>
@@ -53,7 +35,7 @@
         <pre><strong>Capabilities:</strong>{{ item.mediaStream?.getVideoTracks()?.[0]?.getCapabilities() | json }}</pre>
         <pre><strong>Constraints:</strong>{{ item.constraints | json }}</pre>
       </div>-->
-      <app-widget [appCanvasWidget]="item" [activeDebug]="false" class="widget">
+      <app-widget [appCanvasWidget]="item" [activeDebug]="canvasService.debugMode()" class="widget">
         <div><b>uuid {{ item.uuid }}</b></div>
       </app-widget>
     } @empty {

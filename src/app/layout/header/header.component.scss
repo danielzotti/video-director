@@ -1,11 +1,42 @@
 nav {
   background-color:#333;
-  padding: 20px;
+  padding: 12px 20px;
   color: white;
   display: flex;
   flex-direction: row;
-  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+
   a {
     color: inherit;
+  }
+
+  .canvas-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-left: auto;
+  }
+
+  .live-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.2);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    white-space: nowrap;
   }
 }

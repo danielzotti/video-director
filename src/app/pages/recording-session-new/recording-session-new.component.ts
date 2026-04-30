@@ -1,4 +1,3 @@
-import {DecimalPipe} from '@angular/common';
 import {ChangeDetectionStrategy, Component, computed, effect, inject} from '@angular/core';
 import {v4 as uuid} from 'uuid';
 import {WidgetComponent} from '../../components/widget/widget.component';
@@ -16,7 +15,6 @@ import {StreamStateService} from '../../services/stream-state.service';
     WidgetComponent,
     CanvasDirective,
     CanvasWidgetDirective,
-    DecimalPipe,
   ],
   templateUrl: './recording-session-new.component.html',
   styleUrl: './recording-session-new.component.scss',
@@ -85,9 +83,4 @@ export class RecordingSessionNewComponent {
     a.click();
   }
 
-  changeSnapSize(event: Event) {
-    const target = event.target as HTMLSelectElement | null;
-    const snapSize = Number(target?.value ?? '1');
-    this.canvasService.setSnapSize(snapSize || 1);
-  }
 }
