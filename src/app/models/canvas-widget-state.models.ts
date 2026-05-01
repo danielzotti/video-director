@@ -46,4 +46,5 @@ export interface WidgetStateItem extends Rect2D, Partial<WidgetStateItemStyle> {
   uuid: string;
   z: number;
   content: WidgetContent;
+  name?: string;
 }

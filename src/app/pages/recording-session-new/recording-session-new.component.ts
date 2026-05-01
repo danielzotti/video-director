@@ -9,6 +9,7 @@ import {CanvasService} from '../../services/canvas.service';
 import {StreamStateService} from '../../services/stream-state.service';
 import {CanvasDebugPanelComponent} from '../../components/canvas-debug-panel/canvas-debug-panel.component';
 import {CanvasSettingsPanelComponent} from '../../layout/canvas-settings-panel/canvas-settings-panel.component';
+import {CanvasLayersPanelComponent} from '../../layout/canvas-layers-panel/canvas-layers-panel.component';
 import {CanvasToolbarComponent} from '../../layout/canvas-toolbar/canvas-toolbar.component';
 import {Point2D} from '../../models/geometry.models';
 
@@ -21,6 +22,7 @@ import {Point2D} from '../../models/geometry.models';
     CanvasWidgetDirective,
     CanvasDebugPanelComponent,
     CanvasSettingsPanelComponent,
+    CanvasLayersPanelComponent,
     CanvasToolbarComponent,
   ],
   templateUrl: './recording-session-new.component.html',
@@ -33,13 +35,20 @@ export class RecordingSessionNewComponent {
   public canvasService = inject(CanvasService);
   private readonly editorContentRef = viewChild<ElementRef<HTMLElement>>('editorContent');
   private readonly floatingPanelRef = viewChild<ElementRef<HTMLElement>>('floatingPanel');
+  private readonly floatingLayersPanelRef = viewChild<ElementRef<HTMLElement>>('floatingLayersPanel');
 
   protected readonly floatingPanelPosition = signal<Point2D>({ x: 0, y: 0 });
+  protected readonly floatingLayersPanelPosition = signal<Point2D>({ x: 0, y: 0 });
 
   private floatingPanelDragOffset: Point2D | null = null;
   private isFloatingPanelDragging = false;
   private hasFloatingPanelPosition = false;
   private readonly floatingPanelMargin = 12;
+
+  private floatingLayersPanelDragOffset: Point2D | null = null;
+  private isFloatingLayersPanelDragging = false;
+  private hasFloatingLayersPanelPosition = false;
+  private readonly floatingLayersPanelMargin = 12;
 
   streamList = computed(() => this.streamStateService.list());
   widgetList = computed(() => this.widgetStateService.list());
@@ -60,6 +69,18 @@ export class RecordingSessionNewComponent {
 
       requestAnimationFrame(() => {
         this.initializeOrClampFloatingPanel();
+      });
+    });
+
+    effect(() => {
+      if (this.canvasService.layersPanelLayout() !== 'floating') {
+        this.isFloatingLayersPanelDragging = false;
+        this.floatingLayersPanelDragOffset = null;
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        this.initializeOrClampFloatingLayersPanel();
       });
     });
   }
@@ -102,47 +123,44 @@ export class RecordingSessionNewComponent {
     event.preventDefault();
   }
 
-  @HostListener('window:pointermove', ['$event'])
-  protected onWindowPointerMove(event: PointerEvent): void {
-    if (!this.isFloatingPanelDragging || !this.floatingPanelDragOffset) {
-      return;
-    }
+   private onWindowPointerMove(event: PointerEvent): void {
+     if (!this.isFloatingPanelDragging || !this.floatingPanelDragOffset) {
+       return;
+     }
 
-    const boundaryEl = this.editorContentRef()?.nativeElement;
-    const panelEl = this.floatingPanelRef()?.nativeElement;
-    if (!boundaryEl || !panelEl) {
-      return;
-    }
+     const boundaryEl = this.editorContentRef()?.nativeElement;
+     const panelEl = this.floatingPanelRef()?.nativeElement;
+     if (!boundaryEl || !panelEl) {
+       return;
+     }
 
-    const boundaryRect = boundaryEl.getBoundingClientRect();
-    const panelRect = panelEl.getBoundingClientRect();
+     const boundaryRect = boundaryEl.getBoundingClientRect();
+     const panelRect = panelEl.getBoundingClientRect();
 
-    const nextPosition = this.getClampedFloatingPanelPosition(
-      {
-        x: event.clientX - boundaryRect.left - this.floatingPanelDragOffset.x,
-        y: event.clientY - boundaryRect.top - this.floatingPanelDragOffset.y,
-      },
-      boundaryRect,
-      panelRect,
-    );
+     const nextPosition = this.getClampedFloatingPanelPosition(
+       {
+         x: event.clientX - boundaryRect.left - this.floatingPanelDragOffset.x,
+         y: event.clientY - boundaryRect.top - this.floatingPanelDragOffset.y,
+       },
+       boundaryRect,
+       panelRect,
+     );
 
-    this.floatingPanelPosition.set(nextPosition);
-  }
+     this.floatingPanelPosition.set(nextPosition);
+   }
 
-  @HostListener('window:pointerup')
-  protected onWindowPointerUp(): void {
-    this.isFloatingPanelDragging = false;
-    this.floatingPanelDragOffset = null;
-  }
+   private onWindowPointerUp(): void {
+     this.isFloatingPanelDragging = false;
+     this.floatingPanelDragOffset = null;
+   }
 
-  @HostListener('window:resize')
-  protected onWindowResize(): void {
-    if (this.canvasService.settingsPanelLayout() !== 'floating') {
-      return;
-    }
+   private onWindowResize(): void {
+     if (this.canvasService.settingsPanelLayout() !== 'floating') {
+       return;
+     }
 
-    this.initializeOrClampFloatingPanel();
-  }
+     this.initializeOrClampFloatingPanel();
+   }
 
   private initializeOrClampFloatingPanel(): void {
     const boundaryEl = this.editorContentRef()?.nativeElement;
@@ -184,9 +202,132 @@ export class RecordingSessionNewComponent {
     };
   }
 
-  private clamp(value: number, min: number, max: number): number {
-    return Math.round(Math.min(Math.max(value, min), max));
-  }
+   private clamp(value: number, min: number, max: number): number {
+     return Math.round(Math.min(Math.max(value, min), max));
+   }
+
+   protected onFloatingLayersPanelPointerDown(event: PointerEvent): void {
+     if (this.canvasService.layersPanelLayout() !== 'floating' || event.button !== 0) {
+       return;
+     }
+
+     const target = event.target as HTMLElement | null;
+     if (!target?.closest('.layers-panel__header')) {
+       return;
+     }
+
+     const boundaryEl = this.editorContentRef()?.nativeElement;
+     const panelEl = this.floatingLayersPanelRef()?.nativeElement;
+     if (!boundaryEl || !panelEl) {
+       return;
+     }
+
+     const boundaryRect = boundaryEl.getBoundingClientRect();
+     const panelRect = panelEl.getBoundingClientRect();
+
+     this.isFloatingLayersPanelDragging = true;
+     this.floatingLayersPanelDragOffset = {
+       x: event.clientX - panelRect.left,
+       y: event.clientY - panelRect.top,
+     };
+
+     const nextPosition = this.getClampedFloatingLayersPanelPosition(
+       {
+         x: event.clientX - boundaryRect.left - this.floatingLayersPanelDragOffset.x,
+         y: event.clientY - boundaryRect.top - this.floatingLayersPanelDragOffset.y,
+       },
+       boundaryRect,
+       panelRect,
+     );
+
+     this.floatingLayersPanelPosition.set(nextPosition);
+     event.preventDefault();
+   }
+
+   @HostListener('window:pointermove', ['$event'])
+   protected onWindowPointerMoveHandler(event: PointerEvent): void {
+     // Handle layers panel drag
+     if (this.isFloatingLayersPanelDragging && this.floatingLayersPanelDragOffset) {
+       const boundaryEl = this.editorContentRef()?.nativeElement;
+       const panelEl = this.floatingLayersPanelRef()?.nativeElement;
+       if (!boundaryEl || !panelEl) {
+         return;
+       }
+
+       const boundaryRect = boundaryEl.getBoundingClientRect();
+       const panelRect = panelEl.getBoundingClientRect();
+
+       const nextPosition = this.getClampedFloatingLayersPanelPosition(
+         {
+           x: event.clientX - boundaryRect.left - this.floatingLayersPanelDragOffset.x,
+           y: event.clientY - boundaryRect.top - this.floatingLayersPanelDragOffset.y,
+         },
+         boundaryRect,
+         panelRect,
+       );
+
+       this.floatingLayersPanelPosition.set(nextPosition);
+     }
+
+     // Handle settings panel drag
+     this.onWindowPointerMove(event);
+   }
+
+   @HostListener('window:pointerup')
+   protected onWindowPointerUpHandler(): void {
+     this.isFloatingLayersPanelDragging = false;
+     this.floatingLayersPanelDragOffset = null;
+     this.onWindowPointerUp();
+   }
+
+   @HostListener('window:resize')
+   protected onWindowResizeHandler(): void {
+     if (this.canvasService.layersPanelLayout() === 'floating') {
+       this.initializeOrClampFloatingLayersPanel();
+     }
+
+     this.onWindowResize();
+   }
+
+   private initializeOrClampFloatingLayersPanel(): void {
+     const boundaryEl = this.editorContentRef()?.nativeElement;
+     const panelEl = this.floatingLayersPanelRef()?.nativeElement;
+     if (!boundaryEl || !panelEl) {
+       return;
+     }
+
+     const boundaryRect = boundaryEl.getBoundingClientRect();
+     const panelRect = panelEl.getBoundingClientRect();
+
+     if (!this.hasFloatingLayersPanelPosition) {
+       this.hasFloatingLayersPanelPosition = true;
+       this.floatingLayersPanelPosition.set(
+         this.getClampedFloatingLayersPanelPosition(
+           {
+             x: this.floatingLayersPanelMargin,
+             y: this.floatingLayersPanelMargin,
+           },
+           boundaryRect,
+           panelRect,
+         ),
+       );
+       return;
+     }
+
+     this.floatingLayersPanelPosition.set(
+       this.getClampedFloatingLayersPanelPosition(this.floatingLayersPanelPosition(), boundaryRect, panelRect),
+     );
+   }
+
+   private getClampedFloatingLayersPanelPosition(position: Point2D, boundaryRect: DOMRect, panelRect: DOMRect): Point2D {
+     const maxX = Math.max(0, boundaryRect.width - panelRect.width);
+     const maxY = Math.max(0, boundaryRect.height - panelRect.height);
+
+     return {
+       x: this.clamp(position.x, 0, maxX),
+       y: this.clamp(position.y, 0, maxY),
+     };
+   }
 
 
   async newWebcamStream() {

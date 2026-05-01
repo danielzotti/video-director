@@ -31,6 +31,7 @@ export interface CanvasServiceInitModel {
 
 export type ResizePosition = ResizeHandle;
 export type SettingsPanelLayout = 'floating' | 'fixed-right' | 'closed';
+export type LayersPanelLayout = 'floating' | 'fixed-left' | 'closed';
 type PointerLikeEvent = MouseEvent | PointerEvent;
 
 @Injectable({
@@ -52,14 +53,15 @@ export class CanvasService {
     private readonly viewportService = inject(CanvasViewportService);
     private readonly mathService = inject(MathService);
 
-    public canManageCanvas = signal(false);
-    public canExitBorders = signal(false);
-    public canSnapToGrid = signal(false);
-    public canSnapToObjects = signal(true);
-    public canSnapToBorder = signal(false);
-    public canResizeWidget = signal(false);
-    public debugMode = signal(true);
-    public settingsPanelLayout = signal<SettingsPanelLayout>('fixed-right');
+     public canManageCanvas = signal(false);
+     public canExitBorders = signal(false);
+     public canSnapToGrid = signal(false);
+     public canSnapToObjects = signal(true);
+     public canSnapToBorder = signal(false);
+     public canResizeWidget = signal(false);
+     public debugMode = signal(true);
+     public settingsPanelLayout = signal<SettingsPanelLayout>('fixed-right');
+     public layersPanelLayout = signal<LayersPanelLayout>('fixed-left');
 
     public isDraggingCanvas = signal(false);
     public isDraggingWidget = signal(false);
@@ -237,9 +239,13 @@ export class CanvasService {
         this.debugMode.set(value);
     }
 
-    public setSettingsPanelLayout(value: SettingsPanelLayout) {
-        this.settingsPanelLayout.set(value);
-    }
+     public setSettingsPanelLayout(value: SettingsPanelLayout) {
+         this.settingsPanelLayout.set(value);
+     }
+
+     public setLayersPanelLayout(value: LayersPanelLayout) {
+         this.layersPanelLayout.set(value);
+     }
 
     public selectWidget(widgetId: string | null) {
         this.selectedWidgetId.set(widgetId);

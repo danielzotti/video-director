@@ -28,10 +28,17 @@
 
   <div class="canvas-toolbar__group canvas-toolbar__group--settings">
     <app-ui-select
-      label="Panel"
-      [options]="panelLayoutOptions"
+      label="Settings"
+      [options]="settingsPanelLayoutOptions"
       [value]="cs.settingsPanelLayout()"
       (valueChange)="setSettingsPanelLayout($event)"
+    />
+
+    <app-ui-select
+      label="Layers"
+      [options]="layersPanelLayoutOptions"
+      [value]="cs.layersPanelLayout()"
+      (valueChange)="setLayersPanelLayout($event)"
     />
   </div>
 

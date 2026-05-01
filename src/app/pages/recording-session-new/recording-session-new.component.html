@@ -7,9 +7,16 @@
         }
     </div>
     <div class="editor-content" #editorContent>
-        <div class="canvas-layers-panel">
-            Layers here
-        </div>
+        @if (canvasService.layersPanelLayout() === 'fixed-left') {
+        <aside class="canvas-side-panel canvas-side-panel--left">
+            <app-canvas-layers-panel
+                    [isOpen]="true"
+                    panelMode="sidebar"
+                    title="Layers"
+                    (closed)="canvasService.setLayersPanelLayout('closed')"
+            />
+        </aside>
+    }
         <div class="canvas-wrapper" #canvasWrapper>
             <div class="canvas"
                  appCanvas
@@ -77,6 +84,24 @@
                         panelMode="popover"
                         title="Editor Settings"
                         (closed)="canvasService.setSettingsPanelLayout('closed')"
+                />
+            </div>
+        }
+
+        @if (canvasService.layersPanelLayout() === 'floating') {
+            <div
+                    class="canvas-floating-panel"
+                    #floatingLayersPanel
+                    [style.left.px]="floatingLayersPanelPosition().x"
+                    [style.top.px]="floatingLayersPanelPosition().y"
+                    (pointerdown)="onFloatingLayersPanelPointerDown($event)"
+            >
+                <app-canvas-layers-panel
+                        [isOpen]="true"
+                        [showBackdrop]="false"
+                        panelMode="popover"
+                        title="Layers"
+                        (closed)="canvasService.setLayersPanelLayout('closed')"
                 />
             </div>
         }

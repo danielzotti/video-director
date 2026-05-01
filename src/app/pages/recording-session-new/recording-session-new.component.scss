@@ -35,6 +35,16 @@
 
 .canvas-side-panel { display: block; }
 
+.canvas-side-panel--left {
+  display: flex;
+  position: relative;
+  width: 320px;
+  height: 100%;
+  border-right: 1px solid var(--ds-panel-border);
+  background-color: var(--ds-panel-bg);
+  flex-shrink: 0;
+}
+
 .canvas-floating-panel {
   position: absolute;
   left: 0;
@@ -61,7 +71,7 @@
   position: absolute;
   bottom: 0;
   right: 0;
-  color: gray;
+  color: var(--gray-light);
   z-index: 10;
 }
 

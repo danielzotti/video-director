@@ -1,0 +1,299 @@
+.panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: default;
+  appearance: none;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.layers-panel {
+  width: 320px;
+  max-width: min(320px, calc(100vw - (var(--ds-space-3) * 2)));
+  max-height: 100%;
+  background-color: var(--ds-panel-bg);
+  border: 1px solid var(--ds-panel-border);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-panel-shadow);
+  overflow-x: hidden;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+  pointer-events: none;
+  transition:
+    opacity var(--ds-duration-default) var(--ds-easing),
+    transform var(--ds-duration-default) var(--ds-easing),
+    visibility 0s var(--ds-duration-default);
+
+  &--open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    visibility: visible;
+    transition:
+      opacity var(--ds-duration-default) var(--ds-easing),
+      transform var(--ds-duration-default) var(--ds-easing),
+      visibility 0s 0s;
+  }
+
+  &--sidebar {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 320px;
+    height: 100%;
+    border-radius: 0;
+    border-right: 1px solid var(--ds-panel-border);
+    border-top: none;
+    border-left: none;
+    border-bottom: none;
+    box-shadow: none;
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    transition: none;
+    overflow: auto;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    padding: var(--ds-space-3) var(--ds-space-4);
+    border-bottom: 1px solid var(--ds-border-subtle);
+
+    .layers-panel:not(.layers-panel--sidebar) & {
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
+  }
+
+  &__title {
+    font-size: var(--ds-font-lg);
+    font-weight: 600;
+    color: var(--ds-text-primary);
+    letter-spacing: 0.02em;
+  }
+
+  &__close {
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    color: var(--ds-text-secondary);
+    border-radius: var(--ds-radius-sm);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+
+    &:hover {
+      color: var(--ds-text-primary);
+      background: rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  &__content {
+    padding: var(--ds-space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-2);
+    overflow-y: auto;
+  }
+
+  &__empty {
+    padding: var(--ds-space-3);
+    font-size: var(--ds-font-sm);
+    color: var(--ds-text-secondary);
+    text-align: center;
+    line-height: 1.4;
+  }
+}
+
+.layers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.layer-item {
+  position: relative;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-sm);
+  background-color: var(--ds-surface-1);
+  cursor: grab;
+  user-select: none;
+  transition: all 0.15s ease;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:hover {
+    background-color: var(--ds-surface-2);
+  }
+
+  &--selected {
+    background-color: var(--ds-accent-subtle);
+    border-color: var(--ds-accent);
+
+    .layer-item__name {
+      color: var(--ds-accent);
+      font-weight: 500;
+    }
+  }
+
+  &--dragging {
+    opacity: 0.5;
+    background-color: var(--ds-surface-0);
+  }
+
+  &--drag-over {
+    background-color: var(--ds-accent-subtle);
+    border-color: var(--ds-accent);
+  }
+
+  &--drop-above::before,
+  &--drop-below::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    height: 2px;
+    background-color: var(--ds-accent);
+    border-radius: 999px;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ds-accent), transparent 70%);
+  }
+
+  &--drop-above::before {
+    top: -2px;
+  }
+
+  &--drop-below::after {
+    bottom: -2px;
+  }
+
+  &__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-space-2);
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__icon {
+    font-weight: 600;
+    font-size: var(--ds-font-xs);
+    color: var(--ds-accent);
+    min-width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  &__name {
+    font-size: var(--ds-font-sm);
+    color: var(--ds-text-primary);
+    font-weight: 500;
+    word-break: break-word;
+    cursor: grab;
+  }
+
+  &__preview {
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--ds-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 210px;
+  }
+
+  &__id-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  &__id-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ds-text-secondary);
+  }
+
+  &__id {
+    font-size: var(--ds-font-xs);
+    color: var(--ds-text-tertiary);
+    font-family: monospace;
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
+  &__rename-input {
+    width: 100%;
+    border: 1px solid var(--ds-accent);
+    border-radius: var(--ds-radius-sm);
+    background-color: var(--ds-surface-0);
+    color: var(--ds-text-primary);
+    padding: 4px 6px;
+    font-size: var(--ds-font-sm);
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: var(--ds-accent);
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  &__controls {
+    display: flex;
+    gap: 4px;
+  }
+
+  &__btn {
+    padding: 4px 8px;
+    border: 1px solid var(--ds-border-subtle);
+    border-radius: var(--ds-radius-sm);
+    background-color: var(--ds-surface-0);
+    color: var(--ds-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background-color: var(--ds-accent-subtle);
+      color: var(--ds-accent);
+      border-color: var(--ds-accent);
+    }
+
+    &--small {
+      padding: 2px 6px;
+      font-size: 10px;
+    }
+  }
+}
+

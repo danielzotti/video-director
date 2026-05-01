@@ -1,0 +1,73 @@
+@if (isOpen() && isPopoverMode && showBackdrop()) {
+  <button class="panel-backdrop" type="button" (click)="closed.emit()">&nbsp;</button>
+}
+
+<div class="layers-panel" [class.layers-panel--open]="isOpen()" [class.layers-panel--sidebar]="isSidebarMode">
+  <div class="layers-panel__header">
+    <span class="layers-panel__title">{{ title() }}</span>
+    @if (isPopoverMode || isSidebarMode) {
+      <button class="layers-panel__close" type="button" (click)="closed.emit()">×</button>
+    }
+  </div>
+
+  <div class="layers-panel__content">
+    @if (displayedLayers().length > 0) {
+      <div class="layers-list">
+        @for (item of displayedLayers(); track item.uuid; let i = $index) {
+          <div
+            class="layer-item"
+            [class.layer-item--selected]="cs.selectedWidgetId() === item.uuid"
+            [class.layer-item--drag-over]="dragOverLayerId === item.uuid"
+            [class.layer-item--drop-above]="dragOverLayerId === item.uuid && dropPosition === 'above'"
+            [class.layer-item--drop-below]="dragOverLayerId === item.uuid && dropPosition === 'below'"
+            draggable="true"
+            (click)="onLayerClick(item.uuid, $event)"
+            (dragstart)="onLayerDragStart(item.uuid, $event)"
+            (dragover)="onLayerDragOver(item.uuid, $event)"
+            (dragleave)="onLayerDragLeave($event)"
+            (drop)="onLayerDrop(item.uuid, $event)"
+            (dragend)="onLayerDragEnd($event)"
+          >
+            <div class="layer-item__content">
+              @if (renamingLayerId === item.uuid) {
+                <input
+                  #renameField
+                  type="text"
+                  class="layer-item__rename-input"
+                  [attr.data-uuid]="item.uuid"
+                  [value]="renameInput"
+                  (input)="renameInput = renameField.value"
+                  (keydown)="onRenameKeydown($event, item.uuid)"
+                  (blur)="cancelRename()"
+                />
+              } @else {
+                <div class="layer-item__name-container">
+                  <div class="layer-item__header">
+                    <span class="layer-item__icon" [title]="getLayerContentType(item.uuid)">{{ getLayerContentIcon(item.uuid) }}</span>
+                    <span class="layer-item__name" (dblclick)="startRename(item.uuid, $event)">{{ getLayerDisplayName(item.uuid) }}</span>
+                  </div>
+                  <div class="layer-item__preview">{{ getLayerPreview(item.uuid) }}</div>
+                  <div class="layer-item__id-row">
+                    <span class="layer-item__id-label">ID:</span>
+                    <span class="layer-item__id">{{ item.uuid }}</span>
+                  </div>
+                </div>
+              }
+              <div class="layer-item__controls">
+                @if (i < displayedLayers().length - 1) {
+                  <button class="layer-item__btn" type="button" (click)="moveLayerDown(item.uuid, $event)">↓</button>
+                }
+                @if (i > 0) {
+                  <button class="layer-item__btn" type="button" (click)="moveLayerUp(item.uuid, $event)">↑</button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="layers-panel__empty">Nessun layer nel canvas.</div>
+    }
+  </div>
+</div>
+

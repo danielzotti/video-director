@@ -64,9 +64,11 @@ export class CanvasWidgetStateService {
     }
   });
 
-  public list: Signal<WidgetStateList> = computed(() => Object.values(this.state()));
+   public list: Signal<WidgetStateList> = computed(() =>
+     Object.values(this.state()).sort((a, b) => a.z - b.z)
+   );
 
-  public lastUpdate: WritableSignal<Date> = signal(new Date());
+   public lastUpdate: WritableSignal<Date> = signal(new Date());
 
   public getById(uuid:WidgetStateItem["uuid"]) {
     return this.state()[uuid];
@@ -90,11 +92,72 @@ export class CanvasWidgetStateService {
     this.state.update((s) => ({...s, [widget.uuid]: this.normalizeWidget(widget)}));
   }
 
-  public remove({uuid}: { uuid: string; }) {
-    const newState = {...this.state()};
-    delete newState[uuid];
-    this.state.set(newState);
-  }
+   public remove({uuid}: { uuid: string; }) {
+     const newState = {...this.state()};
+     delete newState[uuid];
+     this.state.set(newState);
+   }
+
+    public reorderLayerToIndex(uuid: string, targetIndex: number) {
+      const widgets = this.list();
+      const sourceWidget = widgets.find(w => w.uuid === uuid);
+      if (!sourceWidget) {
+        return;
+      }
+
+      const clampedIndex = Math.max(0, Math.min(targetIndex, widgets.length - 1));
+      const orderedWidgets = widgets.filter(w => w.uuid !== uuid);
+      const reorderedWidgets = [
+        ...orderedWidgets.slice(0, clampedIndex),
+        sourceWidget,
+        ...orderedWidgets.slice(clampedIndex),
+      ];
+
+      const newState: WidgetState = {};
+      reorderedWidgets.forEach((widget, index) => {
+        newState[widget.uuid] = {
+          ...widget,
+          z: index + 1
+        };
+      });
+
+      this.state.set(newState);
+      // Trigger update for computed signals
+      this.lastUpdate.set(new Date());
+    }
+
+   public moveLayerUp(uuid: string) {
+     const widgets = this.list();
+     const currentIndex = widgets.findIndex(w => w.uuid === uuid);
+     if (currentIndex >= 0 && currentIndex < widgets.length - 1) {
+       this.reorderLayerToIndex(uuid, currentIndex + 1);
+     }
+   }
+
+   public moveLayerDown(uuid: string) {
+     const widgets = this.list();
+     const currentIndex = widgets.findIndex(w => w.uuid === uuid);
+     if (currentIndex > 0) {
+       this.reorderLayerToIndex(uuid, currentIndex - 1);
+     }
+   }
+
+   public moveLayerToFront(uuid: string) {
+     const widgets = this.list();
+     this.reorderLayerToIndex(uuid, widgets.length - 1);
+   }
+
+   public moveLayerToBack(uuid: string) {
+     this.reorderLayerToIndex(uuid, 0);
+   }
+
+   public renameLayer(uuid: string, name: string) {
+     const widget = this.getById(uuid);
+     if (!widget) {
+       return;
+     }
+     this.update({...widget, name});
+   }
 
   private normalizeWidget(widget: WidgetStateItem): WidgetStateItem {
     return {
