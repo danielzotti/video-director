@@ -1,5 +1,5 @@
 <!-- Backdrop -->
-@if (isOpen()) {
+@if (isOpen() && isPopoverMode) {
   <button
     class="panel-backdrop"
     type="button"
@@ -10,15 +10,56 @@
 }
 
 <!-- Panel -->
-<div class="settings-panel" [class.settings-panel--open]="isOpen()" role="dialog" aria-label="Canvas settings">
+<div
+  class="settings-panel"
+  [class.settings-panel--open]="isOpen()"
+  [class.settings-panel--sidebar]="isSidebarMode"
+  role="dialog"
+  aria-label="Canvas settings"
+>
 
   <div class="settings-panel__header">
-    <span class="settings-panel__title">Canvas Settings</span>
+    <span class="settings-panel__title">{{ title() }}</span>
+    @if (isPopoverMode) {
+      <button class="settings-panel__close" type="button" (click)="closed.emit()" aria-label="Close widget panel">×</button>
+    }
   </div>
 
-  <!-- SNAP section -->
-  <section class="settings-panel__section">
-    <div class="settings-panel__section-label">Snap</div>
+  @if (!contentOnly()) {
+    <!-- CANVAS section -->
+    <section class="settings-panel__section">
+      <div class="settings-panel__section-label">Canvas</div>
+
+      <div class="settings-panel__row settings-panel__row--column">
+        <label class="settings-panel__field-label" for="canvas-width">Width</label>
+        <input
+          id="canvas-width"
+          class="settings-panel__input"
+          type="number"
+          min="1"
+          [value]="cs.width()"
+          (input)="onCanvasWidthChange($event)"
+        />
+      </div>
+
+      <div class="settings-panel__row settings-panel__row--column">
+        <label class="settings-panel__field-label" for="canvas-height">Height</label>
+        <input
+          id="canvas-height"
+          class="settings-panel__input"
+          type="number"
+          min="1"
+          [value]="cs.height()"
+          (input)="onCanvasHeightChange($event)"
+        />
+      </div>
+    </section>
+
+    <app-ui-separator orientation="horizontal" />
+
+    <!-- SNAP section -->
+    <section class="settings-panel__section">
+      <div class="settings-panel__section-label">Snap</div>
 
     <div class="settings-panel__row">
       <app-ui-select
@@ -52,13 +93,13 @@
         (checkedChange)="cs.setSnapToBorder($event)"
       />
     </div>
-  </section>
+    </section>
 
-  <app-ui-separator orientation="horizontal" />
+    <app-ui-separator orientation="horizontal" />
 
-  <!-- BEHAVIOUR section -->
-  <section class="settings-panel__section">
-    <div class="settings-panel__section-label">Behaviour</div>
+    <!-- BEHAVIOUR section -->
+    <section class="settings-panel__section">
+      <div class="settings-panel__section-label">Behaviour</div>
 
     <div class="settings-panel__row">
       <app-ui-toggle
@@ -75,13 +116,76 @@
         (checkedChange)="cs.setWidgetResize($event)"
       />
     </div>
+    </section>
+
+    <app-ui-separator orientation="horizontal" />
+  }
+
+  <!-- WIDGET CONTENT section -->
+  <section class="settings-panel__section">
+    <div class="settings-panel__section-label">Widget Content</div>
+
+    @if (hasSelectedWidget) {
+      <div class="settings-panel__row settings-panel__row--column">
+        <app-ui-select
+          label="Content type"
+          [options]="contentTypeOptions"
+          [value]="selectedWidget!.content.type"
+          (valueChange)="setContentType($event)"
+        />
+      </div>
+
+      @if (selectedTextContent; as textContent) {
+        <div class="settings-panel__row settings-panel__row--column">
+          <label class="settings-panel__field-label" for="widget-text-content">Text</label>
+          <textarea
+            id="widget-text-content"
+            class="settings-panel__textarea"
+            rows="4"
+            [value]="textContent.text"
+            (input)="onTextChange($event)"
+          ></textarea>
+        </div>
+      }
+
+      @if (selectedImageContent; as imageContent) {
+        <div class="settings-panel__row settings-panel__row--column">
+          <label class="settings-panel__field-label" for="widget-image-src">Image URL</label>
+          <input
+            id="widget-image-src"
+            class="settings-panel__input"
+            type="url"
+            placeholder="https://..."
+            [value]="imageContent.src"
+            (input)="onImageSrcChange($event)"
+          />
+          @if (!cs.isValidImageUrl(imageContent.src)) {
+            <span class="settings-panel__help settings-panel__help--error">Usa un URL assoluto http/https.</span>
+          }
+        </div>
+
+        <div class="settings-panel__row settings-panel__row--column">
+          <label class="settings-panel__field-label" for="widget-image-alt">Alt text</label>
+          <input
+            id="widget-image-alt"
+            class="settings-panel__input"
+            type="text"
+            [value]="imageContent.alt || ''"
+            (input)="onImageAltChange($event)"
+          />
+        </div>
+      }
+    } @else {
+      <div class="settings-panel__empty">Seleziona un widget nel canvas per modificarne il contenuto.</div>
+    }
   </section>
 
-  <app-ui-separator orientation="horizontal" />
+  @if (!contentOnly()) {
+    <app-ui-separator orientation="horizontal" />
 
-  <!-- DEVELOPER section -->
-  <section class="settings-panel__section">
-    <div class="settings-panel__section-label">Developer</div>
+    <!-- DEVELOPER section -->
+    <section class="settings-panel__section">
+      <div class="settings-panel__section-label">Developer</div>
 
     <div class="settings-panel__row">
       <app-ui-toggle
@@ -100,5 +204,6 @@
         <div class="debug-row"><span class="debug-key">Resizing</span><span class="debug-val" [class.debug-val--active]="cs.isResizingWidget()">{{ cs.isResizingWidget() ? 'yes' : 'no' }}</span></div>
       </div>
     }
-  </section>
+    </section>
+  }
 </div>

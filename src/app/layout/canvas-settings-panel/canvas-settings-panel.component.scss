@@ -41,6 +41,26 @@
       visibility 0s 0s;
   }
 
+  &--sidebar {
+    position: relative;
+    top: 0;
+    right: 0;
+    width: 320px;
+    height: 100%;
+    border-radius: 0;
+    border-left: 1px solid var(--ds-panel-border);
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: none;
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    transition: none;
+    overflow: auto;
+  }
+
   &__header {
     display: flex;
     align-items: center;
@@ -53,6 +73,24 @@
     font-weight: 600;
     color: var(--ds-text-primary);
     letter-spacing: 0.02em;
+  }
+
+  &__close {
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--ds-text-secondary);
+    border-radius: var(--ds-radius-sm);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+
+    &:hover {
+      color: var(--ds-text-primary);
+      background: rgba(255, 255, 255, 0.06);
+    }
   }
 
   &__section {
@@ -76,6 +114,55 @@
     align-items: center;
     justify-content: space-between;
     min-height: 28px;
+
+    &--column {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: var(--ds-space-1);
+    }
+  }
+
+  &__field-label {
+    font-size: var(--ds-font-sm);
+    color: var(--ds-text-secondary);
+  }
+
+  &__input,
+  &__textarea {
+    width: 100%;
+    border: 1px solid var(--ds-border-default);
+    border-radius: var(--ds-radius-sm);
+    background-color: var(--ds-surface-1);
+    color: var(--ds-text-primary);
+    padding: 6px 8px;
+    font-size: var(--ds-font-sm);
+    font-family: var(--font-family-text);
+
+    &:focus {
+      outline: 1px solid var(--ds-accent);
+      outline-offset: 0;
+    }
+  }
+
+  &__textarea {
+    resize: vertical;
+    min-height: 72px;
+  }
+
+  &__help {
+    font-size: var(--ds-font-xs);
+    color: var(--ds-text-secondary);
+
+    &--error {
+      color: #ff6b6b;
+    }
+  }
+
+  &__empty {
+    font-size: var(--ds-font-sm);
+    color: var(--ds-text-secondary);
+    line-height: 1.4;
   }
 
   &__debug-info {

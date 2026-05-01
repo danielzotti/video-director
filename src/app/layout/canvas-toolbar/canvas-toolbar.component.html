@@ -26,21 +26,5 @@
 
   <app-ui-separator />
 
-  <!-- Settings -->
-  <div class="canvas-toolbar__settings-anchor">
-    <app-ui-button
-      variant="icon"
-      title="Canvas settings"
-      [active]="settingsOpen()"
-      (click)="toggleSettings()"
-    >
-      <app-ui-icon name="settings" />
-    </app-ui-button>
-
-    <app-canvas-settings-panel
-      [isOpen]="settingsOpen()"
-      (closed)="closeSettings()"
-    />
-  </div>
 
 </div>

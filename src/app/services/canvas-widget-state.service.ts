@@ -1,6 +1,12 @@
 import {computed, Injectable, Signal, signal, WritableSignal} from '@angular/core';
 import {v4 as uuid} from 'uuid';
-import {WidgetState, WidgetStateItem, WidgetStateList} from '../models/canvas-widget-state.models';
+import {
+  DEFAULT_WIDGET_CONTENT,
+  WidgetContent,
+  WidgetState,
+  WidgetStateItem,
+  WidgetStateList,
+} from '../models/canvas-widget-state.models';
 
 @Injectable({
   providedIn: 'root'
@@ -14,6 +20,7 @@ export class CanvasWidgetStateService {
       z: 1,
       width: 200,
       height: 200,
+      content: {type: 'text', text: 'Titolo'},
     },
     '2': {
       uuid: '2',
@@ -22,6 +29,11 @@ export class CanvasWidgetStateService {
       z: 2,
       width: 400,
       height: 200,
+      content: {
+        type: 'image',
+        src: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92eee?auto=format&fit=crop&w=1200&q=80',
+        alt: 'Background astratto',
+      },
     },
     '3': {
       uuid: '3',
@@ -30,6 +42,7 @@ export class CanvasWidgetStateService {
       z: 3,
       width: 120,
       height: 100,
+      content: {type: 'text', text: 'CTA'},
     },
     '4': {
       uuid: '4',
@@ -38,6 +51,7 @@ export class CanvasWidgetStateService {
       z: 4,
       width: 91,
       height: 88,
+      content: {type: 'text', text: 'Logo'},
     },
     '5': {
       uuid: '5',
@@ -46,6 +60,7 @@ export class CanvasWidgetStateService {
       z: 5,
       width: 20,
       height: 33,
+      content: {type: 'text', text: '1'},
     }
   });
 
@@ -58,12 +73,12 @@ export class CanvasWidgetStateService {
   }
 
   public add(widget: WidgetStateItem) {
-    const newWidget: WidgetStateItem = {
+    const newWidget = this.normalizeWidget({
       ...widget,
       x: widget.x ?? 0,
       y: widget.y ?? 0,
       ...(!widget.uuid && {uuid: uuid()}),
-    }
+    });
 
     this.state.update((s) => ({
       ...s,
@@ -72,12 +87,38 @@ export class CanvasWidgetStateService {
   }
 
   public update(widget: WidgetStateItem) {
-    this.state.update((s) => ({...s, [widget.uuid]: widget as WidgetStateItem}));
+    this.state.update((s) => ({...s, [widget.uuid]: this.normalizeWidget(widget)}));
   }
 
   public remove({uuid}: { uuid: string; }) {
     const newState = {...this.state()};
     delete newState[uuid];
     this.state.set(newState);
+  }
+
+  private normalizeWidget(widget: WidgetStateItem): WidgetStateItem {
+    return {
+      ...widget,
+      content: this.normalizeContent(widget.content),
+    };
+  }
+
+  private normalizeContent(content?: WidgetContent): WidgetContent {
+    if (!content) {
+      return {...DEFAULT_WIDGET_CONTENT};
+    }
+
+    if (content.type === 'image') {
+      return {
+        type: 'image',
+        src: content.src,
+        alt: content.alt ?? '',
+      };
+    }
+
+    return {
+      type: 'text',
+      text: content.text,
+    };
   }
 }

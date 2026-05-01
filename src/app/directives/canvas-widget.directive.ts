@@ -36,6 +36,11 @@ export class CanvasWidgetDirective implements AfterViewInit {
     return this.debugMode();
   }
 
+  @HostBinding('class.app-canvas-widget--selected')
+  get isSelected() {
+    return this.canvasService.selectedWidgetId() === this.widget().uuid;
+  }
+
   ngAfterViewInit() {
     for (const position of CanvasWidgetDirective.RESIZE_HANDLES) {
       this.addResizer({position});

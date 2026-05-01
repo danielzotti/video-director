@@ -220,6 +220,7 @@ export class CanvasDirective implements OnInit {
         return !!wrapper && !!targetNode && wrapper.contains(targetNode);
     }
 
+
     private updateCanvasAreaCursor() {
         const wrapper = this.canvasWrapper();
         if (!wrapper) {

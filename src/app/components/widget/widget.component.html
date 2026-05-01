@@ -1,3 +1,18 @@
+@if (textContent; as content) {
+  <div class="widget-content widget-content--text">{{ content.text }}</div>
+} @else {
+  @if (imageContent && isImageUrlValid) {
+    <img
+      class="widget-content widget-content--image"
+      [src]="imageContent.src"
+      [alt]="imageContent.alt || 'Widget content'"
+      draggable="false"
+    />
+  } @else {
+    <div class="widget-content widget-content--placeholder">Inserisci un URL immagine valido (http/https)</div>
+  }
+}
+
 <ng-content></ng-content>
 @if (activeDebug()) {
   <div>x: {{ elRef.nativeElement.style?.left }}, y: {{ elRef.nativeElement.style?.top }}</div>

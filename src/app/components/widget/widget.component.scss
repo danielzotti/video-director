@@ -10,6 +10,7 @@
   //min-height: 20px;
   //outline: 1px solid black;
   border:1px solid black;
+  overflow: hidden;
   //user-select: none;
   //resize: both;
   //overflow: hidden;
@@ -24,6 +25,10 @@
     //background-color: red;
   }
 
+  &.app-canvas-widget--selected {
+    box-shadow: inset 0 0 0 2px var(--ds-accent);
+  }
+
   &.app-canvas-widget-dragging {
     //outline: 3px solid var(--accent-color);
   }
@@ -31,6 +36,40 @@
   .app-canvas-widget-resizer {
     background-color: transparent;
     z-index: 2;
+  }
+
+  .widget-content {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+
+    &--text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #ffffff;
+    }
+
+    &--image {
+      display: block;
+      object-fit: cover;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    &--placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      font-size: 12px;
+      line-height: 1.3;
+      color: var(--ds-text-secondary);
+      background: var(--ds-surface-0);
+    }
   }
 
   &.debug-mode {

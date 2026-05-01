@@ -1,5 +1,9 @@
 import {computed, inject, Injectable, Renderer2, RendererFactory2, signal} from '@angular/core';
-import {WidgetStateItem} from '../models/canvas-widget-state.models';
+import {
+    DEFAULT_WIDGET_TEXT,
+    WidgetContentType,
+    WidgetStateItem,
+} from '../models/canvas-widget-state.models';
 import {AxisGuides, Point2D, Rect2D, ResizeHandle} from '../models/geometry.models';
 import {CanvasWidgetStateService} from './canvas-widget-state.service';
 import {CanvasWidgetDragService} from './canvas-widget-drag.service';
@@ -74,6 +78,11 @@ export class CanvasService {
         return this.mathService.divisorsInCommon(this.width(), this.height()) ?? [1];
     });
 
+    public readonly selectedWidget = computed<WidgetStateItem | null>(() => {
+        const selectedId = this.selectedWidgetId();
+        return selectedId ? this.widgetsState.getById(selectedId) ?? null : null;
+    });
+
     private readonly objectSnapDistance = 8;
     private readonly borderSnapDistance = 8;
 
@@ -139,10 +148,15 @@ export class CanvasService {
 
     public canvasResize({width, height}: { width?: number; height?: number; }) {
         if (typeof width === 'number') {
-            this.width.set(width);
+            this.width.set(Math.max(1, Math.round(width)));
         }
         if (typeof height === 'number') {
-            this.height.set(height);
+            this.height.set(Math.max(1, Math.round(height)));
+        }
+
+        if (this.canvasEl) {
+            this.renderer.setStyle(this.canvasEl, 'width', `${this.width()}px`);
+            this.renderer.setStyle(this.canvasEl, 'height', `${this.height()}px`);
         }
     }
 
@@ -219,6 +233,82 @@ export class CanvasService {
 
     public setDebugMode(value: boolean) {
         this.debugMode.set(value);
+    }
+
+    public selectWidget(widgetId: string | null) {
+        this.selectedWidgetId.set(widgetId);
+    }
+
+    public setSelectedWidgetContentType(type: WidgetContentType) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type === type) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: type === 'text'
+                ? {type: 'text', text: DEFAULT_WIDGET_TEXT}
+                : {type: 'image', src: '', alt: ''},
+        });
+    }
+
+    public setSelectedWidgetText(text: string) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'text') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                type: 'text',
+                text,
+            },
+        });
+    }
+
+    public setSelectedWidgetImageSrc(src: string) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'image') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                src,
+            },
+        });
+    }
+
+    public setSelectedWidgetImageAlt(alt: string) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'image') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                alt,
+            },
+        });
+    }
+
+    public isValidImageUrl(src: string): boolean {
+        if (!src.trim()) {
+            return false;
+        }
+
+        try {
+            const url = new URL(src);
+            return url.protocol === 'http:' || url.protocol === 'https:';
+        } catch {
+            return false;
+        }
     }
 
     public resetWidgetToSnapSize() {
@@ -354,7 +444,7 @@ export class CanvasService {
         event.stopPropagation();
 
         this.isDraggingWidget.set(true);
-        this.selectedWidgetId.set(widget.uuid);
+        this.selectWidget(widget.uuid);
         this.activeWidgetEl = el;
         el.classList.add(this.WIDGET_DRAGGING_CLASS);
         el.style.zIndex = '9999';
@@ -406,7 +496,6 @@ export class CanvasService {
         el.classList.remove(this.WIDGET_DRAGGING_CLASS);
         el.style.zIndex = widget.z.toString();
         this.isDraggingWidget.set(false);
-        this.selectedWidgetId.set(null);
         this.activeWidgetEl = null;
         this.widgetDragOffset = null;
         this.objectSnapGuides.set({});
@@ -437,7 +526,7 @@ export class CanvasService {
 
         this.isResizingWidget.set(true);
         this.widgetResizingPosition.set(position);
-        this.selectedWidgetId.set(widget.uuid);
+        this.selectWidget(widget.uuid);
         this.activeWidgetEl = el;
         el.classList.add(this.WIDGET_RESIZING_CLASS);
         el.style.zIndex = '9999';
@@ -493,7 +582,6 @@ export class CanvasService {
         el.style.zIndex = widget.z.toString();
         this.isResizingWidget.set(false);
         this.widgetResizingPosition.set(null);
-        this.selectedWidgetId.set(null);
         this.activeWidgetEl = null;
         this.resizeStartPointer = null;
         this.resizeStartRect = null;
