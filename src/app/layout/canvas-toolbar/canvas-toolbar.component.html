@@ -1,48 +1,49 @@
 <div class="canvas-toolbar">
 
-  <!-- Zoom controls -->
-  <div class="canvas-toolbar__group">
-    <app-ui-button variant="icon" title="Zoom out" (click)="zoomOut()">
-      <app-ui-icon name="zoom-out" />
-    </app-ui-button>
+    <!-- Zoom controls -->
+    <div class="canvas-toolbar__group">
+        <app-ui-button variant="icon" title="Zoom out" (click)="zoomOut()">
+            <app-ui-icon name="zoom-out"/>
+        </app-ui-button>
 
-    <button class="canvas-toolbar__zoom-label" (click)="reset()" title="Reset zoom">
-      {{ (cs.zoom() * 100) | number:'1.0-0' }}%
-    </button>
+        <button class="canvas-toolbar__zoom-label" (click)="reset()" title="Reset zoom">
+            {{ (cs.zoom() * 100) | number:'1.0-0' }}%
+        </button>
 
-    <app-ui-button variant="icon" title="Zoom in" (click)="zoomIn()">
-      <app-ui-icon name="zoom-in" />
-    </app-ui-button>
-  </div>
+        <app-ui-button variant="icon" title="Zoom in" (click)="zoomIn()">
+            <app-ui-icon name="zoom-in"/>
+        </app-ui-button>
+    </div>
 
-  <app-ui-separator />
+    <app-ui-separator/>
 
-  <!-- Center -->
-  <div class="canvas-toolbar__group">
-    <app-ui-button variant="icon" title="Center canvas" (click)="center()">
-      <app-ui-icon name="center" />
-    </app-ui-button>
-  </div>
+    <!-- Center -->
+    <div class="canvas-toolbar__group">
+        <app-ui-button variant="icon" title="Center canvas" (click)="center()">
+            <app-ui-icon name="center"/>
+        </app-ui-button>
 
-  <app-ui-separator />
+        <app-ui-button variant="icon" ti tle="Fit canvas to viewport" (click)="fitCanvas()">
+            <app-ui-icon name="resize"/>
+        </app-ui-button>
+    </div>
 
-  <div class="canvas-toolbar__group canvas-toolbar__group--settings">
-    <app-ui-select
-      label="Settings"
-      [options]="settingsPanelLayoutOptions"
-      [value]="cs.settingsPanelLayout()"
-      (valueChange)="setSettingsPanelLayout($event)"
-    />
+    <app-ui-separator/>
 
-    <app-ui-select
-      label="Layers"
-      [options]="layersPanelLayoutOptions"
-      [value]="cs.layersPanelLayout()"
-      (valueChange)="setLayersPanelLayout($event)"
-    />
-  </div>
+    <div class="canvas-toolbar__group canvas-toolbar__group--settings">
+        <app-ui-select
+                label="Layers"
+                [options]="layersPanelLayoutOptions"
+                [value]="cs.layersPanelLayout()"
+                (valueChange)="setLayersPanelLayout($event)"
+        />
 
-  <app-ui-separator />
-
+        <app-ui-select
+                label="Settings"
+                [options]="settingsPanelLayoutOptions"
+                [value]="cs.settingsPanelLayout()"
+                (valueChange)="setSettingsPanelLayout($event)"
+        />
+    </div>
 
 </div>

@@ -10,6 +10,21 @@ export class CanvasViewportService {
     return Math.max(0.25, Math.min(3, value));
   }
 
+  fitCanvasZoom({
+    wrapper,
+    canvas,
+  }: {
+    wrapper: Size2D;
+    canvas: Size2D;
+  }): number {
+    if (canvas.width <= 0 || canvas.height <= 0) {
+      return 1;
+    }
+
+    const fitZoom = Math.min(wrapper.width / canvas.width, wrapper.height / canvas.height);
+    return this.clampZoom(fitZoom);
+  }
+
   centerCanvas({
     wrapper,
     canvas,

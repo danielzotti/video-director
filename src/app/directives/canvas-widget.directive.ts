@@ -18,9 +18,9 @@ export class CanvasWidgetDirective implements AfterViewInit {
     'bottom-right',
     'bottom-left',
   ];
-  private static readonly BASE_RESIZER_SIZE = 5;
-  private static readonly EDGE_HANDLE_MULTIPLIER = 10;
-  private static readonly CORNER_HANDLE_MULTIPLIER = 2;
+  private static readonly BASE_RESIZER_SIZE = 8;
+  private static readonly EDGE_HANDLE_MULTIPLIER = 8;
+  private static readonly CORNER_HANDLE_MULTIPLIER = 2.5;
 
   private readonly renderer = inject(Renderer2);
   private readonly elRef = inject(ElementRef<HTMLElement>);

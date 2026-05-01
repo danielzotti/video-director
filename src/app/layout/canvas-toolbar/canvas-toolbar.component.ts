@@ -45,6 +45,10 @@ export class CanvasToolbarComponent {
     this.cs.canvasCenter();
   }
 
+  protected fitCanvas(): void {
+    this.cs.canvasFitToViewport();
+  }
+
   protected setSettingsPanelLayout(value: string | number): void {
     if (!this.isSettingsPanelLayout(value)) {
       return;

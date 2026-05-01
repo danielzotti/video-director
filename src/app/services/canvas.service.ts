@@ -177,6 +177,24 @@ export class CanvasService {
         this.canvasCenter();
     }
 
+    public canvasFitToViewport() {
+        if (!this.canvasWrapperEl) {
+            this.zoom.set(1);
+            this.top.set(0);
+            this.left.set(0);
+            return;
+        }
+
+        const wrapperRect = this.canvasWrapperEl.getBoundingClientRect();
+        const nextZoom = this.viewportService.fitCanvasZoom({
+            wrapper: {width: wrapperRect.width, height: wrapperRect.height},
+            canvas: {width: this.width(), height: this.height()},
+        });
+
+        this.zoom.set(nextZoom);
+        this.canvasCenter();
+    }
+
     public canvasCenter() {
         if (!this.canvasWrapperEl) {
             this.top.set(0);
