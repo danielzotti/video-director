@@ -20,7 +20,7 @@ export class CanvasWidgetStateService {
       z: 1,
       width: 200,
       height: 200,
-      content: {type: 'text', text: 'Titolo'},
+      content: {type: 'text', text: 'This is a title'},
     },
     '2': {
       uuid: '2',
@@ -32,7 +32,7 @@ export class CanvasWidgetStateService {
       content: {
         type: 'image',
         src: 'https://danielzotti.it/_next/static/media/danielzotti-logo-medium.856a381a.webp',
-        alt: 'Background astratto',
+        alt: 'Logo Daniel Zotti',
       },
     },
     '3': {
@@ -60,7 +60,7 @@ export class CanvasWidgetStateService {
       z: 5,
       width: 20,
       height: 33,
-      content: {type: 'text', text: '1'},
+      content: {type: 'text', text: 'This is a very long text who knows what happens'},
     }
   });
 
