@@ -32,8 +32,10 @@
          <pre><strong>Capabilities:</strong>{{ item.mediaStream?.getVideoTracks()?.[0]?.getCapabilities() | json }}</pre>
          <pre><strong>Constraints:</strong>{{ item.constraints | json }}</pre>
        </div>-->
-      <app-widget [appCanvasWidget]="item" [activeDebug]="canvasService.debugMode()" class="widget">
-        <div><b>uuid {{ item.uuid }}</b></div>
+      <app-widget [appCanvasWidget]="item" [activeDebug]="canvasService.debugMode()" [debugMode]="canvasService.debugMode()" class="widget">
+        @if (canvasService.debugMode()) {
+          <div><b>uuid {{ item.uuid }}</b></div>
+        }
       </app-widget>
     } @empty {
       <p><em>No items.</em></p>

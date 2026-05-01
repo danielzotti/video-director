@@ -29,6 +29,12 @@ export class CanvasWidgetDirective implements AfterViewInit {
 
   // INPUTS
   widget = input.required<WidgetStateItem>({alias: 'appCanvasWidget'});
+  debugMode = input(false);
+
+  @HostBinding('class.debug-mode')
+  get isDebugMode() {
+    return this.debugMode();
+  }
 
   ngAfterViewInit() {
     for (const position of CanvasWidgetDirective.RESIZE_HANDLES) {
