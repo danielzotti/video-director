@@ -1,6 +1,18 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, effect, HostListener, inject, input, signal, untracked, ViewChild } from '@angular/core';
-import { DOCUMENT, DecimalPipe } from '@angular/common';
-import { CanvasService } from '../../services/canvas.service';
+import {DecimalPipe, DOCUMENT} from '@angular/common';
+import {
+    AfterViewInit,
+    ChangeDetectionStrategy,
+    Component,
+    effect,
+    ElementRef,
+    HostListener,
+    inject,
+    input,
+    signal,
+    untracked,
+    ViewChild
+} from '@angular/core';
+import {CanvasService} from '../../services/canvas.service';
 
 interface DebugPanelPosition {
   x: number;
@@ -22,6 +34,7 @@ export class CanvasDebugPanelComponent implements AfterViewInit {
 
   show = input<boolean>(false);
   protected cs = inject(CanvasService);
+
   @ViewChild('panel')
   protected panelEl?: ElementRef<HTMLElement>;
   @ViewChild('panelHeader')
