@@ -18,8 +18,6 @@
             class="layer-item"
             [class.layer-item--selected]="cs.selectedWidgetId() === item.uuid"
             [class.layer-item--drag-over]="dragOverLayerId === item.uuid"
-            [class.layer-item--drop-above]="dragOverLayerId === item.uuid && dropPosition === 'above'"
-            [class.layer-item--drop-below]="dragOverLayerId === item.uuid && dropPosition === 'below'"
             draggable="true"
             (click)="onLayerClick(item.uuid, $event)"
             (dragstart)="onLayerDragStart(item.uuid, $event)"

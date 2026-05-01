@@ -26,7 +26,6 @@ export class CanvasLayersPanelComponent {
 
   protected draggedLayerId: string | null = null;
   protected dragOverLayerId: string | null = null;
-  protected dropPosition: 'above' | 'below' | null = null;
   protected renamingLayerId: string | null = null;
   protected renameInput = '';
 
@@ -105,19 +104,12 @@ export class CanvasLayersPanelComponent {
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
     }
-
-    const targetElement = event.currentTarget as HTMLElement | null;
-    const rect = targetElement?.getBoundingClientRect();
-    const isAboveHalf = rect ? event.clientY < rect.top + rect.height / 2 : false;
-
     this.dragOverLayerId = uuid;
-    this.dropPosition = isAboveHalf ? 'above' : 'below';
   }
 
   protected onLayerDragLeave(event: DragEvent): void {
     event.stopPropagation();
     this.dragOverLayerId = null;
-    this.dropPosition = null;
   }
 
    protected onLayerDrop(targetUuid: string, event: DragEvent): void {
@@ -127,7 +119,6 @@ export class CanvasLayersPanelComponent {
      if (!this.draggedLayerId || this.draggedLayerId === targetUuid) {
        this.draggedLayerId = null;
        this.dragOverLayerId = null;
-       this.dropPosition = null;
        return;
      }
 
@@ -139,7 +130,12 @@ export class CanvasLayersPanelComponent {
        return;
      }
 
-     const targetInsertionIndex = targetDisplayedIndex + (this.dropPosition === 'below' ? 1 : 0);
+     // Drop non dipende più dalla metà del layer: l'hover completo inserisce prima del target.
+     // Comportamento naturale drag&drop: quando vai dall'alto al basso inserisci DOPO il target,
+     // quando vai dal basso all'alto inserisci PRIMA del target.
+     const targetInsertionIndex = sourceDisplayedIndex < targetDisplayedIndex
+       ? targetDisplayedIndex + 1
+       : targetDisplayedIndex;
      const withoutSource = displayed.filter(w => w.uuid !== this.draggedLayerId);
 
      const adjustedInsertionIndex = sourceDisplayedIndex < targetInsertionIndex
@@ -164,14 +160,12 @@ export class CanvasLayersPanelComponent {
 
      this.draggedLayerId = null;
      this.dragOverLayerId = null;
-     this.dropPosition = null;
    }
 
   protected onLayerDragEnd(event: DragEvent): void {
     event.stopPropagation();
     this.draggedLayerId = null;
     this.dragOverLayerId = null;
-    this.dropPosition = null;
   }
 
   protected startRename(uuid: string, event: MouseEvent): void {
