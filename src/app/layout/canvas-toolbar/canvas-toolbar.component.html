@@ -1,5 +1,16 @@
 <div class="canvas-toolbar">
 
+    <div class="canvas-toolbar__group--panel">
+        <app-ui-select
+                label="Layers"
+                [options]="layersPanelLayoutOptions"
+                [value]="cs.layersPanelLayout()"
+                (valueChange)="setLayersPanelLayout($event)"
+        />
+    </div>
+    <app-ui-separator/>
+
+
     <!-- Zoom controls -->
     <div class="canvas-toolbar__group">
         <app-ui-button variant="icon" title="Zoom out" (click)="zoomOut()">
@@ -30,14 +41,7 @@
 
     <app-ui-separator/>
 
-    <div class="canvas-toolbar__group canvas-toolbar__group--settings">
-        <app-ui-select
-                label="Layers"
-                [options]="layersPanelLayoutOptions"
-                [value]="cs.layersPanelLayout()"
-                (valueChange)="setLayersPanelLayout($event)"
-        />
-
+    <div class="canvas-toolbar__group--panel">
         <app-ui-select
                 label="Settings"
                 [options]="settingsPanelLayoutOptions"
@@ -45,5 +49,4 @@
                 (valueChange)="setSettingsPanelLayout($event)"
         />
     </div>
-
 </div>

@@ -14,12 +14,9 @@
   &__group {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
 
-    &--settings {
-      padding: 0 var(--ds-space-1);
-      display: flex;
-      gap: 10px;
+    &--panel {
+      padding-inline: 10px var(--ds-space-1);
     }
   }
 

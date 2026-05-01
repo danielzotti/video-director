@@ -12,6 +12,8 @@
 }
 
 .settings-panel {
+  display: flex;
+  flex-direction: column;
   width: 320px;
   max-width: min(320px, calc(100vw - (var(--ds-space-3) * 2)));
   max-height: 100%;
@@ -19,25 +21,22 @@
   border: 1px solid var(--ds-panel-border);
   border-radius: var(--ds-radius-lg);
   box-shadow: var(--ds-panel-shadow);
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
   pointer-events: none;
-  transition:
-    opacity var(--ds-duration-default) var(--ds-easing),
-    transform var(--ds-duration-default) var(--ds-easing),
-    visibility 0s var(--ds-duration-default);
+  transition: opacity var(--ds-duration-default) var(--ds-easing),
+  transform var(--ds-duration-default) var(--ds-easing),
+  visibility 0s var(--ds-duration-default);
 
   &--open {
     opacity: 1;
     transform: translateY(0) scale(1);
     pointer-events: auto;
     visibility: visible;
-    transition:
-      opacity var(--ds-duration-default) var(--ds-easing),
-      transform var(--ds-duration-default) var(--ds-easing),
-      visibility 0s 0s;
+    transition: opacity var(--ds-duration-default) var(--ds-easing),
+    transform var(--ds-duration-default) var(--ds-easing),
+    visibility 0s 0s;
   }
 
   &--sidebar {
@@ -57,13 +56,17 @@
     visibility: visible;
     pointer-events: auto;
     transition: none;
-    overflow: auto;
+    overflow: hidden;
   }
 
   &__header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     display: flex;
     align-items: center;
     padding: var(--ds-space-3) var(--ds-space-4);
+    background-color: var(--ds-panel-bg);
     border-bottom: 1px solid var(--ds-border-subtle);
 
     .settings-panel:not(.settings-panel--sidebar) & {
@@ -75,6 +78,13 @@
         cursor: grabbing;
       }
     }
+  }
+
+  &__content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   &__title {
@@ -93,6 +103,9 @@
     cursor: pointer;
     font-size: 18px;
     line-height: 1;
+    width: 24px;
+    height: 24px;
+    padding: 0;
 
     &:hover {
       color: var(--ds-text-primary);
@@ -192,12 +205,16 @@
   font-size: var(--ds-font-sm);
 }
 
-.debug-key { color: var(--ds-text-secondary); }
+.debug-key {
+  color: var(--ds-text-secondary);
+}
 
 .debug-val {
   color: var(--ds-text-primary);
   font-variant-numeric: tabular-nums;
   font-family: monospace;
 
-  &--active { color: var(--ds-accent); }
+  &--active {
+    color: var(--ds-accent);
+  }
 }

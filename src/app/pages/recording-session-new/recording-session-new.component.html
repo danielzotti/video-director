@@ -7,16 +7,34 @@
         }
     </div>
     <div class="editor-content" #editorContent>
-        @if (canvasService.layersPanelLayout() === 'fixed-left') {
-        <aside class="canvas-side-panel canvas-side-panel--left">
-            <app-canvas-layers-panel
-                    [isOpen]="true"
-                    panelMode="sidebar"
-                    title="Layers"
-                    (closed)="canvasService.setLayersPanelLayout('closed')"
-            />
-        </aside>
-    }
+        @if (canvasService.canManageCanvas()) {
+            @if (canvasService.layersPanelLayout() === 'fixed-left') {
+                <aside class="canvas-side-panel canvas-side-panel--left">
+                    <app-canvas-layers-panel
+                            [isOpen]="true"
+                            panelMode="sidebar"
+                            title="Layers"
+                            (closed)="canvasService.setLayersPanelLayout('closed')"
+                    />
+                </aside>
+            } @else if (canvasService.layersPanelLayout() === 'floating') {
+                <div
+                        class="canvas-floating-panel"
+                        #floatingLayersPanel
+                        [style.left.px]="floatingLayersPanelPosition().x"
+                        [style.top.px]="floatingLayersPanelPosition().y"
+                        (pointerdown)="onFloatingLayersPanelPointerDown($event)"
+                >
+                    <app-canvas-layers-panel
+                            [isOpen]="true"
+                            [showBackdrop]="false"
+                            panelMode="popover"
+                            title="Layers"
+                            (closed)="canvasService.setLayersPanelLayout('closed')"
+                    />
+                </div>
+            }
+        }
         <div class="canvas-wrapper" #canvasWrapper>
             <div class="canvas"
                  appCanvas
@@ -61,50 +79,35 @@
             </div>
         </div>
 
-        @if (canvasService.settingsPanelLayout() === 'fixed-right') {
-            <aside class="canvas-side-panel">
-                <app-canvas-settings-panel
-                        [isOpen]="true"
-                        panelMode="sidebar"
-                        title="Editor Settings"
-                        (closed)="canvasService.setSettingsPanelLayout('closed')"
-                />
-            </aside>
-        } @else if (canvasService.settingsPanelLayout() === 'floating') {
-            <div
-                    class="canvas-floating-panel"
-                    #floatingPanel
-                    [style.left.px]="floatingPanelPosition().x"
-                    [style.top.px]="floatingPanelPosition().y"
-                    (pointerdown)="onFloatingPanelPointerDown($event)"
-            >
-                <app-canvas-settings-panel
-                        [isOpen]="true"
-                        [showBackdrop]="false"
-                        panelMode="popover"
-                        title="Editor Settings"
-                        (closed)="canvasService.setSettingsPanelLayout('closed')"
-                />
-            </div>
+        @if (canvasService.canManageCanvas()) {
+            @if (canvasService.settingsPanelLayout() === 'fixed-right') {
+                <aside class="canvas-side-panel">
+                    <app-canvas-settings-panel
+                            [isOpen]="true"
+                            panelMode="sidebar"
+                            title="Editor Settings"
+                            (closed)="canvasService.setSettingsPanelLayout('closed')"
+                    />
+                </aside>
+            } @else if (canvasService.settingsPanelLayout() === 'floating') {
+                <div
+                        class="canvas-floating-panel"
+                        #floatingPanel
+                        [style.left.px]="floatingPanelPosition().x"
+                        [style.top.px]="floatingPanelPosition().y"
+                        (pointerdown)="onFloatingPanelPointerDown($event)"
+                >
+                    <app-canvas-settings-panel
+                            [isOpen]="true"
+                            [showBackdrop]="false"
+                            panelMode="popover"
+                            title="Editor Settings"
+                            (closed)="canvasService.setSettingsPanelLayout('closed')"
+                    />
+                </div>
+            }
         }
 
-        @if (canvasService.layersPanelLayout() === 'floating') {
-            <div
-                    class="canvas-floating-panel"
-                    #floatingLayersPanel
-                    [style.left.px]="floatingLayersPanelPosition().x"
-                    [style.top.px]="floatingLayersPanelPosition().y"
-                    (pointerdown)="onFloatingLayersPanelPointerDown($event)"
-            >
-                <app-canvas-layers-panel
-                        [isOpen]="true"
-                        [showBackdrop]="false"
-                        panelMode="popover"
-                        title="Layers"
-                        (closed)="canvasService.setLayersPanelLayout('closed')"
-                />
-            </div>
-        }
     </div>
 
 </div>

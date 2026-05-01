@@ -53,15 +53,15 @@ export class CanvasService {
     private readonly viewportService = inject(CanvasViewportService);
     private readonly mathService = inject(MathService);
 
-     public canManageCanvas = signal(false);
-     public canExitBorders = signal(false);
-     public canSnapToGrid = signal(false);
-     public canSnapToObjects = signal(true);
-     public canSnapToBorder = signal(false);
-     public canResizeWidget = signal(false);
-     public debugMode = signal(true);
-     public settingsPanelLayout = signal<SettingsPanelLayout>('fixed-right');
-     public layersPanelLayout = signal<LayersPanelLayout>('fixed-left');
+    public canManageCanvas = signal(false);
+    public canExitBorders = signal(false);
+    public canSnapToGrid = signal(false);
+    public canSnapToObjects = signal(true);
+    public canSnapToBorder = signal(false);
+    public canResizeWidget = signal(false);
+    public debugMode = signal(true);
+    public settingsPanelLayout = signal<SettingsPanelLayout>('fixed-right');
+    public layersPanelLayout = signal<LayersPanelLayout>('fixed-left');
 
     public isDraggingCanvas = signal(false);
     public isDraggingWidget = signal(false);
@@ -115,7 +115,7 @@ export class CanvasService {
         this.canvasEl = canvas;
         this.canvasWrapperEl = canvasWrapper ?? null;
 
-        this.canManageCanvas.set(!!this.canvasWrapperEl);
+        this.canManageCanvas.set(true); // !!this.canvasWrapperEl
         this.canExitBorders.set(allowExitBorders);
         this.canSnapToGrid.set(allowSnapToGrid);
         this.canSnapToObjects.set(allowSnapToObjects);
@@ -257,13 +257,13 @@ export class CanvasService {
         this.debugMode.set(value);
     }
 
-     public setSettingsPanelLayout(value: SettingsPanelLayout) {
-         this.settingsPanelLayout.set(value);
-     }
+    public setSettingsPanelLayout(value: SettingsPanelLayout) {
+        this.settingsPanelLayout.set(value);
+    }
 
-     public setLayersPanelLayout(value: LayersPanelLayout) {
-         this.layersPanelLayout.set(value);
-     }
+    public setLayersPanelLayout(value: LayersPanelLayout) {
+        this.layersPanelLayout.set(value);
+    }
 
     public selectWidget(widgetId: string | null) {
         this.selectedWidgetId.set(widgetId);
@@ -601,7 +601,11 @@ export class CanvasService {
         el.style.top = `${nextRect.y}px`;
     }
 
-    public widgetResizeEnd({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event?: PointerLikeEvent }) {
+    public widgetResizeEnd({widget, el, event}: {
+        widget: WidgetStateItem,
+        el: HTMLElement,
+        event?: PointerLikeEvent
+    }) {
         event?.stopPropagation();
 
         if (!el.classList.contains(this.WIDGET_RESIZING_CLASS)) {
