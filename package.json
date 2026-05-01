@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "build:github": "ng build --configuration production --base-href /video-director/ --output-path=dist/video-director",
+    "deploy": "npm run build:github && npx gh-pages -d dist/video-director/browser",
     "test": "ng test",
     "lint": "ng lint"
   },
