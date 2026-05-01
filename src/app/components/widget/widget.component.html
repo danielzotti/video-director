@@ -1,20 +1,22 @@
 @if (textContent; as content) {
-  <div class="widget-content widget-content--text">{{ content.text }}</div>
+    <div class="widget-content widget-content--text">{{ content.text }}</div>
 } @else {
-  @if (imageContent && isImageUrlValid) {
-    <img
-      class="widget-content widget-content--image"
-      [src]="imageContent.src"
-      [alt]="imageContent.alt || 'Widget content'"
-      draggable="false"
-    />
-  } @else {
-    <div class="widget-content widget-content--placeholder">Inserisci un URL immagine valido (http/https)</div>
-  }
+    @if (imageContent && isImageUrlValid) {
+        <img
+                class="widget-content widget-content--image"
+                [src]="imageContent.src"
+                [alt]="imageContent.alt || 'Widget content'"
+                draggable="false"
+        />
+    } @else {
+        <div class="widget-content widget-content--placeholder">Inserisci un URL immagine valido (http/https)</div>
+    }
 }
 
-<ng-content></ng-content>
 @if (activeDebug()) {
-  <div>x: {{ elRef.nativeElement.style?.left }}, y: {{ elRef.nativeElement.style?.top }}</div>
-  <div>{{ elRef.nativeElement.style?.width }} x {{ elRef.nativeElement.style?.height }}</div>
+    <div class="widget-debug-info">
+        <ng-content></ng-content>
+        <div>x: {{ elRef.nativeElement.style?.left }}, y: {{ elRef.nativeElement.style?.top }}</div>
+        <div>{{ elRef.nativeElement.style?.width }} x {{ elRef.nativeElement.style?.height }}</div>
+    </div>
 }

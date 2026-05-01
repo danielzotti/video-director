@@ -1,0 +1,6 @@
+@use "../../../scss/layout";
+
+.page {
+  @extend .container;
+  padding: var(--margin-default);
+}

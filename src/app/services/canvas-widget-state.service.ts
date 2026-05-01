@@ -31,7 +31,7 @@ export class CanvasWidgetStateService {
       height: 200,
       content: {
         type: 'image',
-        src: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92eee?auto=format&fit=crop&w=1200&q=80',
+        src: 'https://danielzotti.it/_next/static/media/danielzotti-logo-medium.856a381a.webp',
         alt: 'Background astratto',
       },
     },
