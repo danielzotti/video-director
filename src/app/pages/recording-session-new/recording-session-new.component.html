@@ -25,16 +25,16 @@
 
     @for (item of widgetList(); track item.uuid) {
       <!--<div>
-        <h6>{{ item.uuid }} - {{ item.type }} [{{ item.mediaStream?.active ? "active" : "inactive" }}]</h6>
-        <div>
-          <button (click)="stopStreamItem(item)">Stop</button>
-          <button (click)="takeScreenshot(item)">Screenshot</button>
-        </div>
-        <app-video-stream [item]="item" class="stream-preview"></app-video-stream>
-        <pre><strong>Settings:</strong>{{ item.settings | json }}</pre>
-        <pre><strong>Capabilities:</strong>{{ item.mediaStream?.getVideoTracks()?.[0]?.getCapabilities() | json }}</pre>
-        <pre><strong>Constraints:</strong>{{ item.constraints | json }}</pre>
-      </div>-->
+         <h6>{{ item.uuid }} - {{ item.type }} [{{ item.mediaStream?.active ? "active" : "inactive" }}]</h6>
+         <div>
+           <button (click)="stopStreamItem(item)">Stop</button>
+           <button (click)="takeScreenshot(item)">Screenshot</button>
+         </div>
+         <app-video-stream [item]="item" class="stream-preview"></app-video-stream>
+         <pre><strong>Settings:</strong>{{ item.settings | json }}</pre>
+         <pre><strong>Capabilities:</strong>{{ item.mediaStream?.getVideoTracks()?.[0]?.getCapabilities() | json }}</pre>
+         <pre><strong>Constraints:</strong>{{ item.constraints | json }}</pre>
+       </div>-->
       <app-widget [appCanvasWidget]="item" [activeDebug]="canvasService.debugMode()" class="widget">
         <div><b>uuid {{ item.uuid }}</b></div>
       </app-widget>
@@ -44,3 +44,8 @@
     <div class="canvas-info">x: {{canvasService.left()}}, y: {{canvasService.top()}}</div>
   </div>
 </div>
+
+<!-- Debug Panel -->
+@if (canvasService.debugMode()) {
+  <app-canvas-debug-panel [show]="canvasService.debugMode()" />
+}

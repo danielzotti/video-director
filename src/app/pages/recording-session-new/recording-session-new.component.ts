@@ -7,6 +7,7 @@ import {StreamStateItem} from '../../models/stream.model';
 import {CanvasWidgetStateService} from '../../services/canvas-widget-state.service';
 import {CanvasService} from '../../services/canvas.service';
 import {StreamStateService} from '../../services/stream-state.service';
+import {CanvasDebugPanelComponent} from '../../components/canvas-debug-panel/canvas-debug-panel.component';
 
 @Component({
   selector: 'app-recording-session-new',
@@ -15,6 +16,7 @@ import {StreamStateService} from '../../services/stream-state.service';
     WidgetComponent,
     CanvasDirective,
     CanvasWidgetDirective,
+    CanvasDebugPanelComponent,
   ],
   templateUrl: './recording-session-new.component.html',
   styleUrl: './recording-session-new.component.scss',

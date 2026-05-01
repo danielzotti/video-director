@@ -25,4 +25,35 @@ export class CanvasToolbarComponent {
   protected closeSettings(): void {
     this.settingsOpen.set(false);
   }
+
+  protected zoomIn(): void {
+    const focalPoint = this.getViewportCenter();
+    this.cs.canvasZoomIn(undefined, focalPoint);
+  }
+
+  protected zoomOut(): void {
+    const focalPoint = this.getViewportCenter();
+    this.cs.canvasZoomOut(undefined, focalPoint);
+  }
+
+  protected reset(): void {
+    this.cs.canvasZoomReset();
+  }
+
+  protected center(): void {
+    this.cs.canvasCenter();
+  }
+
+  private getViewportCenter() {
+    const wrapper = this.cs.canvasWrapperEl;
+    if (!wrapper) {
+      return undefined;
+    }
+
+    const rect = wrapper.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+  }
 }

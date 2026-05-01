@@ -1,0 +1,60 @@
+.debug-panel {
+  position: fixed;
+  z-index: 1000;
+  background-color: var(--ds-surface-0);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.15s ease;
+  &--dragging {
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    .debug-panel__header {
+      cursor: grabbing;
+    }
+  }
+  &__header {
+    padding: var(--ds-space-2) var(--ds-space-3);
+    border-bottom: 1px solid var(--ds-border-subtle);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    transition: background-color 0.15s ease;
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+  }
+  &__title {
+    margin: 0;
+    font-size: var(--ds-font-md);
+    font-weight: 600;
+    color: var(--ds-text-primary);
+    letter-spacing: 0.02em;
+  }
+  &__content {
+    padding: var(--ds-space-2) var(--ds-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: var(--ds-font-sm);
+    white-space: nowrap;
+  }
+}
+.debug-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-2);
+}
+.debug-key {
+  color: var(--ds-text-secondary);
+  font-weight: 500;
+  min-width: 60px;
+}
+.debug-val {
+  color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+  font-family: monospace;
+  &--active {
+    color: var(--ds-accent);
+  }
+}

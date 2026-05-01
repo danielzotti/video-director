@@ -1,0 +1,27 @@
+<div #panel class="debug-panel" [style.left.px]="position().x" [style.top.px]="position().y" [class.debug-panel--dragging]="isDragging()">
+  <div #panelHeader class="debug-panel__header" (pointerdown)="onDragStart($event)">
+    <h3 class="debug-panel__title">Debug</h3>
+  </div>
+  <div class="debug-panel__content">
+    <div class="debug-row">
+      <span class="debug-key">Zoom</span>
+      <span class="debug-val">{{ cs.zoom() | number:'1.2-2' }}</span>
+    </div>
+    <div class="debug-row">
+      <span class="debug-key">Offset</span>
+      <span class="debug-val">{{ cs.left() }}, {{ cs.top() }}</span>
+    </div>
+    <div class="debug-row">
+      <span class="debug-key">Selected</span>
+      <span class="debug-val">{{ cs.selectedWidgetId() ?? '—' }}</span>
+    </div>
+    <div class="debug-row">
+      <span class="debug-key">Dragging</span>
+      <span class="debug-val" [class.debug-val--active]="cs.isDraggingWidget()">{{ cs.isDraggingWidget() ? 'yes' : 'no' }}</span>
+    </div>
+    <div class="debug-row">
+      <span class="debug-key">Resizing</span>
+      <span class="debug-val" [class.debug-val--active]="cs.isResizingWidget()">{{ cs.isResizingWidget() ? 'yes' : 'no' }}</span>
+    </div>
+  </div>
+</div>
