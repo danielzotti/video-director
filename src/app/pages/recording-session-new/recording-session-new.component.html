@@ -6,7 +6,7 @@
             </div>
         }
     </div>
-    <div class="editor-content">
+    <div class="editor-content" #editorContent>
         <div class="canvas-layers-panel">
             Layers here
         </div>
@@ -54,13 +54,32 @@
             </div>
         </div>
 
-        <aside class="canvas-side-panel">
-            <app-canvas-settings-panel
-                    [isOpen]="true"
-                    panelMode="sidebar"
-                    title="Editor Settings"
-            />
-        </aside>
+        @if (canvasService.settingsPanelLayout() === 'fixed-right') {
+            <aside class="canvas-side-panel">
+                <app-canvas-settings-panel
+                        [isOpen]="true"
+                        panelMode="sidebar"
+                        title="Editor Settings"
+                        (closed)="canvasService.setSettingsPanelLayout('closed')"
+                />
+            </aside>
+        } @else if (canvasService.settingsPanelLayout() === 'floating') {
+            <div
+                    class="canvas-floating-panel"
+                    #floatingPanel
+                    [style.left.px]="floatingPanelPosition().x"
+                    [style.top.px]="floatingPanelPosition().y"
+                    (pointerdown)="onFloatingPanelPointerDown($event)"
+            >
+                <app-canvas-settings-panel
+                        [isOpen]="true"
+                        [showBackdrop]="false"
+                        panelMode="popover"
+                        title="Editor Settings"
+                        (closed)="canvasService.setSettingsPanelLayout('closed')"
+                />
+            </div>
+        }
     </div>
 
 </div>

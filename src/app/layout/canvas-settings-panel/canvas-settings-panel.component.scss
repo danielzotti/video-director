@@ -12,11 +12,15 @@
 }
 
 .settings-panel {
+  width: 320px;
+  max-width: min(320px, calc(100vw - (var(--ds-space-3) * 2)));
+  max-height: 100%;
   background-color: var(--ds-panel-bg);
   border: 1px solid var(--ds-panel-border);
   border-radius: var(--ds-radius-lg);
   box-shadow: var(--ds-panel-shadow);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
   pointer-events: none;
@@ -61,6 +65,16 @@
     align-items: center;
     padding: var(--ds-space-3) var(--ds-space-4);
     border-bottom: 1px solid var(--ds-border-subtle);
+
+    .settings-panel:not(.settings-panel--sidebar) & {
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
   }
 
   &__title {
@@ -72,8 +86,6 @@
 
   &__close {
     margin-left: auto;
-    width: 28px;
-    height: 28px;
     border: none;
     background: transparent;
     color: var(--ds-text-secondary);

@@ -26,5 +26,16 @@
 
   <app-ui-separator />
 
+  <div class="canvas-toolbar__group canvas-toolbar__group--settings">
+    <app-ui-select
+      label="Panel"
+      [options]="panelLayoutOptions"
+      [value]="cs.settingsPanelLayout()"
+      (valueChange)="setSettingsPanelLayout($event)"
+    />
+  </div>
+
+  <app-ui-separator />
+
 
 </div>

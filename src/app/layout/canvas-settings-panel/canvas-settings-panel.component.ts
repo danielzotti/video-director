@@ -26,6 +26,7 @@ export class CanvasSettingsPanelComponent {
   };
 
   isOpen = input<boolean>(false);
+  showBackdrop = input<boolean>(true);
   panelMode = input<'popover' | 'sidebar'>('popover');
   contentOnly = input<boolean>(false);
   title = input<string>('Canvas Settings');

@@ -1,5 +1,5 @@
 <!-- Backdrop -->
-@if (isOpen() && isPopoverMode) {
+@if (isOpen() && isPopoverMode && showBackdrop()) {
   <button
     class="panel-backdrop"
     type="button"
@@ -20,7 +20,7 @@
 
   <div class="settings-panel__header">
     <span class="settings-panel__title">{{ title() }}</span>
-    @if (isPopoverMode) {
+    @if (isPopoverMode || isSidebarMode) {
       <button class="settings-panel__close" type="button" (click)="closed.emit()" aria-label="Close widget panel">×</button>
     }
   </div>

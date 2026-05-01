@@ -12,7 +12,6 @@
 .canvas-toolbar {
   display: flex;
   justify-content: flex-end;
-  //padding: var(--ds-space-3) var(--ds-space-4) 0;
 }
 
 .editor {
@@ -25,6 +24,7 @@
 .editor-content {
   flex: 1 1 auto;
   display: flex;
+  position: relative;
   align-items: stretch;
   justify-items: stretch;
   gap: 0;
@@ -33,13 +33,19 @@
 }
 
 
-.canvas-side-panel {
+.canvas-side-panel { display: block; }
 
+.canvas-floating-panel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .canvas-wrapper {
-  //outline: 1px solid #f7b733;
-  border:1px solid #f7b733;
+  border: 1px solid #f7b733;
   background-color: #333;
   touch-action: none;
   flex: 1;
@@ -48,8 +54,6 @@
 .canvas {
   background-color: white;
   outline: 1px solid var(--accent-color);
-  //position: relative;
-  //transform-origin: 0 0;
   transform-origin: center center;
 }
 

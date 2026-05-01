@@ -30,6 +30,7 @@ export interface CanvasServiceInitModel {
 }
 
 export type ResizePosition = ResizeHandle;
+export type SettingsPanelLayout = 'floating' | 'fixed-right' | 'closed';
 type PointerLikeEvent = MouseEvent | PointerEvent;
 
 @Injectable({
@@ -58,6 +59,7 @@ export class CanvasService {
     public canSnapToBorder = signal(false);
     public canResizeWidget = signal(false);
     public debugMode = signal(true);
+    public settingsPanelLayout = signal<SettingsPanelLayout>('fixed-right');
 
     public isDraggingCanvas = signal(false);
     public isDraggingWidget = signal(false);
@@ -233,6 +235,10 @@ export class CanvasService {
 
     public setDebugMode(value: boolean) {
         this.debugMode.set(value);
+    }
+
+    public setSettingsPanelLayout(value: SettingsPanelLayout) {
+        this.settingsPanelLayout.set(value);
     }
 
     public selectWidget(widgetId: string | null) {
