@@ -1,0 +1,118 @@
+:host {
+  display: contents;
+}
+
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--font-family-text);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--ds-duration-fast) var(--ds-easing),
+    border-color     var(--ds-duration-fast) var(--ds-easing),
+    color            var(--ds-duration-fast) var(--ds-easing),
+    box-shadow       var(--ds-duration-fast) var(--ds-easing);
+  outline: none;
+  user-select: none;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-accent);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  // ── Sizes ──────────────────────────────────────────────────────────────
+  &--sm {
+    height: 26px;
+    padding: 0 var(--ds-space-2);
+    font-size: var(--ds-font-sm);
+  }
+
+  &--md {
+    height: 30px;
+    padding: 0 var(--ds-space-3);
+    font-size: var(--ds-font-md);
+  }
+
+  // ── Variants ───────────────────────────────────────────────────────────
+  &--primary {
+    background-color: var(--ds-accent);
+    border-color: var(--ds-accent);
+    color: #000;
+
+    &:hover { filter: brightness(1.1); }
+    &:active { filter: brightness(0.9); }
+  }
+
+  &--secondary {
+    background-color: var(--ds-surface-3);
+    border-color: var(--ds-border-default);
+    color: var(--ds-text-primary);
+
+    &:hover {
+      background-color: var(--ds-surface-3);
+      border-color: var(--ds-border-strong);
+    }
+    &:active { background-color: var(--ds-surface-2); }
+  }
+
+  &--ghost {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--ds-text-secondary);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.07);
+      color: var(--ds-text-primary);
+    }
+    &:active { background-color: rgba(255, 255, 255, 0.04); }
+  }
+
+  &--icon {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--ds-text-secondary);
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--ds-radius-sm);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.07);
+      color: var(--ds-text-primary);
+    }
+    &:active { background-color: rgba(255, 255, 255, 0.04); }
+
+    &.ui-btn--sm {
+      width: 26px;
+      height: 26px;
+    }
+  }
+
+  &--danger {
+    background-color: var(--ds-danger-muted);
+    border-color: var(--ds-danger);
+    color: var(--ds-danger);
+
+    &:hover { background-color: var(--ds-danger); color: #fff; }
+    &:active { filter: brightness(0.9); }
+  }
+
+  // ── Active state (toggled/selected) ────────────────────────────────────
+  &--active {
+    background-color: var(--ds-accent-muted) !important;
+    border-color: var(--ds-accent) !important;
+    color: var(--ds-accent) !important;
+  }
+}
+

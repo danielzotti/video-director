@@ -1,42 +1,58 @@
 nav {
-  background-color:#333;
-  padding: 12px 20px;
-  color: white;
+  background-color: var(--ds-surface-0);
+  border-bottom: 1px solid var(--ds-border-subtle);
+  height: var(--navbar-height, 52px);
+  padding: 0 var(--ds-space-5);
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: var(--ds-space-4);
 
-  a {
-    color: inherit;
-  }
-
-  .canvas-controls {
+  .nav-brand {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
     align-items: center;
+    flex-shrink: 0;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+  }
+
+  .nav-link {
+    color: var(--ds-text-secondary);
+    font-size: var(--ds-font-lg);
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: none;
+    padding: var(--ds-space-1) var(--ds-space-2);
+    border-radius: var(--ds-radius-sm);
+    transition: color var(--ds-duration-fast) var(--ds-easing),
+                background-color var(--ds-duration-fast) var(--ds-easing);
+
+    &:hover {
+      color: var(--ds-text-primary);
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    &.active {
+      color: var(--ds-accent);
+    }
+  }
+
+  .nav-brand .nav-link {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--ds-text-primary);
+
+    &:hover { background-color: transparent; }
+  }
+
+  .nav-toolbar {
     margin-left: auto;
-  }
-
-  .live-status {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    background-color: rgba(0, 0, 0, 0.2);
-    font-size: 0.8rem;
-    white-space: nowrap;
-  }
-
-  label {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.9rem;
-    white-space: nowrap;
   }
 }

@@ -195,7 +195,6 @@ export const snapWidgetPositionToCanvasBorders = ({
   const right = position.x + widget.width;
   const rightDiff = Math.abs(canvas.width - right);
   if (rightDiff <= distance && rightDiff < bestDiffX) {
-    bestDiffX = rightDiff;
     snapX = canvas.width - widget.width;
     guides.x = canvas.width;
   }

@@ -1,0 +1,109 @@
+.panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: default;
+  appearance: none;
+}
+
+.settings-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 100;
+  width: 260px;
+  background-color: var(--ds-panel-bg);
+  border: 1px solid var(--ds-panel-border);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-panel-shadow);
+  overflow: hidden;
+
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity var(--ds-duration-default) var(--ds-easing),
+    transform var(--ds-duration-default) var(--ds-easing),
+    visibility 0s var(--ds-duration-default);
+
+  &--open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    visibility: visible;
+    transition:
+      opacity var(--ds-duration-default) var(--ds-easing),
+      transform var(--ds-duration-default) var(--ds-easing),
+      visibility 0s 0s;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    padding: var(--ds-space-3) var(--ds-space-4);
+    border-bottom: 1px solid var(--ds-border-subtle);
+  }
+
+  &__title {
+    font-size: var(--ds-font-lg);
+    font-weight: 600;
+    color: var(--ds-text-primary);
+    letter-spacing: 0.02em;
+  }
+
+  &__section {
+    padding: var(--ds-space-3) var(--ds-space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-2);
+  }
+
+  &__section-label {
+    font-size: var(--ds-font-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ds-text-secondary);
+    margin-bottom: var(--ds-space-1);
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 28px;
+  }
+
+  &__debug-info {
+    margin-top: var(--ds-space-1);
+    background-color: var(--ds-surface-0);
+    border: 1px solid var(--ds-border-subtle);
+    border-radius: var(--ds-radius-sm);
+    padding: var(--ds-space-2) var(--ds-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+.debug-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-2);
+  font-size: var(--ds-font-sm);
+}
+
+.debug-key { color: var(--ds-text-secondary); }
+
+.debug-val {
+  color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+  font-family: monospace;
+
+  &--active { color: var(--ds-accent); }
+}

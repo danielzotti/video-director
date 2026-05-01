@@ -1,0 +1,45 @@
+:host {
+  display: contents;
+}
+
+.canvas-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  background-color: var(--ds-surface-2);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  padding: 3px;
+
+  &__group {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  &__zoom-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 26px;
+    padding: 0 var(--ds-space-1);
+    border-radius: var(--ds-radius-xs);
+    border: none;
+    background: transparent;
+    color: var(--ds-text-primary);
+    font-size: var(--ds-font-md);
+    font-family: var(--font-family-text);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: background-color var(--ds-duration-fast) var(--ds-easing);
+
+    &:hover { background-color: rgba(255, 255, 255, 0.07); }
+  }
+
+  &__settings-anchor {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+}

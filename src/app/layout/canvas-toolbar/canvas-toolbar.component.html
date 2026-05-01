@@ -1,0 +1,46 @@
+<div class="canvas-toolbar">
+
+  <!-- Zoom controls -->
+  <div class="canvas-toolbar__group">
+    <app-ui-button variant="icon" title="Zoom out" (click)="cs.canvasZoomOut()">
+      <app-ui-icon name="zoom-out" />
+    </app-ui-button>
+
+    <button class="canvas-toolbar__zoom-label" (click)="cs.canvasZoomReset()" title="Reset zoom">
+      {{ (cs.zoom() * 100) | number:'1.0-0' }}%
+    </button>
+
+    <app-ui-button variant="icon" title="Zoom in" (click)="cs.canvasZoomIn()">
+      <app-ui-icon name="zoom-in" />
+    </app-ui-button>
+  </div>
+
+  <app-ui-separator />
+
+  <!-- Center -->
+  <div class="canvas-toolbar__group">
+    <app-ui-button variant="icon" title="Center canvas" (click)="cs.canvasCenter()">
+      <app-ui-icon name="center" />
+    </app-ui-button>
+  </div>
+
+  <app-ui-separator />
+
+  <!-- Settings -->
+  <div class="canvas-toolbar__settings-anchor">
+    <app-ui-button
+      variant="icon"
+      title="Canvas settings"
+      [active]="settingsOpen()"
+      (click)="toggleSettings()"
+    >
+      <app-ui-icon name="settings" />
+    </app-ui-button>
+
+    <app-canvas-settings-panel
+      [isOpen]="settingsOpen()"
+      (closed)="closeSettings()"
+    />
+  </div>
+
+</div>
