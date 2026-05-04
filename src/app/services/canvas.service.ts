@@ -276,6 +276,18 @@ export class CanvasService {
         this.selectedWidgetId.set(widgetId);
     }
 
+    public getWidgetRenderZIndex(widget: Pick<WidgetStateItem, 'uuid' | 'z'>): number {
+        if (this.selectedWidgetId() !== widget.uuid) {
+            return widget.z;
+        }
+
+        const maxLayerZ = this.widgetsState
+            .list()
+            .reduce((maxZ, item) => Math.max(maxZ, item.z), 0);
+
+        return Math.max(maxLayerZ, widget.z) + 1;
+    }
+
     public setSelectedWidgetContentType(type: WidgetContentType) {
         const widget = this.selectedWidget();
         if (!widget || widget.content.type === type) {
@@ -531,7 +543,7 @@ export class CanvasService {
         }
 
         el.classList.remove(this.WIDGET_DRAGGING_CLASS);
-        el.style.zIndex = widget.z.toString();
+        el.style.zIndex = this.getWidgetRenderZIndex(widget).toString();
         this.isDraggingWidget.set(false);
         this.activeWidgetEl = null;
         this.widgetDragOffset = null;
@@ -625,7 +637,7 @@ export class CanvasService {
         }
 
         el.classList.remove(this.WIDGET_RESIZING_CLASS);
-        el.style.zIndex = widget.z.toString();
+        el.style.zIndex = this.getWidgetRenderZIndex(widget).toString();
         this.isResizingWidget.set(false);
         this.widgetResizingPosition.set(null);
         this.activeWidgetEl = null;

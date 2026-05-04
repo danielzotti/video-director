@@ -52,12 +52,14 @@ export class CanvasWidgetDirective implements AfterViewInit {
 
     @HostBinding('style')
     get style() {
+        const widget = this.widget();
+
         return {
-            top: this.widget().y + 'px',
-            left: this.widget().x + 'px',
-            width: this.widget().width + 'px',
-            height: this.widget().height + 'px',
-            zIndex: this.widget().z,
+            top: widget.y + 'px',
+            left: widget.x + 'px',
+            width: widget.width + 'px',
+            height: widget.height + 'px',
+            zIndex: this.canvasService.getWidgetRenderZIndex(widget),
             position: "absolute"
         };
     }
