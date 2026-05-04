@@ -97,6 +97,7 @@ export class CanvasService {
     private widgetDragOffset: Point2D | null = null;
     private resizeStartPointer: Point2D | null = null;
     private resizeStartRect: Rect2D | null = null;
+    private resizeStartAspectRatio: number | null = null;
 
     private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(null, null);
 
@@ -572,6 +573,9 @@ export class CanvasService {
             width: this.snapSize(),
             height: this.snapSize(),
         });
+        this.resizeStartAspectRatio = this.resizeStartRect.height > 0
+            ? this.resizeStartRect.width / this.resizeStartRect.height
+            : null;
     }
 
     public widgetResize({el, event}: { widget: WidgetStateItem, el: HTMLElement, event: PointerLikeEvent }) {
@@ -599,6 +603,8 @@ export class CanvasService {
             snapSize: this.snapSize(),
             canExitBorders: this.canExitBorders(),
             canvas: {width: this.width(), height: this.height()},
+            keepAspectRatio: event.shiftKey,
+            aspectRatio: this.resizeStartAspectRatio ?? undefined,
         });
 
         el.style.width = `${nextRect.width}px`;
@@ -625,6 +631,7 @@ export class CanvasService {
         this.activeWidgetEl = null;
         this.resizeStartPointer = null;
         this.resizeStartRect = null;
+        this.resizeStartAspectRatio = null;
 
         const stateWidget = this.widgetsState.getById(widget.uuid);
         if (!stateWidget) {

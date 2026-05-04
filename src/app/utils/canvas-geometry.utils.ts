@@ -2,6 +2,24 @@ import {Point2D, Rect2D, ResizeHandle, Size2D, SnapResult} from '../models/geome
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
 
 const roundToStep = (value: number, step: number): number => Math.round(value / step) * step;
+const integerGcd = (a: number, b: number): number => {
+  let x = Math.abs(Math.trunc(a));
+  let y = Math.abs(Math.trunc(b));
+
+  while (y !== 0) {
+    const tmp = y;
+    y = x % y;
+    x = tmp;
+  }
+
+  return x || 1;
+};
+
+const integerLcm = (a: number, b: number): number => {
+  const x = Math.max(1, Math.abs(Math.trunc(a)));
+  const y = Math.max(1, Math.abs(Math.trunc(b)));
+  return Math.abs((x / integerGcd(x, y)) * y);
+};
 
 export const clamp = (value: number, min: number, max: number): number => {
   if (value < min) {
@@ -224,11 +242,15 @@ export const resizeRectFromHandle = ({
   handle,
   delta,
   min,
+  keepAspectRatio = false,
+  aspectRatio,
 }: {
   rect: Rect2D;
   handle: ResizeHandle;
   delta: Point2D;
   min: Size2D;
+  keepAspectRatio?: boolean;
+  aspectRatio?: number;
 }): Rect2D => {
   const next: Rect2D = {...rect};
 
@@ -254,7 +276,381 @@ export const resizeRectFromHandle = ({
     next.height = Math.max(min.height, rect.height - (next.y - rect.y));
   }
 
-  return next;
+  if (!keepAspectRatio) {
+    return next;
+  }
+
+  return enforceRectAspectRatioByHandle({
+    rect: next,
+    handle,
+    initialRect: rect,
+    min,
+    aspectRatio,
+  });
+};
+
+const isValidAspectRatio = (ratio?: number): ratio is number => typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0;
+
+const minWidthForAspect = (min: Size2D, ratio: number): number => Math.max(min.width, min.height * ratio);
+
+const buildAspectGridUnits = ({
+  initialRect,
+  min,
+  snap,
+}: {
+  initialRect: Rect2D;
+  min: Size2D;
+  snap: number;
+}) => {
+  const widthRef = Math.max(1, Math.round(initialRect.width));
+  const heightRef = Math.max(1, Math.round(initialRect.height));
+  const divisor = integerGcd(widthRef, heightRef);
+  const ratioWidth = Math.max(1, widthRef / divisor);
+  const ratioHeight = Math.max(1, heightRef / divisor);
+
+  const tWidth = snap / integerGcd(ratioWidth, snap);
+  const tHeight = snap / integerGcd(ratioHeight, snap);
+  const tStep = integerLcm(tWidth, tHeight);
+
+  const widthUnit = ratioWidth * tStep;
+  const heightUnit = ratioHeight * tStep;
+
+  return {
+    widthUnit,
+    heightUnit,
+    minMultiplier: Math.max(
+      1,
+      Math.ceil(min.width / widthUnit),
+      Math.ceil(min.height / heightUnit),
+    ),
+  };
+};
+
+export const resolveEffectiveResizeHandle = ({
+  handle,
+  rect,
+  canvas,
+  allowExitBorders,
+}: {
+  handle: ResizeHandle;
+  rect: Rect2D;
+  canvas: Size2D;
+  allowExitBorders: boolean;
+}): ResizeHandle => {
+  if (allowExitBorders || handle.includes('-')) {
+    return handle;
+  }
+
+  const rect_bottom = rect.y + rect.height;
+  const rect_right = rect.x + rect.width;
+
+  if (handle === 'right') {
+    return rect_bottom >= canvas.height ? 'top-right' : 'bottom-right';
+  }
+  if (handle === 'left') {
+    return rect_bottom >= canvas.height ? 'top-left' : 'bottom-left';
+  }
+  if (handle === 'top') {
+    return rect_right >= canvas.width ? 'top-left' : 'top-right';
+  }
+  if (handle === 'bottom') {
+    return rect_right >= canvas.width ? 'bottom-left' : 'bottom-right';
+  }
+
+  return handle;
+};
+
+const resolveAspectMaxWidthByHandle = ({
+  handle,
+  initialRect,
+  canvas,
+  ratio,
+}: {
+  handle: ResizeHandle;
+  initialRect: Rect2D;
+  canvas: Size2D;
+  ratio: number;
+}): number => {
+  const hasLeft = handle.includes('left');
+  const hasRight = handle.includes('right');
+  const hasTop = handle.includes('top');
+  const hasBottom = handle.includes('bottom');
+
+  const right = initialRect.x + initialRect.width;
+  const bottom = initialRect.y + initialRect.height;
+
+  if ((hasLeft || hasRight) && (hasTop || hasBottom)) {
+    const maxByX = hasLeft ? right : canvas.width - initialRect.x;
+    const maxByY = (hasTop ? bottom : canvas.height - initialRect.y) * ratio;
+    return Math.max(0, Math.min(maxByX, maxByY));
+  }
+
+  if (hasLeft || hasRight) {
+    const maxByX = hasLeft ? right : canvas.width - initialRect.x;
+    const centerY = initialRect.y + initialRect.height / 2;
+    const verticalRoom = 2 * Math.min(centerY, canvas.height - centerY);
+    const maxByY = Math.max(0, verticalRoom) * ratio;
+    return Math.max(0, Math.min(maxByX, maxByY));
+  }
+
+  if (hasTop || hasBottom) {
+    const maxByY = (hasTop ? bottom : canvas.height - initialRect.y) * ratio;
+    const centerX = initialRect.x + initialRect.width / 2;
+    const horizontalRoom = 2 * Math.min(centerX, canvas.width - centerX);
+    const maxByX = Math.max(0, horizontalRoom);
+    return Math.max(0, Math.min(maxByX, maxByY));
+  }
+
+  return 0;
+};
+
+const placeRectByHandle = ({
+  handle,
+  initialRect,
+  width,
+  height,
+}: {
+  handle: ResizeHandle;
+  initialRect: Rect2D;
+  width: number;
+  height: number;
+}): Rect2D => {
+  const hasLeft = handle.includes('left');
+  const hasRight = handle.includes('right');
+  const hasTop = handle.includes('top');
+  const hasBottom = handle.includes('bottom');
+
+  if ((hasLeft || hasRight) && (hasTop || hasBottom)) {
+    const anchorX = hasLeft ? initialRect.x + initialRect.width : initialRect.x;
+    const anchorY = hasTop ? initialRect.y + initialRect.height : initialRect.y;
+
+    return {
+      x: hasLeft ? anchorX - width : anchorX,
+      y: hasTop ? anchorY - height : anchorY,
+      width,
+      height,
+    };
+  }
+
+  if (hasLeft || hasRight) {
+    const anchorX = hasLeft ? initialRect.x + initialRect.width : initialRect.x;
+    const centerY = initialRect.y + initialRect.height / 2;
+
+    return {
+      x: hasLeft ? anchorX - width : anchorX,
+      y: centerY - height / 2,
+      width,
+      height,
+    };
+  }
+
+  if (hasTop || hasBottom) {
+    const anchorY = hasTop ? initialRect.y + initialRect.height : initialRect.y;
+    const centerX = initialRect.x + initialRect.width / 2;
+
+    return {
+      x: centerX - width / 2,
+      y: hasTop ? anchorY - height : anchorY,
+      width,
+      height,
+    };
+  }
+
+  return {
+    x: initialRect.x,
+    y: initialRect.y,
+    width,
+    height,
+  };
+};
+
+export const enforceRectAspectRatioByHandle = ({
+  rect,
+  handle,
+  initialRect,
+  min,
+  aspectRatio,
+}: {
+  rect: Rect2D;
+  handle: ResizeHandle;
+  initialRect: Rect2D;
+  min: Size2D;
+  aspectRatio?: number;
+}): Rect2D => {
+  if (!isValidAspectRatio(aspectRatio)) {
+    return rect;
+  }
+
+  const ratio = aspectRatio;
+  const minimumWidth = minWidthForAspect(min, ratio);
+
+  const hasLeft = handle.includes('left');
+  const hasRight = handle.includes('right');
+  const hasTop = handle.includes('top');
+  const hasBottom = handle.includes('bottom');
+
+  if ((hasLeft || hasRight) && (hasTop || hasBottom)) {
+    const widthDelta = Math.abs(rect.width - initialRect.width) / Math.max(1, initialRect.width);
+    const heightDelta = Math.abs(rect.height - initialRect.height) / Math.max(1, initialRect.height);
+    const widthDriven = widthDelta >= heightDelta;
+
+    const width = Math.max(widthDriven ? rect.width : rect.height * ratio, minimumWidth);
+    const height = width / ratio;
+    return placeRectByHandle({
+      handle,
+      initialRect,
+      width,
+      height,
+    });
+  }
+
+  if (hasLeft || hasRight) {
+    const width = Math.max(rect.width, minimumWidth);
+    const height = width / ratio;
+    return placeRectByHandle({
+      handle,
+      initialRect,
+      width,
+      height,
+    });
+  }
+
+  if (hasTop || hasBottom) {
+    const height = Math.max(rect.height, minimumWidth / ratio);
+    const width = height * ratio;
+    return placeRectByHandle({
+      handle,
+      initialRect,
+      width,
+      height,
+    });
+  }
+
+  return rect;
+};
+
+export const snapAspectResizedRectByHandle = ({
+  rect,
+  handle,
+  initialRect,
+  min,
+  snap,
+  aspectRatio,
+}: {
+  rect: Rect2D;
+  handle: ResizeHandle;
+  initialRect: Rect2D;
+  min: Size2D;
+  snap: number;
+  aspectRatio?: number;
+}): Rect2D => {
+  if (snap <= 1 || !isValidAspectRatio(aspectRatio)) {
+    return rect;
+  }
+
+  const {widthUnit, heightUnit, minMultiplier} = buildAspectGridUnits({
+    initialRect,
+    min,
+    snap,
+  });
+
+  const hasHorizontal = handle.includes('left') || handle.includes('right');
+  const hasVertical = handle.includes('top') || handle.includes('bottom');
+
+  let rawMultiplier = rect.width / widthUnit;
+  if (hasHorizontal && hasVertical) {
+    const widthDelta = Math.abs(rect.width - initialRect.width) / Math.max(1, initialRect.width);
+    const heightDelta = Math.abs(rect.height - initialRect.height) / Math.max(1, initialRect.height);
+    rawMultiplier = widthDelta >= heightDelta ? rect.width / widthUnit : rect.height / heightUnit;
+  } else if (!hasHorizontal && hasVertical) {
+    rawMultiplier = rect.height / heightUnit;
+  }
+
+  const multiplier = Math.max(minMultiplier, Math.round(rawMultiplier));
+  return placeRectByHandle({
+    handle,
+    initialRect,
+    width: widthUnit * multiplier,
+    height: heightUnit * multiplier,
+  });
+};
+
+export const clampAspectResizedRectByHandle = ({
+  rect,
+  handle,
+  initialRect,
+  canvas,
+  min,
+  aspectRatio,
+  snap,
+}: {
+  rect: Rect2D;
+  handle: ResizeHandle;
+  initialRect: Rect2D;
+  canvas: Size2D;
+  min: Size2D;
+  aspectRatio?: number;
+  snap?: number;
+}): Rect2D => {
+  if (!isValidAspectRatio(aspectRatio)) {
+    return clampResizedRectByHandle({
+      rect,
+      handle,
+      initialRect,
+      canvas,
+      min,
+    });
+  }
+
+  const ratio = aspectRatio;
+  const maxWidth = resolveAspectMaxWidthByHandle({
+    handle,
+    initialRect,
+    canvas,
+    ratio,
+  });
+
+  if (maxWidth <= 0) {
+    return placeRectByHandle({
+      handle,
+      initialRect,
+      width: 0,
+      height: 0,
+    });
+  }
+
+  const isVerticalOnly = !handle.includes('left') && !handle.includes('right') && (handle.includes('top') || handle.includes('bottom'));
+  const requestedWidth = isVerticalOnly ? rect.height * ratio : rect.width;
+
+  if (typeof snap === 'number' && snap > 1) {
+    const {widthUnit, heightUnit, minMultiplier} = buildAspectGridUnits({
+      initialRect,
+      min,
+      snap,
+    });
+
+    const maxMultiplier = Math.floor(maxWidth / widthUnit);
+    if (maxMultiplier >= 1) {
+      const rawMultiplier = requestedWidth / widthUnit;
+      const lowerBound = Math.min(minMultiplier, maxMultiplier);
+      const multiplier = clamp(Math.round(rawMultiplier), lowerBound, maxMultiplier);
+      return placeRectByHandle({
+        handle,
+        initialRect,
+        width: widthUnit * multiplier,
+        height: heightUnit * multiplier,
+      });
+    }
+  }
+
+  const minWidth = minWidthForAspect(min, ratio);
+  const clampedWidth = clamp(requestedWidth, Math.min(minWidth, maxWidth), maxWidth);
+  return placeRectByHandle({
+    handle,
+    initialRect,
+    width: clampedWidth,
+    height: clampedWidth / ratio,
+  });
 };
 
 export const snapResizedRectByHandle = ({
