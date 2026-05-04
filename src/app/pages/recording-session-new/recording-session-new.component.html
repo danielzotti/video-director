@@ -42,6 +42,8 @@
                  [canvasWrapper]="canvasWrapper"
                  [allowSnapToObjects]="canvasService.canSnapToObjects()"
                  [allowSnapToBorder]="canvasService.canSnapToBorder()"
+                 [class.canvas--show-grid]="canvasService.showGrid()"
+                 [style.--grid-size.px]="canvasService.snapSize()"
             >
                 @if (canvasService.objectSnapGuides().x !== undefined) {
                     <div class="canvas-guide canvas-guide-x" [style.left.px]="canvasService.objectSnapGuides().x"></div>

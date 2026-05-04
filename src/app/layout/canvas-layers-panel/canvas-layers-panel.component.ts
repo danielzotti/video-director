@@ -144,6 +144,15 @@ export class CanvasLayersPanelComponent {
     this.cs.selectWidget(uuid);
   }
 
+  protected onLayerKeydown(uuid: string, event: Event): void {
+    if (!(event instanceof KeyboardEvent)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.cs.selectWidget(uuid);
+  }
+
   protected onLayerDragStart(uuid: string, event: DragEvent): void {
     event.stopPropagation();
     this.draggedLayerId = uuid;

@@ -30,7 +30,7 @@ export class CanvasDirective implements OnInit {
 
     canvasWrapper = input<HTMLElement | null>(null);
     allowSnapToObjects = input(true);
-    allowSnapToBorder = input(false);
+    allowSnapToBorder = input(true);
 
     ngOnInit(): void {
         const w = 1280;
@@ -48,7 +48,7 @@ export class CanvasDirective implements OnInit {
             height: h,
             zoom: 1,
             allowWidgetResize: true,
-            allowExitBorders: false
+            allowExitBorders: false,
         });
 
         this.renderer.setStyle(this.canvasElementRef.nativeElement, 'transformOrigin', 'top left');

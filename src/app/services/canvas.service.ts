@@ -24,6 +24,7 @@ export interface CanvasServiceInitModel {
     allowSnapToObjects?: boolean;
     allowSnapToBorder?: boolean;
     allowWidgetResize?: boolean;
+    allowShowGrid?: boolean;
     width?: number;
     height?: number;
     snapSize?: number;
@@ -58,9 +59,10 @@ export class CanvasService {
     public canExitBorders = signal(false);
     public canSnapToGrid = signal(false);
     public canSnapToObjects = signal(true);
-    public canSnapToBorder = signal(false);
+    public canSnapToBorder = signal(true);
     public canResizeWidget = signal(false);
-    public debugMode = signal(true);
+    public showGrid = signal(false);
+    public debugMode = signal(false);
     public debugPanelVisible = signal(false);
     public settingsPanelLayout = signal<SettingsPanelLayout>('fixed-right');
     public layersPanelLayout = signal<LayersPanelLayout>('fixed-left');
@@ -109,6 +111,7 @@ export class CanvasService {
                     allowSnapToGrid = true,
                     allowSnapToObjects = false,
                     allowSnapToBorder = false,
+                    allowShowGrid = true,
                     width = 800,
                     height = 600,
                     snapSize = 1,
@@ -124,6 +127,7 @@ export class CanvasService {
         this.canSnapToObjects.set(allowSnapToObjects);
         this.canSnapToBorder.set(allowSnapToBorder);
         this.canResizeWidget.set(allowWidgetResize);
+        this.showGrid.set(allowShowGrid);
 
         this.width.set(width);
         this.height.set(height);
@@ -254,6 +258,10 @@ export class CanvasService {
 
     public setWidgetResize(value: boolean) {
         this.canResizeWidget.set(value);
+    }
+
+    public setShowGrid(value: boolean) {
+        this.showGrid.set(value);
     }
 
     public setDebugMode(value: boolean) {
@@ -632,33 +640,33 @@ export class CanvasService {
             y: pointerCanvas.y - this.resizeStartPointer.y,
         };
 
-    const nextRect = this.widgetResizeService.computeNextRect({
-      handle: position,
-      initialRect: this.resizeStartRect,
-      delta,
-      min: {width: this.snapSize(), height: this.snapSize()},
-      snapToGrid: this.canSnapToGrid(),
-      snapSize: this.snapSize(),
-      canExitBorders: this.canExitBorders(),
-      canvas: {width: this.width(), height: this.height()},
-      keepAspectRatio: event.shiftKey,
-      aspectRatio: this.resizeStartAspectRatio ?? undefined,
-      snapToObjects: this.canSnapToObjects(),
-      objectSnapDistance: this.objectSnapDistance,
-      snapToBorder: this.canSnapToBorder(),
-      borderSnapDistance: this.borderSnapDistance,
-      siblings: this.widgetsState.list().filter(w => w.uuid !== this.selectedWidgetId()),
-      zoom: this.zoom(),
-    });
+        const nextRect = this.widgetResizeService.computeNextRect({
+            handle: position,
+            initialRect: this.resizeStartRect,
+            delta,
+            min: {width: this.snapSize(), height: this.snapSize()},
+            snapToGrid: this.canSnapToGrid(),
+            snapSize: this.snapSize(),
+            canExitBorders: this.canExitBorders(),
+            canvas: {width: this.width(), height: this.height()},
+            keepAspectRatio: event.shiftKey,
+            aspectRatio: this.resizeStartAspectRatio ?? undefined,
+            snapToObjects: this.canSnapToObjects(),
+            objectSnapDistance: this.objectSnapDistance,
+            snapToBorder: this.canSnapToBorder(),
+            borderSnapDistance: this.borderSnapDistance,
+            siblings: this.widgetsState.list().filter(w => w.uuid !== this.selectedWidgetId()),
+            zoom: this.zoom(),
+        });
 
-    this.objectSnapGuides.set(
-      this.canSnapToObjects() || this.canSnapToBorder() ? nextRect.guides : {}
-    );
+        this.objectSnapGuides.set(
+            this.canSnapToObjects() || this.canSnapToBorder() ? nextRect.guides : {}
+        );
 
-    el.style.width = `${nextRect.rect.width}px`;
-    el.style.height = `${nextRect.rect.height}px`;
-    el.style.left = `${nextRect.rect.x}px`;
-    el.style.top = `${nextRect.rect.y}px`;
+        el.style.width = `${nextRect.rect.width}px`;
+        el.style.height = `${nextRect.rect.height}px`;
+        el.style.left = `${nextRect.rect.x}px`;
+        el.style.top = `${nextRect.rect.y}px`;
     }
 
     public widgetResizeEnd({widget, el, event}: {

@@ -1,309 +1,324 @@
 <!-- Backdrop -->
 @if (isOpen() && isPopoverMode && showBackdrop()) {
-  <button
-    class="panel-backdrop"
-    type="button"
-    aria-label="Close settings"
-    (click)="closed.emit()"
-    (keydown.escape)="closed.emit()"
-  ></button>
+    <button
+            class="panel-backdrop"
+            type="button"
+            aria-label="Close settings"
+            (click)="closed.emit()"
+            (keydown.escape)="closed.emit()"
+    ></button>
 }
 
 <!-- Panel -->
 <div
-  class="settings-panel"
-  [class.settings-panel--open]="isOpen()"
-  [class.settings-panel--sidebar]="isSidebarMode"
-  [class.settings-panel--popover]="isPopoverMode"
-  [style.max-height]="maxHeight() ?? undefined"
-  [style.height]="panelHeightStyle() ?? undefined"
-  role="dialog"
-  aria-label="Canvas settings"
+        class="settings-panel"
+        [class.settings-panel--open]="isOpen()"
+        [class.settings-panel--sidebar]="isSidebarMode"
+        [class.settings-panel--popover]="isPopoverMode"
+        [style.max-height]="maxHeight() ?? undefined"
+        [style.height]="panelHeightStyle() ?? undefined"
+        role="dialog"
+        aria-label="Canvas settings"
 >
 
-  <div class="settings-panel__header">
-    <span class="settings-panel__title">{{ title() }}</span>
-    @if (isPopoverMode || isSidebarMode) {
-      <button class="settings-panel__close" type="button" (click)="closed.emit()" aria-label="Close widget panel">×</button>
+    <div class="settings-panel__header">
+        <span class="settings-panel__title">{{ title() }}</span>
+        @if (isPopoverMode || isSidebarMode) {
+            <button class="settings-panel__close" type="button" (click)="closed.emit()" aria-label="Close widget panel">
+                ×
+            </button>
+        }
+    </div>
+
+    <div class="settings-panel__content">
+        @if (hasSelectedWidget) {
+            <section class="settings-panel__section">
+                <div class="settings-panel__section-label">Widget</div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-name">Name</label>
+                    <input
+                            id="widget-name"
+                            class="settings-panel__input"
+                            type="text"
+                            [value]="selectedWidget!.name || ''"
+                            (input)="onWidgetNameChange($event)"
+                    />
+                </div>
+            </section>
+
+            <app-ui-separator orientation="horizontal"/>
+
+            <!-- WIDGET GEOMETRY section -->
+            <section class="settings-panel__section">
+                <div class="settings-panel__section-label">Widget Geometry</div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-x">X</label>
+                    <input
+                            id="widget-x"
+                            class="settings-panel__input"
+                            type="number"
+                            [step]="widgetInputStep"
+                            [value]="geometryDraft().x"
+                            (input)="onWidgetGeometryInput($event, 'x')"
+                            (blur)="onWidgetGeometryCommit($event, 'x')"
+                            (keydown.enter)="onNumericEnter($event, 'x')"
+                    />
+                </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-y">Y</label>
+                    <input
+                            id="widget-y"
+                            class="settings-panel__input"
+                            type="number"
+                            [step]="widgetInputStep"
+                            [value]="geometryDraft().y"
+                            (input)="onWidgetGeometryInput($event, 'y')"
+                            (blur)="onWidgetGeometryCommit($event, 'y')"
+                            (keydown.enter)="onNumericEnter($event, 'y')"
+                    />
+                </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-width">Width</label>
+                    <input
+                            id="widget-width"
+                            class="settings-panel__input"
+                            type="number"
+                            min="1"
+                            [step]="widgetInputStep"
+                            [disabled]="!cs.canResizeWidget()"
+                            [value]="geometryDraft().width"
+                            (input)="onWidgetGeometryInput($event, 'width')"
+                            (blur)="onWidgetGeometryCommit($event, 'width')"
+                            (keydown.enter)="onNumericEnter($event, 'width')"
+                    />
+                </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-height">Height</label>
+                    <input
+                            id="widget-height"
+                            class="settings-panel__input"
+                            type="number"
+                            min="1"
+                            [step]="widgetInputStep"
+                            [disabled]="!cs.canResizeWidget()"
+                            [value]="geometryDraft().height"
+                            (input)="onWidgetGeometryInput($event, 'height')"
+                            (blur)="onWidgetGeometryCommit($event, 'height')"
+                            (keydown.enter)="onNumericEnter($event, 'height')"
+                    />
+                </div>
+            </section>
+
+            <app-ui-separator orientation="horizontal"/>
+
+            <!-- WIDGET CONTENT section -->
+            <section class="settings-panel__section">
+                <div class="settings-panel__section-label">Widget Content</div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <app-ui-select
+                            label="Content type"
+                            [options]="contentTypeOptions"
+                            [value]="selectedWidget!.content.type"
+                            (valueChange)="setContentType($event)"
+                    />
+                </div>
+
+                @if (selectedTextContent; as textContent) {
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-text-content">Text</label>
+                        <textarea
+                                id="widget-text-content"
+                                class="settings-panel__textarea"
+                                rows="4"
+                                [value]="textContent.text"
+                                (input)="onTextChange($event)"
+                        ></textarea>
+                    </div>
+                }
+
+                @if (selectedImageContent; as imageContent) {
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-image-src">Image URL</label>
+                        <input
+                                id="widget-image-src"
+                                class="settings-panel__input"
+                                type="url"
+                                placeholder="https://..."
+                                [value]="imageContent.src"
+                                (input)="onImageSrcChange($event)"
+                        />
+                        @if (!cs.isValidImageUrl(imageContent.src)) {
+                            <span class="settings-panel__help settings-panel__help--error">Usa un URL assoluto http/https.</span>
+                        }
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-image-alt">Alt text</label>
+                        <input
+                                id="widget-image-alt"
+                                class="settings-panel__input"
+                                type="text"
+                                [value]="imageContent.alt || ''"
+                                (input)="onImageAltChange($event)"
+                        />
+                    </div>
+                }
+            </section>
+        } @else {
+            @if (!contentOnly()) {
+                <!-- CANVAS section -->
+                <section class="settings-panel__section">
+                    <div class="settings-panel__section-label">Canvas</div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="canvas-width">Width</label>
+                        <input
+                                id="canvas-width"
+                                class="settings-panel__input"
+                                type="number"
+                                min="1"
+                                [value]="cs.width()"
+                                (input)="onCanvasWidthChange($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="canvas-height">Height</label>
+                        <input
+                                id="canvas-height"
+                                class="settings-panel__input"
+                                type="number"
+                                min="1"
+                                [value]="cs.height()"
+                                (input)="onCanvasHeightChange($event)"
+                        />
+                    </div>
+                </section>
+
+                <app-ui-separator orientation="horizontal"/>
+
+                <!-- GRID section -->
+                <section class="settings-panel__section">
+                    <div class="settings-panel__section-label">Grid</div>
+                    <app-ui-select
+                            label="Grid size"
+                            [options]="snapOptions"
+                            [value]="cs.snapSize()"
+                            (valueChange)="setSnapSize($event)"
+                    />
+                    <app-ui-toggle
+                            label="Show grid"
+                            [checked]="cs.showGrid()"
+                            (checkedChange)="cs.setShowGrid($event)"
+                    />
+                </section>
+                <!-- SNAP section -->
+                <section class="settings-panel__section">
+
+                    <div class="settings-panel__section-label">Snap</div>
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Snap to grid"
+                                [checked]="cs.canSnapToGrid()"
+                                (checkedChange)="cs.setSnapToGrid($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Snap to objects"
+                                [checked]="cs.canSnapToObjects()"
+                                (checkedChange)="cs.setSnapToObjects($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Snap to border"
+                                [checked]="cs.canSnapToBorder()"
+                                (checkedChange)="cs.setSnapToBorder($event)"
+                        />
+                    </div>
+                </section>
+
+                <app-ui-separator orientation="horizontal"/>
+
+                <!-- BEHAVIOUR section -->
+                <section class="settings-panel__section">
+                    <div class="settings-panel__section-label">Behaviour</div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Allow exit borders"
+                                [checked]="cs.canExitBorders()"
+                                (checkedChange)="cs.setExitBorders($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Widget resize"
+                                [checked]="cs.canResizeWidget()"
+                                (checkedChange)="cs.setWidgetResize($event)"
+                        />
+                    </div>
+                </section>
+
+                <app-ui-separator orientation="horizontal"/>
+
+                <!-- DEVELOPER section -->
+                <section class="settings-panel__section">
+                    <div class="settings-panel__section-label">Developer</div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Debug mode"
+                                [checked]="cs.debugMode()"
+                                (checkedChange)="cs.setDebugMode($event)"
+                        />
+                    </div>
+
+                    @if (cs.debugMode()) {
+                        <div class="settings-panel__row">
+                            <app-ui-toggle
+                                    label="Debug panel visible"
+                                    [checked]="cs.debugPanelVisible()"
+                                    (checkedChange)="cs.setDebugPanelVisible($event)"
+                            />
+                        </div>
+
+                        <div class="settings-panel__debug-info">
+                            <div class="debug-row"><span class="debug-key">Zoom</span><span
+                                    class="debug-val">{{ cs.zoom() | number:'1.2-2' }}</span></div>
+                            <div class="debug-row"><span class="debug-key">Offset</span><span
+                                    class="debug-val">{{ cs.left() }}, {{ cs.top() }}</span></div>
+                            <div class="debug-row"><span class="debug-key">Selected</span><span
+                                    class="debug-val">{{ cs.selectedWidgetId() ?? '-' }}</span></div>
+                            <div class="debug-row"><span class="debug-key">Dragging</span><span class="debug-val"
+                                                                                                [class.debug-val--active]="cs.isDraggingWidget()">{{ cs.isDraggingWidget() ? 'yes' : 'no' }}</span>
+                            </div>
+                            <div class="debug-row"><span class="debug-key">Resizing</span><span class="debug-val"
+                                                                                                [class.debug-val--active]="cs.isResizingWidget()">{{ cs.isResizingWidget() ? 'yes' : 'no' }}</span>
+                            </div>
+                        </div>
+                    }
+                </section>
+            }
+        }
+    </div>
+
+    @if (isPopoverMode) {
+        <div
+                class="settings-panel__resize-handle"
+                (pointerdown)="onResizePointerDown($event)"
+                (pointermove)="onResizePointerMove($event)"
+                (pointerup)="onResizePointerUp($event)"
+        ></div>
     }
-  </div>
-
-  <div class="settings-panel__content">
-    @if (hasSelectedWidget) {
-      <section class="settings-panel__section">
-        <div class="settings-panel__section-label">Widget</div>
-
-        <div class="settings-panel__row settings-panel__row--column">
-          <label class="settings-panel__field-label" for="widget-name">Name</label>
-          <input
-            id="widget-name"
-            class="settings-panel__input"
-            type="text"
-            [value]="selectedWidget!.name || ''"
-            (input)="onWidgetNameChange($event)"
-          />
-        </div>
-      </section>
-
-      <app-ui-separator orientation="horizontal" />
-
-      <!-- WIDGET GEOMETRY section -->
-      <section class="settings-panel__section">
-        <div class="settings-panel__section-label">Widget Geometry</div>
-
-        <div class="settings-panel__row settings-panel__row--column">
-          <label class="settings-panel__field-label" for="widget-x">X</label>
-          <input
-            id="widget-x"
-            class="settings-panel__input"
-            type="number"
-            [step]="widgetInputStep"
-            [value]="geometryDraft().x"
-            (input)="onWidgetGeometryInput($event, 'x')"
-            (blur)="onWidgetGeometryCommit($event, 'x')"
-            (keydown.enter)="onNumericEnter($event, 'x')"
-          />
-        </div>
-
-        <div class="settings-panel__row settings-panel__row--column">
-          <label class="settings-panel__field-label" for="widget-y">Y</label>
-          <input
-            id="widget-y"
-            class="settings-panel__input"
-            type="number"
-            [step]="widgetInputStep"
-            [value]="geometryDraft().y"
-            (input)="onWidgetGeometryInput($event, 'y')"
-            (blur)="onWidgetGeometryCommit($event, 'y')"
-            (keydown.enter)="onNumericEnter($event, 'y')"
-          />
-        </div>
-
-        <div class="settings-panel__row settings-panel__row--column">
-          <label class="settings-panel__field-label" for="widget-width">Width</label>
-          <input
-            id="widget-width"
-            class="settings-panel__input"
-            type="number"
-            min="1"
-            [step]="widgetInputStep"
-            [disabled]="!cs.canResizeWidget()"
-            [value]="geometryDraft().width"
-            (input)="onWidgetGeometryInput($event, 'width')"
-            (blur)="onWidgetGeometryCommit($event, 'width')"
-            (keydown.enter)="onNumericEnter($event, 'width')"
-          />
-        </div>
-
-        <div class="settings-panel__row settings-panel__row--column">
-          <label class="settings-panel__field-label" for="widget-height">Height</label>
-          <input
-            id="widget-height"
-            class="settings-panel__input"
-            type="number"
-            min="1"
-            [step]="widgetInputStep"
-            [disabled]="!cs.canResizeWidget()"
-            [value]="geometryDraft().height"
-            (input)="onWidgetGeometryInput($event, 'height')"
-            (blur)="onWidgetGeometryCommit($event, 'height')"
-            (keydown.enter)="onNumericEnter($event, 'height')"
-          />
-        </div>
-      </section>
-
-      <app-ui-separator orientation="horizontal" />
-
-      <!-- WIDGET CONTENT section -->
-      <section class="settings-panel__section">
-        <div class="settings-panel__section-label">Widget Content</div>
-
-      <div class="settings-panel__row settings-panel__row--column">
-        <app-ui-select
-          label="Content type"
-          [options]="contentTypeOptions"
-          [value]="selectedWidget!.content.type"
-          (valueChange)="setContentType($event)"
-        />
-      </div>
-
-      @if (selectedTextContent; as textContent) {
-        <div class="settings-panel__row settings-panel__row--column">
-          <label class="settings-panel__field-label" for="widget-text-content">Text</label>
-          <textarea
-            id="widget-text-content"
-            class="settings-panel__textarea"
-            rows="4"
-            [value]="textContent.text"
-            (input)="onTextChange($event)"
-          ></textarea>
-        </div>
-      }
-
-      @if (selectedImageContent; as imageContent) {
-        <div class="settings-panel__row settings-panel__row--column">
-          <label class="settings-panel__field-label" for="widget-image-src">Image URL</label>
-          <input
-            id="widget-image-src"
-            class="settings-panel__input"
-            type="url"
-            placeholder="https://..."
-            [value]="imageContent.src"
-            (input)="onImageSrcChange($event)"
-          />
-          @if (!cs.isValidImageUrl(imageContent.src)) {
-            <span class="settings-panel__help settings-panel__help--error">Usa un URL assoluto http/https.</span>
-          }
-        </div>
-
-        <div class="settings-panel__row settings-panel__row--column">
-          <label class="settings-panel__field-label" for="widget-image-alt">Alt text</label>
-          <input
-            id="widget-image-alt"
-            class="settings-panel__input"
-            type="text"
-            [value]="imageContent.alt || ''"
-            (input)="onImageAltChange($event)"
-          />
-        </div>
-      }
-      </section>
-    } @else {
-      @if (!contentOnly()) {
-        <!-- CANVAS section -->
-        <section class="settings-panel__section">
-          <div class="settings-panel__section-label">Canvas</div>
-
-          <div class="settings-panel__row settings-panel__row--column">
-            <label class="settings-panel__field-label" for="canvas-width">Width</label>
-            <input
-              id="canvas-width"
-              class="settings-panel__input"
-              type="number"
-              min="1"
-              [value]="cs.width()"
-              (input)="onCanvasWidthChange($event)"
-            />
-          </div>
-
-          <div class="settings-panel__row settings-panel__row--column">
-            <label class="settings-panel__field-label" for="canvas-height">Height</label>
-            <input
-              id="canvas-height"
-              class="settings-panel__input"
-              type="number"
-              min="1"
-              [value]="cs.height()"
-              (input)="onCanvasHeightChange($event)"
-            />
-          </div>
-        </section>
-
-        <app-ui-separator orientation="horizontal" />
-
-        <!-- SNAP section -->
-        <section class="settings-panel__section">
-          <div class="settings-panel__section-label">Snap</div>
-
-          <div class="settings-panel__row">
-            <app-ui-select
-              label="Grid size"
-              [options]="snapOptions"
-              [value]="cs.snapSize()"
-              (valueChange)="setSnapSize($event)"
-            />
-          </div>
-
-          <div class="settings-panel__row">
-            <app-ui-toggle
-              label="Snap to grid"
-              [checked]="cs.canSnapToGrid()"
-              (checkedChange)="cs.setSnapToGrid($event)"
-            />
-          </div>
-
-          <div class="settings-panel__row">
-            <app-ui-toggle
-              label="Snap to objects"
-              [checked]="cs.canSnapToObjects()"
-              (checkedChange)="cs.setSnapToObjects($event)"
-            />
-          </div>
-
-          <div class="settings-panel__row">
-            <app-ui-toggle
-              label="Snap to border"
-              [checked]="cs.canSnapToBorder()"
-              (checkedChange)="cs.setSnapToBorder($event)"
-            />
-          </div>
-        </section>
-
-        <app-ui-separator orientation="horizontal" />
-
-        <!-- BEHAVIOUR section -->
-        <section class="settings-panel__section">
-          <div class="settings-panel__section-label">Behaviour</div>
-
-          <div class="settings-panel__row">
-            <app-ui-toggle
-              label="Allow exit borders"
-              [checked]="cs.canExitBorders()"
-              (checkedChange)="cs.setExitBorders($event)"
-            />
-          </div>
-
-          <div class="settings-panel__row">
-            <app-ui-toggle
-              label="Widget resize"
-              [checked]="cs.canResizeWidget()"
-              (checkedChange)="cs.setWidgetResize($event)"
-            />
-          </div>
-        </section>
-
-        <app-ui-separator orientation="horizontal" />
-
-        <!-- DEVELOPER section -->
-        <section class="settings-panel__section">
-          <div class="settings-panel__section-label">Developer</div>
-
-          <div class="settings-panel__row">
-            <app-ui-toggle
-              label="Debug mode"
-              [checked]="cs.debugMode()"
-              (checkedChange)="cs.setDebugMode($event)"
-            />
-          </div>
-
-          @if (cs.debugMode()) {
-            <div class="settings-panel__row">
-              <app-ui-toggle
-                label="Debug panel visible"
-                [checked]="cs.debugPanelVisible()"
-                (checkedChange)="cs.setDebugPanelVisible($event)"
-              />
-            </div>
-
-            <div class="settings-panel__debug-info">
-              <div class="debug-row"><span class="debug-key">Zoom</span><span class="debug-val">{{ cs.zoom() | number:'1.2-2' }}</span></div>
-              <div class="debug-row"><span class="debug-key">Offset</span><span class="debug-val">{{ cs.left() }}, {{ cs.top() }}</span></div>
-              <div class="debug-row"><span class="debug-key">Selected</span><span class="debug-val">{{ cs.selectedWidgetId() ?? '-' }}</span></div>
-              <div class="debug-row"><span class="debug-key">Dragging</span><span class="debug-val" [class.debug-val--active]="cs.isDraggingWidget()">{{ cs.isDraggingWidget() ? 'yes' : 'no' }}</span></div>
-              <div class="debug-row"><span class="debug-key">Resizing</span><span class="debug-val" [class.debug-val--active]="cs.isResizingWidget()">{{ cs.isResizingWidget() ? 'yes' : 'no' }}</span></div>
-            </div>
-          }
-        </section>
-      }
-    }
-  </div>
-
-  @if (isPopoverMode) {
-    <div
-      class="settings-panel__resize-handle"
-      (pointerdown)="onResizePointerDown($event)"
-      (pointermove)="onResizePointerMove($event)"
-      (pointerup)="onResizePointerUp($event)"
-    ></div>
-  }
 </div>
