@@ -66,6 +66,12 @@ export class CanvasDirective implements OnInit {
 
     @HostListener('window:keydown', ['$event'])
     onKeyDown(event: KeyboardEvent) {
+        if (event.code === 'Escape' && this.canvasService.selectedWidgetId()) {
+            event.preventDefault();
+            this.canvasService.selectWidget(null);
+            return;
+        }
+
         if (event.code !== 'Space') {
             return;
         }
@@ -94,6 +100,10 @@ export class CanvasDirective implements OnInit {
     @HostListener('window:pointerdown', ['$event'])
     onPointerDown(event: PointerEvent) {
         this.syncPointerInsideArea(event.target);
+
+        if (event.button === 0 && !this.canvasService.isSpacePressed() && this.isSelectionClearTarget(event.target)) {
+            this.canvasService.selectWidget(null);
+        }
 
         if (!this.isPanTarget(event.target)) {
             return;
@@ -211,6 +221,18 @@ export class CanvasDirective implements OnInit {
 
         // Evita il pan quando si inizia un drag da widget/resizer.
         return targetEl === wrapper || targetEl === canvas || !targetEl.closest('.app-canvas-widget');
+    }
+
+    private isSelectionClearTarget(target: EventTarget | null): boolean {
+        const wrapper = this.canvasWrapper();
+        const canvas = this.canvasElementRef.nativeElement;
+        const targetEl = target as HTMLElement | null;
+
+        if (!wrapper || !targetEl || !wrapper.contains(targetEl)) {
+            return false;
+        }
+
+        return !targetEl.closest('.app-canvas-widget') && (targetEl === wrapper || targetEl === canvas || canvas.contains(targetEl));
     }
 
     private isTargetInsideWrapper(target: EventTarget | null): boolean {

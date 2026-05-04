@@ -26,108 +26,11 @@
   </div>
 
   <div class="settings-panel__content">
-
-  @if (!contentOnly()) {
-    <!-- CANVAS section -->
-    <section class="settings-panel__section">
-      <div class="settings-panel__section-label">Canvas</div>
-
-      <div class="settings-panel__row settings-panel__row--column">
-        <label class="settings-panel__field-label" for="canvas-width">Width</label>
-        <input
-          id="canvas-width"
-          class="settings-panel__input"
-          type="number"
-          min="1"
-          [value]="cs.width()"
-          (input)="onCanvasWidthChange($event)"
-        />
-      </div>
-
-      <div class="settings-panel__row settings-panel__row--column">
-        <label class="settings-panel__field-label" for="canvas-height">Height</label>
-        <input
-          id="canvas-height"
-          class="settings-panel__input"
-          type="number"
-          min="1"
-          [value]="cs.height()"
-          (input)="onCanvasHeightChange($event)"
-        />
-      </div>
-    </section>
-
-    <app-ui-separator orientation="horizontal" />
-
-    <!-- SNAP section -->
-    <section class="settings-panel__section">
-      <div class="settings-panel__section-label">Snap</div>
-
-    <div class="settings-panel__row">
-      <app-ui-select
-        label="Grid size"
-        [options]="snapOptions"
-        [value]="cs.snapSize()"
-        (valueChange)="setSnapSize($event)"
-      />
-    </div>
-
-    <div class="settings-panel__row">
-      <app-ui-toggle
-        label="Snap to grid"
-        [checked]="cs.canSnapToGrid()"
-        (checkedChange)="cs.setSnapToGrid($event)"
-      />
-    </div>
-
-    <div class="settings-panel__row">
-      <app-ui-toggle
-        label="Snap to objects"
-        [checked]="cs.canSnapToObjects()"
-        (checkedChange)="cs.setSnapToObjects($event)"
-      />
-    </div>
-
-    <div class="settings-panel__row">
-      <app-ui-toggle
-        label="Snap to border"
-        [checked]="cs.canSnapToBorder()"
-        (checkedChange)="cs.setSnapToBorder($event)"
-      />
-    </div>
-    </section>
-
-    <app-ui-separator orientation="horizontal" />
-
-    <!-- BEHAVIOUR section -->
-    <section class="settings-panel__section">
-      <div class="settings-panel__section-label">Behaviour</div>
-
-    <div class="settings-panel__row">
-      <app-ui-toggle
-        label="Allow exit borders"
-        [checked]="cs.canExitBorders()"
-        (checkedChange)="cs.setExitBorders($event)"
-      />
-    </div>
-
-    <div class="settings-panel__row">
-      <app-ui-toggle
-        label="Widget resize"
-        [checked]="cs.canResizeWidget()"
-        (checkedChange)="cs.setWidgetResize($event)"
-      />
-    </div>
-    </section>
-
-    <app-ui-separator orientation="horizontal" />
-  }
-
-  <!-- WIDGET CONTENT section -->
-  <section class="settings-panel__section">
-    <div class="settings-panel__section-label">Widget Content</div>
-
     @if (hasSelectedWidget) {
+      <!-- WIDGET CONTENT section -->
+      <section class="settings-panel__section">
+        <div class="settings-panel__section-label">Widget Content</div>
+
       <div class="settings-panel__row settings-panel__row--column">
         <app-ui-select
           label="Content type"
@@ -177,44 +80,134 @@
           />
         </div>
       }
+      </section>
     } @else {
-      <div class="settings-panel__empty">Seleziona un widget nel canvas per modificarne il contenuto.</div>
+      @if (!contentOnly()) {
+        <!-- CANVAS section -->
+        <section class="settings-panel__section">
+          <div class="settings-panel__section-label">Canvas</div>
+
+          <div class="settings-panel__row settings-panel__row--column">
+            <label class="settings-panel__field-label" for="canvas-width">Width</label>
+            <input
+              id="canvas-width"
+              class="settings-panel__input"
+              type="number"
+              min="1"
+              [value]="cs.width()"
+              (input)="onCanvasWidthChange($event)"
+            />
+          </div>
+
+          <div class="settings-panel__row settings-panel__row--column">
+            <label class="settings-panel__field-label" for="canvas-height">Height</label>
+            <input
+              id="canvas-height"
+              class="settings-panel__input"
+              type="number"
+              min="1"
+              [value]="cs.height()"
+              (input)="onCanvasHeightChange($event)"
+            />
+          </div>
+        </section>
+
+        <app-ui-separator orientation="horizontal" />
+
+        <!-- SNAP section -->
+        <section class="settings-panel__section">
+          <div class="settings-panel__section-label">Snap</div>
+
+          <div class="settings-panel__row">
+            <app-ui-select
+              label="Grid size"
+              [options]="snapOptions"
+              [value]="cs.snapSize()"
+              (valueChange)="setSnapSize($event)"
+            />
+          </div>
+
+          <div class="settings-panel__row">
+            <app-ui-toggle
+              label="Snap to grid"
+              [checked]="cs.canSnapToGrid()"
+              (checkedChange)="cs.setSnapToGrid($event)"
+            />
+          </div>
+
+          <div class="settings-panel__row">
+            <app-ui-toggle
+              label="Snap to objects"
+              [checked]="cs.canSnapToObjects()"
+              (checkedChange)="cs.setSnapToObjects($event)"
+            />
+          </div>
+
+          <div class="settings-panel__row">
+            <app-ui-toggle
+              label="Snap to border"
+              [checked]="cs.canSnapToBorder()"
+              (checkedChange)="cs.setSnapToBorder($event)"
+            />
+          </div>
+        </section>
+
+        <app-ui-separator orientation="horizontal" />
+
+        <!-- BEHAVIOUR section -->
+        <section class="settings-panel__section">
+          <div class="settings-panel__section-label">Behaviour</div>
+
+          <div class="settings-panel__row">
+            <app-ui-toggle
+              label="Allow exit borders"
+              [checked]="cs.canExitBorders()"
+              (checkedChange)="cs.setExitBorders($event)"
+            />
+          </div>
+
+          <div class="settings-panel__row">
+            <app-ui-toggle
+              label="Widget resize"
+              [checked]="cs.canResizeWidget()"
+              (checkedChange)="cs.setWidgetResize($event)"
+            />
+          </div>
+        </section>
+
+        <app-ui-separator orientation="horizontal" />
+
+        <!-- DEVELOPER section -->
+        <section class="settings-panel__section">
+          <div class="settings-panel__section-label">Developer</div>
+
+          <div class="settings-panel__row">
+            <app-ui-toggle
+              label="Debug mode"
+              [checked]="cs.debugMode()"
+              (checkedChange)="cs.setDebugMode($event)"
+            />
+          </div>
+
+          @if (cs.debugMode()) {
+            <div class="settings-panel__row">
+              <app-ui-toggle
+                label="Debug panel visible"
+                [checked]="cs.debugPanelVisible()"
+                (checkedChange)="cs.setDebugPanelVisible($event)"
+              />
+            </div>
+
+            <div class="settings-panel__debug-info">
+              <div class="debug-row"><span class="debug-key">Zoom</span><span class="debug-val">{{ cs.zoom() | number:'1.2-2' }}</span></div>
+              <div class="debug-row"><span class="debug-key">Offset</span><span class="debug-val">{{ cs.left() }}, {{ cs.top() }}</span></div>
+              <div class="debug-row"><span class="debug-key">Selected</span><span class="debug-val">{{ cs.selectedWidgetId() ?? '-' }}</span></div>
+              <div class="debug-row"><span class="debug-key">Dragging</span><span class="debug-val" [class.debug-val--active]="cs.isDraggingWidget()">{{ cs.isDraggingWidget() ? 'yes' : 'no' }}</span></div>
+              <div class="debug-row"><span class="debug-key">Resizing</span><span class="debug-val" [class.debug-val--active]="cs.isResizingWidget()">{{ cs.isResizingWidget() ? 'yes' : 'no' }}</span></div>
+            </div>
+          }
+        </section>
+      }
     }
-  </section>
-
-  @if (!contentOnly()) {
-    <app-ui-separator orientation="horizontal" />
-
-    <!-- DEVELOPER section -->
-    <section class="settings-panel__section">
-      <div class="settings-panel__section-label">Developer</div>
-
-     <div class="settings-panel__row">
-       <app-ui-toggle
-         label="Debug mode"
-         [checked]="cs.debugMode()"
-         (checkedChange)="cs.setDebugMode($event)"
-       />
-     </div>
-
-     @if (cs.debugMode()) {
-       <div class="settings-panel__row">
-         <app-ui-toggle
-           label="Debug panel visible"
-           [checked]="cs.debugPanelVisible()"
-           (checkedChange)="cs.setDebugPanelVisible($event)"
-         />
-       </div>
-
-       <div class="settings-panel__debug-info">
-        <div class="debug-row"><span class="debug-key">Zoom</span><span class="debug-val">{{ cs.zoom() | number:'1.2-2' }}</span></div>
-        <div class="debug-row"><span class="debug-key">Offset</span><span class="debug-val">{{ cs.left() }}, {{ cs.top() }}</span></div>
-        <div class="debug-row"><span class="debug-key">Selected</span><span class="debug-val">{{ cs.selectedWidgetId() ?? '-' }}</span></div>
-        <div class="debug-row"><span class="debug-key">Dragging</span><span class="debug-val" [class.debug-val--active]="cs.isDraggingWidget()">{{ cs.isDraggingWidget() ? 'yes' : 'no' }}</span></div>
-        <div class="debug-row"><span class="debug-key">Resizing</span><span class="debug-val" [class.debug-val--active]="cs.isResizingWidget()">{{ cs.isResizingWidget() ? 'yes' : 'no' }}</span></div>
-      </div>
-    }
-    </section>
-  }
   </div>
 </div>
