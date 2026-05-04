@@ -632,23 +632,33 @@ export class CanvasService {
             y: pointerCanvas.y - this.resizeStartPointer.y,
         };
 
-        const nextRect = this.widgetResizeService.computeNextRect({
-            handle: position,
-            initialRect: this.resizeStartRect,
-            delta,
-            min: {width: this.snapSize(), height: this.snapSize()},
-            snapToGrid: this.canSnapToGrid(),
-            snapSize: this.snapSize(),
-            canExitBorders: this.canExitBorders(),
-            canvas: {width: this.width(), height: this.height()},
-            keepAspectRatio: event.shiftKey,
-            aspectRatio: this.resizeStartAspectRatio ?? undefined,
-        });
+    const nextRect = this.widgetResizeService.computeNextRect({
+      handle: position,
+      initialRect: this.resizeStartRect,
+      delta,
+      min: {width: this.snapSize(), height: this.snapSize()},
+      snapToGrid: this.canSnapToGrid(),
+      snapSize: this.snapSize(),
+      canExitBorders: this.canExitBorders(),
+      canvas: {width: this.width(), height: this.height()},
+      keepAspectRatio: event.shiftKey,
+      aspectRatio: this.resizeStartAspectRatio ?? undefined,
+      snapToObjects: this.canSnapToObjects(),
+      objectSnapDistance: this.objectSnapDistance,
+      snapToBorder: this.canSnapToBorder(),
+      borderSnapDistance: this.borderSnapDistance,
+      siblings: this.widgetsState.list().filter(w => w.uuid !== this.selectedWidgetId()),
+      zoom: this.zoom(),
+    });
 
-        el.style.width = `${nextRect.width}px`;
-        el.style.height = `${nextRect.height}px`;
-        el.style.left = `${nextRect.x}px`;
-        el.style.top = `${nextRect.y}px`;
+    this.objectSnapGuides.set(
+      this.canSnapToObjects() || this.canSnapToBorder() ? nextRect.guides : {}
+    );
+
+    el.style.width = `${nextRect.rect.width}px`;
+    el.style.height = `${nextRect.rect.height}px`;
+    el.style.left = `${nextRect.rect.x}px`;
+    el.style.top = `${nextRect.rect.y}px`;
     }
 
     public widgetResizeEnd({widget, el, event}: {
@@ -670,6 +680,7 @@ export class CanvasService {
         this.resizeStartPointer = null;
         this.resizeStartRect = null;
         this.resizeStartAspectRatio = null;
+        this.objectSnapGuides.set({});
 
         const stateWidget = this.widgetsState.getById(widget.uuid);
         if (!stateWidget) {

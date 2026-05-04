@@ -1,4 +1,4 @@
-import {Point2D, Rect2D, ResizeHandle, Size2D, SnapResult} from '../models/geometry.models';
+import {AxisGuides, Point2D, Rect2D, RectSnapResult, ResizeHandle, Size2D, SnapResult} from '../models/geometry.models';
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
 
 const roundToStep = (value: number, step: number): number => Math.round(value / step) * step;
@@ -752,3 +752,155 @@ export const clampRectInsideCanvas = ({rect, canvas}: { rect: Rect2D; canvas: Si
   width: Math.min(rect.width, canvas.width),
   height: Math.min(rect.height, canvas.height),
 });
+
+/**
+ * Snaps the moving edges of a resizing rect to the edges of sibling rects.
+ * Only the edges affected by the given handle are considered.
+ */
+export const snapResizeRectToObjects = ({
+  rect,
+  handle,
+  siblings,
+  distance,
+  min,
+}: {
+  rect: Rect2D;
+  handle: ResizeHandle;
+  siblings: Rect2D[];
+  distance: number;
+  min: Size2D;
+}): RectSnapResult => {
+  const hasLeft = handle.includes('left');
+  const hasRight = handle.includes('right');
+  const hasTop = handle.includes('top');
+  const hasBottom = handle.includes('bottom');
+
+  const guides: AxisGuides = {};
+  const next = {...rect};
+  const rightEdge = rect.x + rect.width;
+  const bottomEdge = rect.y + rect.height;
+
+  let bestDiffX = distance + 1;
+  let snapX: number | null = null;
+  let bestDiffY = distance + 1;
+  let snapY: number | null = null;
+
+  for (const sibling of siblings) {
+    const sib = buildEdges(sibling);
+    const sibXValues = [sib.left, sib.centerX, sib.right];
+    const sibYValues = [sib.top, sib.centerY, sib.bottom];
+
+    if (hasRight) {
+      for (const sv of sibXValues) {
+        const diff = Math.abs(rightEdge - sv);
+        if (diff <= distance && diff < bestDiffX && sv - rect.x >= min.width) {
+          bestDiffX = diff;
+          snapX = sv;
+          guides.x = sv;
+        }
+      }
+    }
+
+    if (hasLeft) {
+      for (const sv of sibXValues) {
+        const diff = Math.abs(rect.x - sv);
+        if (diff <= distance && diff < bestDiffX && rightEdge - sv >= min.width) {
+          bestDiffX = diff;
+          snapX = sv;
+          guides.x = sv;
+        }
+      }
+    }
+
+    if (hasBottom) {
+      for (const sv of sibYValues) {
+        const diff = Math.abs(bottomEdge - sv);
+        if (diff <= distance && diff < bestDiffY && sv - rect.y >= min.height) {
+          bestDiffY = diff;
+          snapY = sv;
+          guides.y = sv;
+        }
+      }
+    }
+
+    if (hasTop) {
+      for (const sv of sibYValues) {
+        const diff = Math.abs(rect.y - sv);
+        if (diff <= distance && diff < bestDiffY && bottomEdge - sv >= min.height) {
+          bestDiffY = diff;
+          snapY = sv;
+          guides.y = sv;
+        }
+      }
+    }
+  }
+
+  if (snapX !== null) {
+    if (hasRight) {
+      next.width = snapX - next.x;
+    } else if (hasLeft) {
+      next.x = snapX;
+      next.width = rightEdge - snapX;
+    }
+  }
+
+  if (snapY !== null) {
+    if (hasBottom) {
+      next.height = snapY - next.y;
+    } else if (hasTop) {
+      next.y = snapY;
+      next.height = bottomEdge - snapY;
+    }
+  }
+
+  return {rect: next, guides};
+};
+
+/**
+ * Snaps the moving edges of a resizing rect to the canvas borders.
+ * Only the edges affected by the given handle are considered.
+ */
+export const snapResizeRectToBorders = ({
+  rect,
+  handle,
+  canvas,
+  distance,
+  min,
+}: {
+  rect: Rect2D;
+  handle: ResizeHandle;
+  canvas: Size2D;
+  distance: number;
+  min: Size2D;
+}): RectSnapResult => {
+  const hasLeft = handle.includes('left');
+  const hasRight = handle.includes('right');
+  const hasTop = handle.includes('top');
+  const hasBottom = handle.includes('bottom');
+
+  const guides: AxisGuides = {};
+  const next = {...rect};
+  const rightEdge = rect.x + rect.width;
+  const bottomEdge = rect.y + rect.height;
+
+  if (hasLeft && Math.abs(rect.x) <= distance && rightEdge >= min.width) {
+    next.x = 0;
+    next.width = rightEdge;
+    guides.x = 0;
+  } else if (hasRight && Math.abs(rightEdge - canvas.width) <= distance && canvas.width - rect.x >= min.width) {
+    next.width = canvas.width - rect.x;
+    guides.x = canvas.width;
+  }
+
+  if (hasTop && Math.abs(rect.y) <= distance && bottomEdge >= min.height) {
+    next.y = 0;
+    next.height = bottomEdge;
+    guides.y = 0;
+  } else if (hasBottom && Math.abs(bottomEdge - canvas.height) <= distance && canvas.height - rect.y >= min.height) {
+    next.height = canvas.height - rect.y;
+    guides.y = canvas.height;
+  }
+
+  return {rect: next, guides};
+};
+

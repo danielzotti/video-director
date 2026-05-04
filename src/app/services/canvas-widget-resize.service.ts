@@ -1,12 +1,14 @@
 import {Injectable} from '@angular/core';
-import {Rect2D, ResizeHandle, Size2D} from '../models/geometry.models';
+import {AxisGuides, Rect2D, RectSnapResult, ResizeHandle, Size2D} from '../models/geometry.models';
 import {
   clampAspectResizedRectByHandle,
   clampResizedRectByHandle,
   enforceRectAspectRatioByHandle,
   resizeRectFromHandle,
   snapAspectResizedRectByHandle,
-  snapResizedRectByHandle
+  snapResizedRectByHandle,
+  snapResizeRectToBorders,
+  snapResizeRectToObjects,
 } from '../utils/canvas-geometry.utils';
 
 @Injectable({
@@ -45,6 +47,12 @@ export class CanvasWidgetResizeService {
     canvas,
     keepAspectRatio,
     aspectRatio,
+    snapToObjects,
+    objectSnapDistance,
+    snapToBorder,
+    borderSnapDistance,
+    siblings,
+    zoom,
   }: {
     handle: ResizeHandle;
     initialRect: Rect2D;
@@ -56,7 +64,13 @@ export class CanvasWidgetResizeService {
     canvas: Size2D;
     keepAspectRatio: boolean;
     aspectRatio?: number;
-  }): Rect2D {
+    snapToObjects: boolean;
+    objectSnapDistance: number;
+    snapToBorder: boolean;
+    borderSnapDistance: number;
+    siblings: Rect2D[];
+    zoom: number;
+  }): RectSnapResult {
     const effectiveHandle = keepAspectRatio ? this.resolveShiftResizeHandle(handle) : handle;
     const shouldKeepAspectRatio = keepAspectRatio;
 
@@ -100,6 +114,38 @@ export class CanvasWidgetResizeService {
       });
     }
 
+    // Snap-to-objects and snap-to-borders act on the moving edges.
+    // Skip when keepAspectRatio is active to avoid breaking the ratio.
+    let guides: AxisGuides = {};
+    if (!shouldKeepAspectRatio) {
+      if (snapToObjects) {
+        const objSnap = snapResizeRectToObjects({
+          rect: nextRect,
+          handle: effectiveHandle,
+          siblings,
+          distance: objectSnapDistance / zoom,
+          min,
+        });
+        nextRect = objSnap.rect;
+        guides = objSnap.guides;
+      }
+
+      if (snapToBorder) {
+        const borderSnap = snapResizeRectToBorders({
+          rect: nextRect,
+          handle: effectiveHandle,
+          canvas,
+          distance: borderSnapDistance / zoom,
+          min,
+        });
+        nextRect = borderSnap.rect;
+        guides = {
+          x: borderSnap.guides.x ?? guides.x,
+          y: borderSnap.guides.y ?? guides.y,
+        };
+      }
+    }
+
     if (!canExitBorders) {
       if (shouldKeepAspectRatio) {
         nextRect = clampAspectResizedRectByHandle({
@@ -122,7 +168,7 @@ export class CanvasWidgetResizeService {
       }
     }
 
-    return nextRect;
+    return {rect: nextRect, guides};
   }
 }
 

@@ -30,3 +30,8 @@ export interface SnapResult {
   guides: AxisGuides;
 }
 
+export interface RectSnapResult {
+  rect: Rect2D;
+  guides: AxisGuides;
+}
+
