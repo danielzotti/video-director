@@ -24,7 +24,7 @@ describe('CanvasWidgetResizeService', () => {
   it('keeps widget inside canvas on Shift side-resize when exit borders are disabled', () => {
     const nextRect = service.computeNextRect({
       handle: 'left',
-      initialRect: {x: 100, y: 100, width: 160, height: 90},
+      initialRect: {x: 100, y: 40, width: 160, height: 90},
       delta: {x: -60, y: 0},
       min: {width: 10, height: 10},
       snapToGrid: false,
@@ -78,7 +78,7 @@ describe('CanvasWidgetResizeService', () => {
     expect(nextRect.width / nextRect.height).toBeCloseTo(initialRect.width / initialRect.height, 6);
   });
 
-  it('does not lock ratio on side handles when snap to grid is enabled', () => {
+  it('maps right side to bottom-right when Shift is pressed', () => {
     const initialRect = {x: 40, y: 30, width: 160, height: 90};
     const nextRect = service.computeNextRect({
       handle: 'right',
@@ -93,14 +93,31 @@ describe('CanvasWidgetResizeService', () => {
       aspectRatio: initialRect.width / initialRect.height,
     });
 
-    expect(nextRect).toEqual({
-      x: initialRect.x,
-      y: initialRect.y,
-      width: 190,
-      height: initialRect.height,
-    });
     expect(nextRect.width % 10).toBe(0);
-    expect(nextRect.height).toBe(initialRect.height);
+    expect(nextRect.height % 10).toBe(0);
+    expect(nextRect.x).toBe(initialRect.x);
+    expect(nextRect.y).toBe(initialRect.y);
+    expect(nextRect.width / nextRect.height).toBeCloseTo(initialRect.width / initialRect.height, 6);
+  });
+
+  it('maps top side to top-left when Shift is pressed', () => {
+    const initialRect = {x: 100, y: 100, width: 160, height: 90};
+    const nextRect = service.computeNextRect({
+      handle: 'top',
+      initialRect,
+      delta: {x: 0, y: -30},
+      min: {width: 10, height: 10},
+      snapToGrid: false,
+      snapSize: 1,
+      canExitBorders: true,
+      canvas: {width: 1920, height: 1080},
+      keepAspectRatio: true,
+      aspectRatio: initialRect.width / initialRect.height,
+    });
+
+    expect(nextRect.x).toBeLessThan(initialRect.x);
+    expect(nextRect.y).toBeLessThan(initialRect.y);
+    expect(nextRect.width / nextRect.height).toBeCloseTo(initialRect.width / initialRect.height, 6);
   });
 
   it('keeps aspect ratio when resizing outside canvas bounds with Shift and borders locked', () => {
@@ -125,7 +142,7 @@ describe('CanvasWidgetResizeService', () => {
     expect(nextRect.width / nextRect.height).toBeCloseTo(initialRect.width / initialRect.height, 6);
   });
  });
- 
+
 
 
 

@@ -13,6 +13,18 @@ import {
   providedIn: 'root',
 })
 export class CanvasWidgetResizeService {
+  private resolveShiftResizeHandle(handle: ResizeHandle): ResizeHandle {
+    if (handle === 'right' || handle === 'bottom') {
+      return 'bottom-right';
+    }
+
+    if (handle === 'left' || handle === 'top') {
+      return 'top-left';
+    }
+
+    return handle;
+  }
+
   readElementRect(el: HTMLElement, fallbackSize: Size2D): Rect2D {
     return {
       x: Number.parseFloat(el.style.left) || 0,
@@ -45,12 +57,12 @@ export class CanvasWidgetResizeService {
     keepAspectRatio: boolean;
     aspectRatio?: number;
   }): Rect2D {
-    const isCornerHandle = handle.includes('-');
-    const shouldKeepAspectRatio = keepAspectRatio && (!snapToGrid || isCornerHandle);
+    const effectiveHandle = keepAspectRatio ? this.resolveShiftResizeHandle(handle) : handle;
+    const shouldKeepAspectRatio = keepAspectRatio;
 
     let nextRect = resizeRectFromHandle({
       rect: initialRect,
-      handle,
+      handle: effectiveHandle,
       delta,
       min,
       keepAspectRatio: shouldKeepAspectRatio,
@@ -61,7 +73,7 @@ export class CanvasWidgetResizeService {
       if (shouldKeepAspectRatio) {
         nextRect = snapAspectResizedRectByHandle({
           rect: nextRect,
-          handle,
+          handle: effectiveHandle,
           initialRect,
           min,
           snap: snapSize,
@@ -70,7 +82,7 @@ export class CanvasWidgetResizeService {
       } else {
         nextRect = snapResizedRectByHandle({
           rect: nextRect,
-          handle,
+          handle: effectiveHandle,
           initialRect,
           snap: snapSize,
           min,
@@ -81,7 +93,7 @@ export class CanvasWidgetResizeService {
     if (shouldKeepAspectRatio && !snapToGrid) {
       nextRect = enforceRectAspectRatioByHandle({
         rect: nextRect,
-        handle,
+        handle: effectiveHandle,
         initialRect,
         min,
         aspectRatio,
@@ -92,7 +104,7 @@ export class CanvasWidgetResizeService {
       if (shouldKeepAspectRatio) {
         nextRect = clampAspectResizedRectByHandle({
           rect: nextRect,
-          handle,
+          handle: effectiveHandle,
           initialRect,
           canvas,
           min,
@@ -102,7 +114,7 @@ export class CanvasWidgetResizeService {
       } else {
         nextRect = clampResizedRectByHandle({
           rect: nextRect,
-          handle,
+          handle: effectiveHandle,
           initialRect,
           canvas,
           min,
