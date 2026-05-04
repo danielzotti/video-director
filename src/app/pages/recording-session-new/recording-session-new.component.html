@@ -113,6 +113,6 @@
 </div>
 
 <!-- Debug Panel -->
-@if (canvasService.debugMode()) {
-    <app-canvas-debug-panel [show]="canvasService.debugMode()"/>
+@if (canvasService.debugMode() && canvasService.debugPanelVisible()) {
+    <app-canvas-debug-panel [show]="true"/>
 }

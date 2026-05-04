@@ -189,16 +189,24 @@
     <section class="settings-panel__section">
       <div class="settings-panel__section-label">Developer</div>
 
-    <div class="settings-panel__row">
-      <app-ui-toggle
-        label="Debug mode"
-        [checked]="cs.debugMode()"
-        (checkedChange)="cs.setDebugMode($event)"
-      />
-    </div>
+     <div class="settings-panel__row">
+       <app-ui-toggle
+         label="Debug mode"
+         [checked]="cs.debugMode()"
+         (checkedChange)="cs.setDebugMode($event)"
+       />
+     </div>
 
-    @if (cs.debugMode()) {
-      <div class="settings-panel__debug-info">
+     @if (cs.debugMode()) {
+       <div class="settings-panel__row">
+         <app-ui-toggle
+           label="Debug panel visible"
+           [checked]="cs.debugPanelVisible()"
+           (checkedChange)="cs.setDebugPanelVisible($event)"
+         />
+       </div>
+
+       <div class="settings-panel__debug-info">
         <div class="debug-row"><span class="debug-key">Zoom</span><span class="debug-val">{{ cs.zoom() | number:'1.2-2' }}</span></div>
         <div class="debug-row"><span class="debug-key">Offset</span><span class="debug-val">{{ cs.left() }}, {{ cs.top() }}</span></div>
         <div class="debug-row"><span class="debug-key">Selected</span><span class="debug-val">{{ cs.selectedWidgetId() ?? '-' }}</span></div>

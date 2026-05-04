@@ -69,13 +69,13 @@ export class CanvasDebugPanelComponent implements AfterViewInit {
     }
   }
 
-  protected onDragStart(e: PointerEvent): void {
-    if (!e.isPrimary || e.button !== 0) {
-      return;
-    }
+   protected onDragStart(e: PointerEvent): void {
+     if (!e.isPrimary || e.button !== 0) {
+       return;
+     }
 
-    e.preventDefault();
-    e.stopPropagation();
+     e.preventDefault();
+     e.stopPropagation();
 
     this.setPosition(this.position());
     this.isDragging.set(true);

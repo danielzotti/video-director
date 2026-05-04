@@ -60,6 +60,7 @@ export class CanvasService {
     public canSnapToBorder = signal(false);
     public canResizeWidget = signal(false);
     public debugMode = signal(true);
+    public debugPanelVisible = signal(false);
     public settingsPanelLayout = signal<SettingsPanelLayout>('fixed-right');
     public layersPanelLayout = signal<LayersPanelLayout>('fixed-left');
 
@@ -255,6 +256,11 @@ export class CanvasService {
 
     public setDebugMode(value: boolean) {
         this.debugMode.set(value);
+    }
+
+
+    public setDebugPanelVisible(value: boolean) {
+        this.debugPanelVisible.set(value);
     }
 
     public setSettingsPanelLayout(value: SettingsPanelLayout) {
