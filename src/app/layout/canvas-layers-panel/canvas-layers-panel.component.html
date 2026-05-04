@@ -2,7 +2,7 @@
   <button class="panel-backdrop" type="button" (click)="closed.emit()">&nbsp;</button>
 }
 
-<div class="layers-panel" [class.layers-panel--open]="isOpen()" [class.layers-panel--sidebar]="isSidebarMode">
+<div class="layers-panel" [class.layers-panel--open]="isOpen()" [class.layers-panel--sidebar]="isSidebarMode" [class.layers-panel--popover]="isPopoverMode">
   <div class="layers-panel__header">
     <span class="layers-panel__title">{{ title() }}</span>
     @if (isPopoverMode || isSidebarMode) {
