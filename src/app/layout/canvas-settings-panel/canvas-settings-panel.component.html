@@ -27,6 +27,90 @@
 
   <div class="settings-panel__content">
     @if (hasSelectedWidget) {
+      <section class="settings-panel__section">
+        <div class="settings-panel__section-label">Widget</div>
+
+        <div class="settings-panel__row settings-panel__row--column">
+          <label class="settings-panel__field-label" for="widget-name">Name</label>
+          <input
+            id="widget-name"
+            class="settings-panel__input"
+            type="text"
+            [value]="selectedWidget!.name || ''"
+            (input)="onWidgetNameChange($event)"
+          />
+        </div>
+      </section>
+
+      <app-ui-separator orientation="horizontal" />
+
+      <!-- WIDGET GEOMETRY section -->
+      <section class="settings-panel__section">
+        <div class="settings-panel__section-label">Widget Geometry</div>
+
+        <div class="settings-panel__row settings-panel__row--column">
+          <label class="settings-panel__field-label" for="widget-x">X</label>
+          <input
+            id="widget-x"
+            class="settings-panel__input"
+            type="number"
+            [step]="widgetInputStep"
+            [value]="geometryDraft().x"
+            (input)="onWidgetGeometryInput($event, 'x')"
+            (blur)="onWidgetGeometryCommit($event, 'x')"
+            (keydown.enter)="onNumericEnter($event, 'x')"
+          />
+        </div>
+
+        <div class="settings-panel__row settings-panel__row--column">
+          <label class="settings-panel__field-label" for="widget-y">Y</label>
+          <input
+            id="widget-y"
+            class="settings-panel__input"
+            type="number"
+            [step]="widgetInputStep"
+            [value]="geometryDraft().y"
+            (input)="onWidgetGeometryInput($event, 'y')"
+            (blur)="onWidgetGeometryCommit($event, 'y')"
+            (keydown.enter)="onNumericEnter($event, 'y')"
+          />
+        </div>
+
+        <div class="settings-panel__row settings-panel__row--column">
+          <label class="settings-panel__field-label" for="widget-width">Width</label>
+          <input
+            id="widget-width"
+            class="settings-panel__input"
+            type="number"
+            min="1"
+            [step]="widgetInputStep"
+            [disabled]="!cs.canResizeWidget()"
+            [value]="geometryDraft().width"
+            (input)="onWidgetGeometryInput($event, 'width')"
+            (blur)="onWidgetGeometryCommit($event, 'width')"
+            (keydown.enter)="onNumericEnter($event, 'width')"
+          />
+        </div>
+
+        <div class="settings-panel__row settings-panel__row--column">
+          <label class="settings-panel__field-label" for="widget-height">Height</label>
+          <input
+            id="widget-height"
+            class="settings-panel__input"
+            type="number"
+            min="1"
+            [step]="widgetInputStep"
+            [disabled]="!cs.canResizeWidget()"
+            [value]="geometryDraft().height"
+            (input)="onWidgetGeometryInput($event, 'height')"
+            (blur)="onWidgetGeometryCommit($event, 'height')"
+            (keydown.enter)="onNumericEnter($event, 'height')"
+          />
+        </div>
+      </section>
+
+      <app-ui-separator orientation="horizontal" />
+
       <!-- WIDGET CONTENT section -->
       <section class="settings-panel__section">
         <div class="settings-panel__section-label">Widget Content</div>

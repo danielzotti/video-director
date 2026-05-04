@@ -37,5 +37,58 @@ describe('CanvasService', () => {
 
     expect(service.getWidgetRenderZIndex(widget!)).toBe(widget!.z);
   });
+
+  it('auto-rounds geometry values when snap to grid is enabled', () => {
+    service.selectWidget('1');
+    service.setWidgetResize(true);
+    service.setSnapToGrid(true);
+    service.setSnapSize(10);
+
+    service.setSelectedWidgetX(17);
+    service.setSelectedWidgetY(26);
+    service.setSelectedWidgetWidth(27);
+    service.setSelectedWidgetHeight(34);
+
+    const widget = service.widgetsState.getById('1');
+    expect(widget).toBeTruthy();
+    expect(widget!.x).toBe(20);
+    expect(widget!.y).toBe(30);
+    expect(widget!.width).toBe(30);
+    expect(widget!.height).toBe(30);
+  });
+
+  it('clamps geometry inside canvas when exit borders is disabled', () => {
+    service.selectWidget('1');
+    service.setWidgetResize(true);
+    service.setExitBorders(false);
+
+    service.setSelectedWidgetWidth(9999);
+    service.setSelectedWidgetHeight(9999);
+    service.setSelectedWidgetX(9999);
+    service.setSelectedWidgetY(9999);
+
+    const widget = service.widgetsState.getById('1');
+    expect(widget).toBeTruthy();
+    expect(widget!.width).toBe(800);
+    expect(widget!.height).toBe(600);
+    expect(widget!.x).toBe(0);
+    expect(widget!.y).toBe(0);
+  });
+
+  it('ignores width/height updates when widget resize is disabled', () => {
+    service.selectWidget('1');
+    service.setWidgetResize(false);
+
+    const before = service.widgetsState.getById('1');
+    expect(before).toBeTruthy();
+
+    service.setSelectedWidgetWidth((before?.width ?? 0) + 100);
+    service.setSelectedWidgetHeight((before?.height ?? 0) + 100);
+
+    const after = service.widgetsState.getById('1');
+    expect(after).toBeTruthy();
+    expect(after!.width).toBe(before!.width);
+    expect(after!.height).toBe(before!.height);
+  });
 });
 

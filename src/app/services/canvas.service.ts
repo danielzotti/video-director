@@ -11,6 +11,7 @@ import {CanvasWidgetResizeService} from './canvas-widget-resize.service';
 import {CanvasViewportService} from './canvas-viewport.service';
 import {MathService} from './math.service';
 import {
+    clampRectInsideCanvas,
     screenToCanvasPoint,
     snapPointToGrid,
 } from '../utils/canvas-geometry.utils';
@@ -345,6 +346,31 @@ export class CanvasService {
                 alt,
             },
         });
+    }
+
+    public setSelectedWidgetName(name: string) {
+        const widget = this.selectedWidget();
+        if (!widget) {
+            return;
+        }
+
+        this.widgetsState.renameLayer(widget.uuid, name);
+    }
+
+    public setSelectedWidgetX(value: number) {
+        this.updateSelectedWidgetRect({x: value});
+    }
+
+    public setSelectedWidgetY(value: number) {
+        this.updateSelectedWidgetRect({y: value});
+    }
+
+    public setSelectedWidgetWidth(value: number) {
+        this.updateSelectedWidgetRect({width: value});
+    }
+
+    public setSelectedWidgetHeight(value: number) {
+        this.updateSelectedWidgetRect({height: value});
     }
 
     public isValidImageUrl(src: string): boolean {
@@ -691,6 +717,57 @@ export class CanvasService {
         this.zoom.set(next.zoom);
         this.left.set(next.left);
         this.top.set(next.top);
+    }
+
+    private updateSelectedWidgetRect(patch: Partial<Rect2D>) {
+        const widget = this.selectedWidget();
+        if (!widget) {
+            return;
+        }
+
+        const isResizePatch = typeof patch.width === 'number' || typeof patch.height === 'number';
+        if (isResizePatch && !this.canResizeWidget()) {
+            return;
+        }
+
+        const snap = this.canSnapToGrid() ? Math.max(1, this.snapSize()) : 1;
+
+        let next: Rect2D = {
+            x: Math.round(patch.x ?? widget.x),
+            y: Math.round(patch.y ?? widget.y),
+            width: Math.max(1, Math.round(patch.width ?? widget.width)),
+            height: Math.max(1, Math.round(patch.height ?? widget.height)),
+        };
+
+        if (this.canSnapToGrid()) {
+            const snappedPoint = snapPointToGrid({
+                point: {x: next.x, y: next.y},
+                snap,
+            });
+
+            next = {
+                ...next,
+                x: snappedPoint.x,
+                y: snappedPoint.y,
+                width: Math.max(snap, Math.round(next.width / snap) * snap),
+                height: Math.max(snap, Math.round(next.height / snap) * snap),
+            };
+        }
+
+        if (!this.canExitBorders()) {
+            next = clampRectInsideCanvas({
+                rect: next,
+                canvas: {
+                    width: this.width(),
+                    height: this.height(),
+                },
+            });
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            ...next,
+        });
     }
 
     private getPointerCanvasPoint(event: PointerLikeEvent): Point2D {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
   WidgetImageContent,
@@ -7,9 +7,9 @@ import {
   WidgetContentType,
 } from '../../models/canvas-widget-state.models';
 import { CanvasService } from '../../services/canvas.service';
-import { UiToggleComponent } from '../../ui/toggle/ui-toggle.component';
-import { UiSelectComponent, SelectOption } from '../../ui/select/ui-select.component';
-import { UiSeparatorComponent } from '../../ui/separator/ui-separator.component';
+import { SelectOption, UiSelectComponent, UiSeparatorComponent, UiToggleComponent } from '../../ui';
+
+type WidgetGeometryField = 'x' | 'y' | 'width' | 'height';
 
 @Component({
   selector: 'app-canvas-settings-panel',
@@ -33,6 +33,30 @@ export class CanvasSettingsPanelComponent {
   closed = output<void>();
 
   protected cs = inject(CanvasService);
+  protected readonly geometryDraft = signal<Record<WidgetGeometryField, string>>({
+    x: '',
+    y: '',
+    width: '',
+    height: '',
+  });
+
+  constructor() {
+    effect(() => {
+      const widget = this.selectedWidget;
+
+      if (!widget) {
+        this.geometryDraft.set({ x: '', y: '', width: '', height: '' });
+        return;
+      }
+
+      this.geometryDraft.set({
+        x: String(widget.x),
+        y: String(widget.y),
+        width: String(widget.width),
+        height: String(widget.height),
+      });
+    });
+  }
 
   protected get snapOptions(): SelectOption[] {
     return this.cs.snapSizeList().map(v => ({ value: v, label: String(v) }));
@@ -69,6 +93,10 @@ export class CanvasSettingsPanelComponent {
   protected get selectedImageContent(): WidgetImageContent | null {
     const content = this.selectedWidget?.content;
     return content?.type === 'image' ? content : null;
+  }
+
+  protected get widgetInputStep(): number {
+    return this.cs.canSnapToGrid() ? this.cs.snapSize() : 1;
   }
 
   protected setSnapSize(val: string | number): void {
@@ -114,5 +142,65 @@ export class CanvasSettingsPanelComponent {
   protected onImageAltChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.cs.setSelectedWidgetImageAlt(value);
+  }
+
+  protected onWidgetNameChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.cs.setSelectedWidgetName(value);
+  }
+
+  protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {
+    const input = event.target as HTMLInputElement;
+    this.updateGeometryDraftValue(field, input.value);
+  }
+
+  protected onWidgetGeometryCommit(event: Event, field: WidgetGeometryField): void {
+    const input = event.target as HTMLInputElement;
+    this.updateGeometryDraftValue(field, input.value);
+
+    const value = Number(input.value);
+
+    if (!Number.isFinite(value)) {
+      this.syncWidgetFieldValue(input, field);
+      return;
+    }
+
+    if (field === 'x') {
+      this.cs.setSelectedWidgetX(value);
+    } else if (field === 'y') {
+      this.cs.setSelectedWidgetY(value);
+    } else if (field === 'width') {
+      this.cs.setSelectedWidgetWidth(value);
+    } else {
+      this.cs.setSelectedWidgetHeight(value);
+    }
+
+    this.syncWidgetFieldValue(input, field);
+  }
+
+  protected onNumericEnter(event: Event, field: WidgetGeometryField): void {
+    event.preventDefault();
+    this.onWidgetGeometryCommit(event, field);
+
+    // Keep focus on the same input after committing with Enter.
+    (event.target as HTMLInputElement).focus();
+  }
+
+
+  private updateGeometryDraftValue(field: WidgetGeometryField, value: string): void {
+    this.geometryDraft.update((draft) => ({
+      ...draft,
+      [field]: value,
+    }));
+  }
+
+  private syncWidgetFieldValue(input: HTMLInputElement, field: WidgetGeometryField): void {
+    const widget = this.selectedWidget;
+    if (!widget) {
+      return;
+    }
+
+    input.value = String(widget[field]);
+    this.updateGeometryDraftValue(field, input.value);
   }
 }
