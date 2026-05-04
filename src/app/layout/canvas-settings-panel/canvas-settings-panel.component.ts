@@ -1,9 +1,17 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, computed } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
+  WidgetImageFitMode,
+  WIDGET_IMAGE_FIT_MODES,
+  WidgetTextAlignmentHorizontal,
+  WidgetTextAlignmentVertical,
+  WidgetTextFontFamily,
   WidgetImageContent,
   WidgetTextContent,
   WIDGET_CONTENT_TYPES,
+  WIDGET_TEXT_ALIGNMENTS_HORIZONTAL,
+  WIDGET_TEXT_ALIGNMENTS_VERTICAL,
+  WIDGET_TEXT_FONT_FAMILIES,
   WidgetContentType,
 } from '../../models/canvas-widget-state.models';
 import { CanvasService } from '../../services/canvas.service';
@@ -23,6 +31,31 @@ export class CanvasSettingsPanelComponent {
   private static readonly CONTENT_LABELS: Record<WidgetContentType, string> = {
     text: 'Text',
     image: 'Image',
+  };
+
+  private static readonly IMAGE_FIT_MODE_LABELS: Record<WidgetImageFitMode, string> = {
+    cover: 'Cover',
+    contain: 'Contain',
+  };
+
+  private static readonly FONT_FAMILY_LABELS: Record<WidgetTextFontFamily, string> = {
+    roboto: 'Roboto (Sans)',
+    montserrat: 'Montserrat (Sans)',
+    exo: 'Exo (Sans)',
+    lora: 'Lora (Serif)',
+    'fira-code': 'Fira Code (Mono)',
+  };
+
+  private static readonly HORIZONTAL_ALIGNMENT_LABELS: Record<WidgetTextAlignmentHorizontal, string> = {
+    left: 'Sinistra',
+    center: 'Centro',
+    right: 'Destra',
+  };
+
+  private static readonly VERTICAL_ALIGNMENT_LABELS: Record<WidgetTextAlignmentVertical, string> = {
+    top: 'Alto',
+    center: 'Centro',
+    bottom: 'Basso',
   };
 
   isOpen = input<boolean>(false);
@@ -121,6 +154,34 @@ export class CanvasSettingsPanelComponent {
     return this.cs.selectedWidget() !== null;
   }
 
+  protected get imageFitModeOptions(): SelectOption[] {
+    return WIDGET_IMAGE_FIT_MODES.map((value) => ({
+      value,
+      label: CanvasSettingsPanelComponent.IMAGE_FIT_MODE_LABELS[value],
+    }));
+  }
+
+  protected get textFontFamilyOptions(): SelectOption[] {
+    return WIDGET_TEXT_FONT_FAMILIES.map((value) => ({
+      value,
+      label: CanvasSettingsPanelComponent.FONT_FAMILY_LABELS[value],
+    }));
+  }
+
+  protected get textHorizontalAlignmentOptions(): SelectOption[] {
+    return WIDGET_TEXT_ALIGNMENTS_HORIZONTAL.map((value) => ({
+      value,
+      label: CanvasSettingsPanelComponent.HORIZONTAL_ALIGNMENT_LABELS[value],
+    }));
+  }
+
+  protected get textVerticalAlignmentOptions(): SelectOption[] {
+    return WIDGET_TEXT_ALIGNMENTS_VERTICAL.map((value) => ({
+      value,
+      label: CanvasSettingsPanelComponent.VERTICAL_ALIGNMENT_LABELS[value],
+    }));
+  }
+
   protected get isPopoverMode(): boolean {
     return this.panelMode() === 'popover';
   }
@@ -182,6 +243,43 @@ export class CanvasSettingsPanelComponent {
     this.cs.setSelectedWidgetText(value);
   }
 
+  protected onTextFontSizeChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+
+    this.cs.setSelectedWidgetTextFontSize(value);
+  }
+
+  protected setTextFontFamily(value: string | number): void {
+    if (value !== 'roboto' && value !== 'montserrat' && value !== 'exo' && value !== 'lora' && value !== 'fira-code') {
+      return;
+    }
+
+    this.cs.setSelectedWidgetTextFontFamily(value);
+  }
+
+  protected setTextHorizontalAlignment(value: string | number): void {
+    if (value !== 'left' && value !== 'center' && value !== 'right') {
+      return;
+    }
+
+    this.cs.setSelectedWidgetTextHorizontalAlignment(value);
+  }
+
+  protected setTextVerticalAlignment(value: string | number): void {
+    if (value !== 'top' && value !== 'center' && value !== 'bottom') {
+      return;
+    }
+
+    this.cs.setSelectedWidgetTextVerticalAlignment(value);
+  }
+
+  protected setTextAutoSize(value: boolean): void {
+    this.cs.setSelectedWidgetTextAutoSize(value);
+  }
+
   protected onImageSrcChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.cs.setSelectedWidgetImageSrc(value);
@@ -190,6 +288,14 @@ export class CanvasSettingsPanelComponent {
   protected onImageAltChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.cs.setSelectedWidgetImageAlt(value);
+  }
+
+  protected setImageFitMode(value: string | number): void {
+    if (value !== 'cover' && value !== 'contain') {
+      return;
+    }
+
+    this.cs.setSelectedWidgetImageFitMode(value);
   }
 
   protected onWidgetNameChange(event: Event): void {

@@ -1,5 +1,5 @@
 import {TestBed} from '@angular/core/testing';
-import {DEFAULT_WIDGET_CONTENT, WidgetStateItem} from '../models/canvas-widget-state.models';
+import {DEFAULT_WIDGET_CONTENT, DEFAULT_WIDGET_TEXT_STYLE, WidgetStateItem} from '../models/canvas-widget-state.models';
 import {CanvasWidgetStateService} from './canvas-widget-state.service';
 
 describe('CanvasWidgetStateService', () => {
@@ -46,6 +46,30 @@ describe('CanvasWidgetStateService', () => {
       type: 'image',
       src: 'https://example.com/image.png',
       alt: '',
+      fitMode: 'cover',
+    });
+  });
+
+  it('normalizes missing text style fields to defaults', () => {
+    const textWidget = {
+      uuid: 'text-widget',
+      x: 20,
+      y: 40,
+      z: 12,
+      width: 220,
+      height: 120,
+      content: {
+        type: 'text',
+        text: 'Legacy text',
+      },
+    } as unknown as WidgetStateItem;
+
+    service.add(textWidget);
+
+    expect(service.getById('text-widget').content).toEqual({
+      type: 'text',
+      text: 'Legacy text',
+      style: DEFAULT_WIDGET_TEXT_STYLE,
     });
   });
 });

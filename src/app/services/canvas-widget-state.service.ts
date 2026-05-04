@@ -2,7 +2,12 @@ import {computed, Injectable, Signal, signal, WritableSignal} from '@angular/cor
 import {v4 as uuid} from 'uuid';
 import {
   DEFAULT_WIDGET_CONTENT,
+  DEFAULT_WIDGET_TEXT_STYLE,
   WidgetContent,
+  WidgetImageFitMode,
+  WidgetTextAlignmentHorizontal,
+  WidgetTextAlignmentVertical,
+  WidgetTextFontFamily,
   WidgetState,
   WidgetStateItem,
   WidgetStateList,
@@ -20,7 +25,11 @@ export class CanvasWidgetStateService {
       z: 1,
       width: 200,
       height: 200,
-      content: {type: 'text', text: 'This is a title'},
+      content: {
+        type: 'text',
+        text: 'This is a title',
+        style: {...DEFAULT_WIDGET_TEXT_STYLE},
+      },
     },
     '2': {
       uuid: '2',
@@ -33,6 +42,7 @@ export class CanvasWidgetStateService {
         type: 'image',
         src: 'https://danielzotti.it/_next/static/media/danielzotti-logo-medium.856a381a.webp',
         alt: 'Logo Daniel Zotti',
+        fitMode: 'cover',
       },
     },
     '3': {
@@ -42,7 +52,11 @@ export class CanvasWidgetStateService {
       z: 3,
       width: 120,
       height: 100,
-      content: {type: 'text', text: 'CTA'},
+      content: {
+        type: 'text',
+        text: 'CTA',
+        style: {...DEFAULT_WIDGET_TEXT_STYLE},
+      },
     },
     '4': {
       uuid: '4',
@@ -51,7 +65,11 @@ export class CanvasWidgetStateService {
       z: 4,
       width: 91,
       height: 88,
-      content: {type: 'text', text: 'Logo'},
+      content: {
+        type: 'text',
+        text: 'Logo',
+        style: {...DEFAULT_WIDGET_TEXT_STYLE},
+      },
     },
     '5': {
       uuid: '5',
@@ -60,7 +78,11 @@ export class CanvasWidgetStateService {
       z: 5,
       width: 20,
       height: 33,
-      content: {type: 'text', text: 'This is a very long text who knows what happens'},
+      content: {
+        type: 'text',
+        text: 'This is a very long text who knows what happens',
+        style: {...DEFAULT_WIDGET_TEXT_STYLE},
+      },
     }
   });
 
@@ -168,7 +190,10 @@ export class CanvasWidgetStateService {
 
   private normalizeContent(content?: WidgetContent): WidgetContent {
     if (!content) {
-      return {...DEFAULT_WIDGET_CONTENT};
+      return {
+        ...DEFAULT_WIDGET_CONTENT,
+        ...(DEFAULT_WIDGET_CONTENT.type === 'text' ? {style: {...DEFAULT_WIDGET_TEXT_STYLE}} : {}),
+      };
     }
 
     if (content.type === 'image') {
@@ -176,12 +201,56 @@ export class CanvasWidgetStateService {
         type: 'image',
         src: content.src,
         alt: content.alt ?? '',
+        fitMode: this.normalizeImageFitMode(content.fitMode),
       };
     }
 
     return {
       type: 'text',
       text: content.text,
+      style: {
+        fontSize: this.normalizeFontSize(content.style?.fontSize),
+        fontFamily: this.normalizeFontFamily(content.style?.fontFamily),
+        autoSize: content.style?.autoSize ?? DEFAULT_WIDGET_TEXT_STYLE.autoSize,
+        alignHorizontal: this.normalizeHorizontalAlignment(content.style?.alignHorizontal),
+        alignVertical: this.normalizeVerticalAlignment(content.style?.alignVertical),
+      },
     };
+  }
+
+  private normalizeFontSize(value?: number): number {
+    if (!Number.isFinite(value)) {
+      return DEFAULT_WIDGET_TEXT_STYLE.fontSize;
+    }
+
+    return Math.max(8, Math.round(value as number));
+  }
+
+  private normalizeFontFamily(value?: string): WidgetTextFontFamily {
+    if (value === 'roboto' || value === 'montserrat' || value === 'exo' || value === 'lora' || value === 'fira-code') {
+      return value;
+    }
+
+    return DEFAULT_WIDGET_TEXT_STYLE.fontFamily;
+  }
+
+  private normalizeHorizontalAlignment(value?: string): WidgetTextAlignmentHorizontal {
+    if (value === 'left' || value === 'center' || value === 'right') {
+      return value;
+    }
+
+    return DEFAULT_WIDGET_TEXT_STYLE.alignHorizontal;
+  }
+
+  private normalizeVerticalAlignment(value?: string): WidgetTextAlignmentVertical {
+    if (value === 'top' || value === 'center' || value === 'bottom') {
+      return value;
+    }
+
+    return DEFAULT_WIDGET_TEXT_STYLE.alignVertical;
+  }
+
+  private normalizeImageFitMode(value?: string): WidgetImageFitMode {
+    return value === 'contain' ? 'contain' : 'cover';
   }
 }

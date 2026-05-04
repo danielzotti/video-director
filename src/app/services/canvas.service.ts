@@ -1,6 +1,11 @@
 import {computed, inject, Injectable, Renderer2, RendererFactory2, signal} from '@angular/core';
 import {
+    DEFAULT_WIDGET_TEXT_STYLE,
     DEFAULT_WIDGET_TEXT,
+    WidgetImageFitMode,
+    WidgetTextAlignmentHorizontal,
+    WidgetTextAlignmentVertical,
+    WidgetTextFontFamily,
     WidgetContentType,
     WidgetStateItem,
 } from '../models/canvas-widget-state.models';
@@ -306,8 +311,8 @@ export class CanvasService {
         this.widgetsState.update({
             ...widget,
             content: type === 'text'
-                ? {type: 'text', text: DEFAULT_WIDGET_TEXT}
-                : {type: 'image', src: '', alt: ''},
+                ? {type: 'text', text: DEFAULT_WIDGET_TEXT, style: {...DEFAULT_WIDGET_TEXT_STYLE}}
+                : {type: 'image', src: '', alt: '', fitMode: 'cover'},
         });
     }
 
@@ -320,7 +325,7 @@ export class CanvasService {
         this.widgetsState.update({
             ...widget,
             content: {
-                type: 'text',
+                ...widget.content,
                 text,
             },
         });
@@ -352,6 +357,111 @@ export class CanvasService {
             content: {
                 ...widget.content,
                 alt,
+            },
+        });
+    }
+
+    public setSelectedWidgetImageFitMode(fitMode: WidgetImageFitMode) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'image') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                fitMode,
+            },
+        });
+    }
+
+    public setSelectedWidgetTextFontSize(fontSize: number) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'text' || !Number.isFinite(fontSize)) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                style: {
+                    ...widget.content.style,
+                    fontSize: Math.max(8, Math.round(fontSize)),
+                },
+            },
+        });
+    }
+
+    public setSelectedWidgetTextFontFamily(fontFamily: WidgetTextFontFamily) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'text') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                style: {
+                    ...widget.content.style,
+                    fontFamily,
+                },
+            },
+        });
+    }
+
+    public setSelectedWidgetTextAutoSize(autoSize: boolean) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'text') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                style: {
+                    ...widget.content.style,
+                    autoSize,
+                },
+            },
+        });
+    }
+
+    public setSelectedWidgetTextHorizontalAlignment(alignHorizontal: WidgetTextAlignmentHorizontal) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'text') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                style: {
+                    ...widget.content.style,
+                    alignHorizontal,
+                },
+            },
+        });
+    }
+
+    public setSelectedWidgetTextVerticalAlignment(alignVertical: WidgetTextAlignmentVertical) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'text') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                style: {
+                    ...widget.content.style,
+                    alignVertical,
+                },
             },
         });
     }

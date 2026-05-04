@@ -140,6 +140,55 @@
                                 (input)="onTextChange($event)"
                         ></textarea>
                     </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <app-ui-toggle
+                                label="Auto font-size"
+                                [checked]="textContent.style.autoSize"
+                                (checkedChange)="setTextAutoSize($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-text-font-size">Font size</label>
+                        <input
+                                id="widget-text-font-size"
+                                class="settings-panel__input"
+                                type="number"
+                                min="8"
+                                step="1"
+                                [disabled]="textContent.style.autoSize"
+                                [value]="textContent.style.fontSize"
+                                (input)="onTextFontSizeChange($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <app-ui-select
+                                label="Font family"
+                                [options]="textFontFamilyOptions"
+                                [value]="textContent.style.fontFamily"
+                                (valueChange)="setTextFontFamily($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <app-ui-select
+                                label="Allineamento orizzontale"
+                                [options]="textHorizontalAlignmentOptions"
+                                [value]="textContent.style.alignHorizontal"
+                                (valueChange)="setTextHorizontalAlignment($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <app-ui-select
+                                label="Allineamento verticale"
+                                [options]="textVerticalAlignmentOptions"
+                                [value]="textContent.style.alignVertical"
+                                (valueChange)="setTextVerticalAlignment($event)"
+                        />
+                    </div>
                 }
 
                 @if (selectedImageContent; as imageContent) {
@@ -166,6 +215,15 @@
                                 type="text"
                                 [value]="imageContent.alt || ''"
                                 (input)="onImageAltChange($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <app-ui-select
+                                label="Image fit"
+                                [options]="imageFitModeOptions"
+                                [value]="imageContent.fitMode"
+                                (valueChange)="setImageFitMode($event)"
                         />
                     </div>
                 }

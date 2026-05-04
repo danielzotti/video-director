@@ -23,15 +23,45 @@ export interface WidgetStateItemStyle {
 export const WIDGET_CONTENT_TYPES = ['text', 'image'] as const;
 export type WidgetContentType = typeof WIDGET_CONTENT_TYPES[number];
 
+export const WIDGET_IMAGE_FIT_MODES = ['cover', 'contain'] as const;
+export type WidgetImageFitMode = typeof WIDGET_IMAGE_FIT_MODES[number];
+
+export const WIDGET_TEXT_FONT_FAMILIES = ['roboto', 'montserrat', 'exo', 'lora', 'fira-code'] as const;
+export type WidgetTextFontFamily = typeof WIDGET_TEXT_FONT_FAMILIES[number];
+
+export const WIDGET_TEXT_ALIGNMENTS_HORIZONTAL = ['left', 'center', 'right'] as const;
+export type WidgetTextAlignmentHorizontal = typeof WIDGET_TEXT_ALIGNMENTS_HORIZONTAL[number];
+
+export const WIDGET_TEXT_ALIGNMENTS_VERTICAL = ['top', 'center', 'bottom'] as const;
+export type WidgetTextAlignmentVertical = typeof WIDGET_TEXT_ALIGNMENTS_VERTICAL[number];
+
+export interface WidgetTextStyle {
+  fontSize: number;
+  fontFamily: WidgetTextFontFamily;
+  autoSize: boolean;
+  alignHorizontal: WidgetTextAlignmentHorizontal;
+  alignVertical: WidgetTextAlignmentVertical;
+}
+
+export const DEFAULT_WIDGET_TEXT_STYLE: WidgetTextStyle = {
+  fontSize: 24,
+  fontFamily: 'roboto',
+  autoSize: false,
+  alignHorizontal: 'center',
+  alignVertical: 'center',
+};
+
 export interface WidgetTextContent {
   type: 'text';
   text: string;
+  style: WidgetTextStyle;
 }
 
 export interface WidgetImageContent {
   type: 'image';
   src: string;
   alt?: string;
+  fitMode: WidgetImageFitMode;
 }
 
 export type WidgetContent = WidgetTextContent | WidgetImageContent;
@@ -40,6 +70,7 @@ export const DEFAULT_WIDGET_TEXT = 'Nuovo widget';
 export const DEFAULT_WIDGET_CONTENT: WidgetContent = {
   type: 'text',
   text: DEFAULT_WIDGET_TEXT,
+  style: DEFAULT_WIDGET_TEXT_STYLE,
 };
 
 export interface WidgetStateItem extends Rect2D, Partial<WidgetStateItemStyle> {

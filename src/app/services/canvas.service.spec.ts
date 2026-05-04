@@ -90,5 +90,35 @@ describe('CanvasService', () => {
     expect(after!.width).toBe(before!.width);
     expect(after!.height).toBe(before!.height);
   });
+
+  it('updates selected image fit mode', () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetImageFitMode('contain');
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('image');
+    if (widget?.content.type === 'image') {
+      expect(widget.content.fitMode).toBe('contain');
+    }
+  });
+
+  it('updates selected text style settings', () => {
+    service.selectWidget('1');
+    service.setSelectedWidgetTextFontFamily('fira-code');
+    service.setSelectedWidgetTextFontSize(32);
+    service.setSelectedWidgetTextHorizontalAlignment('left');
+    service.setSelectedWidgetTextVerticalAlignment('bottom');
+    service.setSelectedWidgetTextAutoSize(true);
+
+    const widget = service.widgetsState.getById('1');
+    expect(widget?.content.type).toBe('text');
+    if (widget?.content.type === 'text') {
+      expect(widget.content.style.fontFamily).toBe('fira-code');
+      expect(widget.content.style.fontSize).toBe(32);
+      expect(widget.content.style.alignHorizontal).toBe('left');
+      expect(widget.content.style.alignVertical).toBe('bottom');
+      expect(widget.content.style.autoSize).toBeTrue();
+    }
+  });
 });
 

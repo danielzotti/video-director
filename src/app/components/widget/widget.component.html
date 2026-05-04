@@ -1,11 +1,22 @@
 @if (textContent; as content) {
-    <div class="widget-content widget-content--text">{{ content.text }}</div>
+    <div
+            #textContentEl
+            class="widget-content widget-content--text"
+            [style.font-size.px]="textComputedFontSize"
+            [style.font-family]="textComputedFontFamily"
+            [style.align-items]="textHorizontalAlignStyle"
+            [style.justify-content]="textVerticalAlignStyle"
+            [style.text-align]="content.style.alignHorizontal"
+            [style.white-space]="textWhiteSpaceStyle"
+            [style.overflow-wrap]="textOverflowWrapStyle"
+    >{{ content.text }}</div>
 } @else {
     @if (imageContent && isImageUrlValid) {
         <img
                 class="widget-content widget-content--image"
                 [src]="imageContent.src"
-                [alt]="imageContent.alt || 'Widget content'"
+                [alt]="imageContent.alt || 'Contenuto widget'"
+                [style.object-fit]="imageContent.fitMode"
                 draggable="false"
         />
     } @else {
