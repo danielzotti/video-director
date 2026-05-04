@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, computed } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
   WidgetImageContent,
@@ -35,21 +35,32 @@ export class CanvasSettingsPanelComponent {
 
   protected cs = inject(CanvasService);
   protected readonly geometryDraft = signal<Record<WidgetGeometryField, string>>({
-    x: '',
-    y: '',
-    width: '',
-    height: '',
+    x: '', y: '', width: '', height: '',
+  });
+
+  private readonly minPanelHeight = 120;
+  private resizeStartY = 0;
+  private resizeStartHeight = 0;
+  readonly panelHeight = signal<number | null>(null);
+
+  readonly panelHeightStyle = computed(() => {
+    const h = this.panelHeight();
+    if (h === null) return null;
+    const maxH = this.maxHeight();
+    if (maxH) {
+      const maxPx = Number.parseInt(maxH, 10);
+      return Math.min(h, maxPx) + 'px';
+    }
+    return h + 'px';
   });
 
   constructor() {
     effect(() => {
       const widget = this.selectedWidget;
-
       if (!widget) {
         this.geometryDraft.set({ x: '', y: '', width: '', height: '' });
         return;
       }
-
       this.geometryDraft.set({
         x: String(widget.x),
         y: String(widget.y),
@@ -57,6 +68,42 @@ export class CanvasSettingsPanelComponent {
         height: String(widget.height),
       });
     });
+
+    // Clamp panelHeight when maxHeight shrinks (panel moved down)
+    effect(() => {
+      const maxH = this.maxHeight();
+      const currentH = this.panelHeight();
+      if (!maxH || currentH === null) return;
+      const maxPx = Number.parseInt(maxH, 10);
+      if (currentH > maxPx) {
+        this.panelHeight.set(Math.max(this.minPanelHeight, maxPx));
+      }
+    });
+  }
+
+  protected onResizePointerDown(event: PointerEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const handle = event.currentTarget as HTMLElement;
+    const panel = handle.closest<HTMLElement>('.settings-panel');
+    if (!panel) return;
+    this.resizeStartY = event.clientY;
+    this.resizeStartHeight = panel.getBoundingClientRect().height;
+    handle.setPointerCapture(event.pointerId);
+  }
+
+  protected onResizePointerMove(event: PointerEvent): void {
+    const handle = event.currentTarget as HTMLElement;
+    if (!handle.hasPointerCapture(event.pointerId)) return;
+    const delta = event.clientY - this.resizeStartY;
+    let newHeight = Math.max(this.minPanelHeight, this.resizeStartHeight + delta);
+    const maxH = this.maxHeight();
+    if (maxH) newHeight = Math.min(newHeight, Number.parseInt(maxH, 10));
+    this.panelHeight.set(newHeight);
+  }
+
+  protected onResizePointerUp(event: PointerEvent): void {
+    (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
   }
 
   protected get snapOptions(): SelectOption[] {

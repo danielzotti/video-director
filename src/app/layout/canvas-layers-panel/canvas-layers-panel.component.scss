@@ -134,6 +134,35 @@
     text-align: center;
     line-height: 1.4;
   }
+
+  &__resize-handle {
+    flex-shrink: 0;
+    height: 8px;
+    cursor: ns-resize;
+    background: transparent;
+    border-bottom-left-radius: var(--ds-radius-lg);
+    border-bottom-right-radius: var(--ds-radius-lg);
+    position: relative;
+    touch-action: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 32px;
+      height: 3px;
+      border-radius: 99px;
+      background: var(--ds-border-default);
+      transition: background var(--ds-duration-default) var(--ds-easing);
+    }
+
+    &:hover::after,
+    &:active::after {
+      background: var(--ds-accent);
+    }
+  }
 }
 
 .layers-list {

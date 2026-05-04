@@ -16,6 +16,7 @@
   [class.settings-panel--sidebar]="isSidebarMode"
   [class.settings-panel--popover]="isPopoverMode"
   [style.max-height]="maxHeight() ?? undefined"
+  [style.height]="panelHeightStyle() ?? undefined"
   role="dialog"
   aria-label="Canvas settings"
 >
@@ -296,4 +297,13 @@
       }
     }
   </div>
+
+  @if (isPopoverMode) {
+    <div
+      class="settings-panel__resize-handle"
+      (pointerdown)="onResizePointerDown($event)"
+      (pointermove)="onResizePointerMove($event)"
+      (pointerup)="onResizePointerUp($event)"
+    ></div>
+  }
 </div>

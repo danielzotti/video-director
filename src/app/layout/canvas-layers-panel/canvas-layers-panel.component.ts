@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, inject, input, output} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {CanvasWidgetStateService} from '../../services/canvas-widget-state.service';
 import {CanvasService} from '../../services/canvas.service';
@@ -29,6 +29,60 @@ export class CanvasLayersPanelComponent {
   protected dragOverLayerId: string | null = null;
   protected renamingLayerId: string | null = null;
   protected renameInput = '';
+
+  private readonly minPanelHeight = 120;
+  private resizeStartY = 0;
+  private resizeStartHeight = 0;
+  readonly panelHeight = signal<number | null>(null);
+
+  readonly panelHeightStyle = computed(() => {
+    const h = this.panelHeight();
+    if (h === null) return null;
+    const maxH = this.maxHeight();
+    if (maxH) {
+      const maxPx = Number.parseInt(maxH, 10);
+      return Math.min(h, maxPx) + 'px';
+    }
+    return h + 'px';
+  });
+
+  constructor() {
+    // Clamp panelHeight when maxHeight shrinks (panel moved down)
+    effect(() => {
+      const maxH = this.maxHeight();
+      const currentH = this.panelHeight();
+      if (!maxH || currentH === null) return;
+      const maxPx = Number.parseInt(maxH, 10);
+      if (currentH > maxPx) {
+        this.panelHeight.set(Math.max(this.minPanelHeight, maxPx));
+      }
+    });
+  }
+
+  protected onResizePointerDown(event: PointerEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const handle = event.currentTarget as HTMLElement;
+    const panel = handle.closest<HTMLElement>('.layers-panel');
+    if (!panel) return;
+    this.resizeStartY = event.clientY;
+    this.resizeStartHeight = panel.getBoundingClientRect().height;
+    handle.setPointerCapture(event.pointerId);
+  }
+
+  protected onResizePointerMove(event: PointerEvent): void {
+    const handle = event.currentTarget as HTMLElement;
+    if (!handle.hasPointerCapture(event.pointerId)) return;
+    const delta = event.clientY - this.resizeStartY;
+    let newHeight = Math.max(this.minPanelHeight, this.resizeStartHeight + delta);
+    const maxH = this.maxHeight();
+    if (maxH) newHeight = Math.min(newHeight, Number.parseInt(maxH, 10));
+    this.panelHeight.set(newHeight);
+  }
+
+  protected onResizePointerUp(event: PointerEvent): void {
+    (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+  }
 
   protected get isPopoverMode(): boolean {
     return this.panelMode() === 'popover';
