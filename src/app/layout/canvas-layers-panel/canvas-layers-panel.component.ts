@@ -19,6 +19,7 @@ export class CanvasLayersPanelComponent {
   showBackdrop = input<boolean>(true);
   panelMode = input<'popover' | 'sidebar'>('popover');
   title = input<string>('Layers');
+  maxHeight = input<string | null>(null);
   closed = output<void>();
 
   protected widgetList = this.widgetsState.list;

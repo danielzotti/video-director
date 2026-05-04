@@ -15,6 +15,7 @@
   [class.settings-panel--open]="isOpen()"
   [class.settings-panel--sidebar]="isSidebarMode"
   [class.settings-panel--popover]="isPopoverMode"
+  [style.max-height]="maxHeight() ?? undefined"
   role="dialog"
   aria-label="Canvas settings"
 >

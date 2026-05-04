@@ -17,23 +17,24 @@
                             (closed)="canvasService.setLayersPanelLayout('closed')"
                     />
                 </aside>
-            } @else if (canvasService.layersPanelLayout() === 'floating') {
-                <div
-                        class="canvas-floating-panel"
-                        #floatingLayersPanel
-                        [style.left.px]="floatingLayersPanelPosition().x"
-                        [style.top.px]="floatingLayersPanelPosition().y"
-                        (pointerdown)="onFloatingLayersPanelPointerDown($event)"
-                >
-                    <app-canvas-layers-panel
-                            [isOpen]="true"
-                            [showBackdrop]="false"
-                            panelMode="popover"
-                            title="Layers"
-                            (closed)="canvasService.setLayersPanelLayout('closed')"
-                    />
-                </div>
-            }
+             } @else if (canvasService.layersPanelLayout() === 'floating') {
+                 <div
+                         class="canvas-floating-panel"
+                         #floatingLayersPanel
+                         [style.left.px]="floatingLayersPanelPosition().x"
+                         [style.top.px]="floatingLayersPanelPosition().y"
+                         (pointerdown)="onFloatingLayersPanelPointerDown($event)"
+                 >
+                     <app-canvas-layers-panel
+                             [isOpen]="true"
+                             [showBackdrop]="false"
+                             panelMode="popover"
+                             title="Layers"
+                             [maxHeight]="floatingLayersPanelMaxHeight()"
+                             (closed)="canvasService.setLayersPanelLayout('closed')"
+                     />
+                 </div>
+             }
         }
         <div class="canvas-wrapper" #canvasWrapper>
             <div class="canvas"
@@ -89,23 +90,24 @@
                             (closed)="canvasService.setSettingsPanelLayout('closed')"
                     />
                 </aside>
-            } @else if (canvasService.settingsPanelLayout() === 'floating') {
-                <div
-                        class="canvas-floating-panel"
-                        #floatingPanel
-                        [style.left.px]="floatingPanelPosition().x"
-                        [style.top.px]="floatingPanelPosition().y"
-                        (pointerdown)="onFloatingPanelPointerDown($event)"
-                >
-                    <app-canvas-settings-panel
-                            [isOpen]="true"
-                            [showBackdrop]="false"
-                            panelMode="popover"
-                            title="Editor Settings"
-                            (closed)="canvasService.setSettingsPanelLayout('closed')"
-                    />
-                </div>
-            }
+             } @else if (canvasService.settingsPanelLayout() === 'floating') {
+                 <div
+                         class="canvas-floating-panel"
+                         #floatingPanel
+                         [style.left.px]="floatingPanelPosition().x"
+                         [style.top.px]="floatingPanelPosition().y"
+                         (pointerdown)="onFloatingPanelPointerDown($event)"
+                 >
+                     <app-canvas-settings-panel
+                             [isOpen]="true"
+                             [showBackdrop]="false"
+                             panelMode="popover"
+                             title="Editor Settings"
+                             [maxHeight]="floatingPanelMaxHeight()"
+                             (closed)="canvasService.setSettingsPanelLayout('closed')"
+                     />
+                 </div>
+             }
         }
 
     </div>

@@ -30,6 +30,7 @@ export class CanvasSettingsPanelComponent {
   panelMode = input<'popover' | 'sidebar'>('popover');
   contentOnly = input<boolean>(false);
   title = input<string>('Canvas Settings');
+  maxHeight = input<string | null>(null);
   closed = output<void>();
 
   protected cs = inject(CanvasService);

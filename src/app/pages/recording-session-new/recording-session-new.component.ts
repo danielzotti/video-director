@@ -40,6 +40,42 @@ export class RecordingSessionNewComponent {
   protected readonly floatingPanelPosition = signal<Point2D>({ x: 0, y: 0 });
   protected readonly floatingLayersPanelPosition = signal<Point2D>({ x: 0, y: 0 });
 
+  // Min height for panels: enough to show header (~50px) + some content
+  private readonly minPanelHeight = 120;
+  private readonly panelMarginBottom = 12;
+
+  protected readonly floatingPanelMaxHeight = computed(() => {
+    const boundaryEl = this.editorContentRef()?.nativeElement;
+    if (!boundaryEl) return 'auto';
+
+    const boundaryRect = boundaryEl.getBoundingClientRect();
+    const panelY = this.floatingPanelPosition().y;
+
+    // Available height = boundary height - panel top position - bottom margin
+    const availableHeight = boundaryRect.height - panelY - this.panelMarginBottom;
+
+    // Use max of available or min height
+    const maxHeight = Math.max(this.minPanelHeight, availableHeight);
+
+    return `${maxHeight}px`;
+  });
+
+  protected readonly floatingLayersPanelMaxHeight = computed(() => {
+    const boundaryEl = this.editorContentRef()?.nativeElement;
+    if (!boundaryEl) return 'auto';
+
+    const boundaryRect = boundaryEl.getBoundingClientRect();
+    const panelY = this.floatingLayersPanelPosition().y;
+
+    // Available height = boundary height - panel top position - bottom margin
+    const availableHeight = boundaryRect.height - panelY - this.panelMarginBottom;
+
+    // Use max of available or min height
+    const maxHeight = Math.max(this.minPanelHeight, availableHeight);
+
+    return `${maxHeight}px`;
+  });
+
   private floatingPanelDragOffset: Point2D | null = null;
   private isFloatingPanelDragging = false;
   private hasFloatingPanelPosition = false;
