@@ -1328,6 +1328,239 @@ export class CanvasService {
         }
     }
 
+    public exportToFile(filename = 'project'): void {
+        const snapshot = this.buildSnapshot();
+        const json = JSON.stringify(snapshot, null, 2);
+        const blob = new Blob([json], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${filename}.dz`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }
+
+    public importFromFile(): void {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.dz';
+        input.onchange = (event: Event) => {
+            const file = (event.target as HTMLInputElement).files?.[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e: ProgressEvent<FileReader>) => {
+                try {
+                    const raw = e.target?.result as string;
+                    const parsed = JSON.parse(raw) as Partial<EditorStateSnapshot>;
+
+                    if (!parsed.canvas || !Array.isArray(parsed.widgets)) {
+                        console.error('[CanvasService] Invalid .dz file: missing canvas or widgets');
+                        return;
+                    }
+
+                    const snapshot: EditorStateSnapshot = {
+                        canvas: parsed.canvas as CanvasSnapshot,
+                        widgets: parsed.widgets as WidgetStateItem[],
+                    };
+
+                    this.applySnapshot(snapshot);
+                    this.currentSnapshot = this.buildSnapshot();
+                    this.writeSnapshotToStorage(this.currentSnapshot);
+                    this.undoStack.set([]);
+                    this.redoStack.set([]);
+                } catch (err) {
+                    console.error('[CanvasService] Failed to parse .dz file', err);
+                }
+            };
+            reader.onerror = () => console.error('[CanvasService] Failed to read file');
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    // 1×1 transparent PNG used as placeholder when an image cannot be fetched
+    private static readonly TRANSPARENT_PNG =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+    public async exportCanvasAsImage(filename = 'canvas'): Promise<void> {
+        const source = this.canvasEl;
+        if (!source) {
+            console.error('[CanvasService] exportCanvasAsImage: canvasEl is null');
+            return;
+        }
+
+        const exportWidth = this.width();
+        const exportHeight = this.height();
+
+        // Work on a detached clone so pan/zoom offsets from the live canvas never affect export bounds.
+        const exportNode = source.cloneNode(true) as HTMLElement;
+        exportNode.classList.remove('canvas--show-grid');
+        exportNode.querySelectorAll('.app-canvas-widget--selected').forEach((node) => {
+            node.classList.remove('app-canvas-widget--selected');
+        });
+        exportNode.querySelectorAll('.app-canvas-widget--show-container').forEach((node) => {
+            node.classList.remove('app-canvas-widget--show-container');
+        });
+        exportNode.querySelectorAll('.canvas-guide, .app-canvas-widget-resizer, .canvas-info, .widget-debug-info').forEach((node) => {
+            node.remove();
+        });
+
+        // Force a normalized viewport-independent layout on the clone.
+        exportNode.style.position = 'relative';
+        exportNode.style.top = '0px';
+        exportNode.style.left = '0px';
+        exportNode.style.transform = 'none';
+        exportNode.style.transformOrigin = 'top left';
+        exportNode.style.outline = 'none';
+        exportNode.style.width = `${exportWidth}px`;
+        exportNode.style.height = `${exportHeight}px`;
+
+        const sandbox = document.createElement('div');
+        sandbox.style.position = 'fixed';
+        sandbox.style.left = '-100000px';
+        sandbox.style.top = '0';
+        sandbox.style.width = `${exportWidth}px`;
+        sandbox.style.height = `${exportHeight}px`;
+        sandbox.style.overflow = 'hidden';
+        sandbox.style.opacity = '0';
+        sandbox.style.pointerEvents = 'none';
+        sandbox.appendChild(exportNode);
+        document.body.appendChild(sandbox);
+
+        const restoredImages = await this.inlineExternalImages(exportNode);
+
+        try {
+            const {toPng} = await import('html-to-image');
+
+            const dataUrl = await toPng(exportNode, {
+                width: exportWidth,
+                height: exportHeight,
+                pixelRatio: window.devicePixelRatio || 1,
+                cacheBust: true,
+                imagePlaceholder: CanvasService.TRANSPARENT_PNG,
+                fetchRequestInit: {mode: 'cors', credentials: 'omit'},
+            });
+
+            const anchor = document.createElement('a');
+            anchor.href = dataUrl;
+            anchor.download = `${filename}.png`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+        } catch (err) {
+            console.error('[CanvasService] exportCanvasAsImage failed:', err);
+            throw err;
+        } finally {
+            restoredImages.forEach(({img, originalSrc}) => {
+                img.src = originalSrc;
+            });
+            document.body.removeChild(sandbox);
+        }
+    }
+
+    /**
+     * For every <img> inside `root` whose src is an external URL, attempts to
+     * convert it to an inline data: URL so that html-to-image never has to issue
+     * a cross-origin fetch itself (which would throw a CORS TypeError).
+     *
+     * Strategy (waterfall, first success wins):
+     *  1. Draw the already-loaded img element to an offscreen canvas → toDataURL()
+     *     Works instantly for same-origin images or images previously loaded with CORS.
+     *  2. fetch() with mode:'cors' → FileReader → data URL
+     *     Works for cross-origin servers that send Access-Control-Allow-Origin.
+     *  3. Load a fresh <img crossOrigin="anonymous"> and draw to canvas.
+     *     A second attempt in case the browser cache had a non-CORS entry.
+     *  4. Transparent 1×1 PNG placeholder.
+     *     Prevents html-to-image from crashing; image slot stays empty.
+     */
+    private async inlineExternalImages(
+        root: HTMLElement,
+    ): Promise<Array<{ img: HTMLImageElement; originalSrc: string }>> {
+        const imgs = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
+        const restored: Array<{ img: HTMLImageElement; originalSrc: string }> = [];
+
+        await Promise.allSettled(
+            imgs.map(async (img) => {
+                const src = img.getAttribute('src') ?? '';
+                if (!src || src.startsWith('data:') || src.startsWith('blob:')) {
+                    return; // already local
+                }
+
+                restored.push({img, originalSrc: src});
+
+                const dataUrl =
+                    this.imgElementToDataUrl(img) ??
+                    (await this.fetchToDataUrl(src)) ??
+                    (await this.crossOriginImgToDataUrl(src)) ??
+                    CanvasService.TRANSPARENT_PNG;
+
+                img.src = dataUrl;
+                // Wait for the browser to decode the replacement before html-to-image
+                // reads the DOM
+                await img.decode().catch(() => undefined);
+            }),
+        );
+
+        return restored;
+    }
+
+    /** Strategy 1 – draw an already-loaded img to an offscreen canvas. */
+    private imgElementToDataUrl(img: HTMLImageElement): string | null {
+        if (!img.complete || img.naturalWidth === 0) {
+            return null;
+        }
+        try {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = img.naturalWidth;
+            offscreen.height = img.naturalHeight;
+            const ctx = offscreen.getContext('2d');
+            if (!ctx) {
+                return null;
+            }
+            ctx.drawImage(img, 0, 0);
+            return offscreen.toDataURL(); // throws SecurityError for tainted canvas
+        } catch {
+            return null; // cross-origin → tainted canvas
+        }
+    }
+
+    /** Strategy 2 – fetch the URL with CORS and convert the blob to a data URL. */
+    private async fetchToDataUrl(url: string): Promise<string | null> {
+        try {
+            const resp = await fetch(url, {mode: 'cors', credentials: 'omit'});
+            if (!resp.ok) {
+                return null;
+            }
+            const blob = await resp.blob();
+            return await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch {
+            return null;
+        }
+    }
+
+    /** Strategy 3 – load a fresh Image with crossOrigin=anonymous and draw to canvas.
+     *  The browser cache may have a non-CORS entry; a fresh load with the CORS flag
+     *  forces a new request that (for CORS-enabled servers) returns CORS headers. */
+    private crossOriginImgToDataUrl(src: string): Promise<string | null> {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(this.imgElementToDataUrl(img));
+            img.onerror = () => resolve(null);
+            // Cache-bust to bypass any cached non-CORS response
+            img.src = src + (src.includes('?') ? '&' : '?') + '__cb=' + Date.now();
+        });
+    }
+
+
     private getPointerCanvasPoint(event: PointerLikeEvent): Point2D {
         if (!this.canvasEl) {
             return {x: 0, y: 0};

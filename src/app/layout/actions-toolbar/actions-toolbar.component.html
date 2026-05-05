@@ -6,5 +6,21 @@
   <app-ui-button variant="icon" title="Redo" [disabled]="!cs.canRedo()" (click)="redo()">
     <app-ui-icon name="redo"/>
   </app-ui-button>
+
+  <app-ui-separator orientation="vertical"/>
+
+  <app-ui-button variant="icon" title="Esporta progetto (.dz)" (click)="exportToFile()">
+    <app-ui-icon name="export-file"/>
+  </app-ui-button>
+
+  <app-ui-button variant="icon" title="Importa progetto (.dz)" (click)="importFromFile()">
+    <app-ui-icon name="import-file"/>
+  </app-ui-button>
+
+  <app-ui-separator orientation="vertical"/>
+
+  <app-ui-button variant="icon" title="Esporta immagine canvas (.png)" (click)="exportCanvasAsImage()">
+    <app-ui-icon name="export-image"/>
+  </app-ui-button>
 </div>
 
