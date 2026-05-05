@@ -19,7 +19,11 @@ export type UiIconName =
   | 'text-align-right'
   | 'align-top'
   | 'align-center'
-  | 'align-bottom';
+  | 'align-bottom'
+  | 'border-none'
+  | 'border-solid'
+  | 'border-dashed'
+  | 'border-dotted';
 
 @Component({
   selector: 'app-ui-icon',
@@ -147,6 +151,19 @@ export type UiIconName =
           <line x1="6" y1="8" x2="18" y2="8"/>
           <line x1="6" y1="13" x2="18" y2="13"/>
           <line x1="3" y1="21" x2="21" y2="21"/>
+        }
+        @case ('border-none') {
+          <line x1="4" y1="4" x2="20" y2="20" stroke-width="2.5"/>
+          <rect x="3" y="3" width="18" height="18" rx="1" stroke-dasharray="3 3" stroke-width="1.5"/>
+        }
+        @case ('border-solid') {
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+        }
+        @case ('border-dashed') {
+          <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 3"/>
+        }
+        @case ('border-dotted') {
+          <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="1.5 3" stroke-linecap="round"/>
         }
       }
     </svg>

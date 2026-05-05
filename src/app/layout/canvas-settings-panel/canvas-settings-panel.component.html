@@ -141,7 +141,98 @@
 
             <app-ui-separator orientation="horizontal"/>
 
-            <!-- WIDGET CONTENT section -->
+            <!-- BORDER section -->
+            <section class="settings-panel__section">
+                <div class="settings-panel__section-label">Border</div>
+
+                <div class="settings-panel__field-pair">
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-border-radius">Radius</label>
+                        <input
+                                id="widget-border-radius"
+                                class="settings-panel__input"
+                                type="number"
+                                min="0"
+                                step="1"
+                                [value]="selectedBorderRadius"
+                                (input)="onBorderRadiusChange($event)"
+                        />
+                    </div>
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-border-width">Width</label>
+                        <input
+                                id="widget-border-width"
+                                class="settings-panel__input"
+                                type="number"
+                                min="0"
+                                step="1"
+                                [value]="selectedBorderWidth"
+                                (input)="onBorderWidthChange($event)"
+                        />
+                    </div>
+                </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-border-color">Color</label>
+                    <div class="settings-panel__color-row">
+                        <input
+                                id="widget-border-color"
+                                class="settings-panel__input settings-panel__input--color"
+                                type="color"
+                                [value]="selectedBorderColor"
+                                [disabled]="!hasBorder"
+                                (input)="onBorderColorChange($event)"
+                        />
+                        <span class="settings-panel__color-value" [class.settings-panel__color-value--muted]="!hasBorder">
+                            {{ selectedBorderColor }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <span class="settings-panel__field-label">Style</span>
+                    <div class="settings-panel__border-style-group">
+                        <app-ui-button
+                                variant="ghost"
+                                size="sm"
+                                [active]="selectedBorderStyle === 'none'"
+                                title="Nessun bordo"
+                                (click)="setBorderStyle('none')"
+                        >
+                            <app-ui-icon name="border-none"/>
+                        </app-ui-button>
+                        <app-ui-button
+                                variant="ghost"
+                                size="sm"
+                                [active]="selectedBorderStyle === 'solid'"
+                                title="Bordo solido"
+                                (click)="setBorderStyle('solid')"
+                        >
+                            <app-ui-icon name="border-solid"/>
+                        </app-ui-button>
+                        <app-ui-button
+                                variant="ghost"
+                                size="sm"
+                                [active]="selectedBorderStyle === 'dashed'"
+                                title="Bordo tratteggiato"
+                                (click)="setBorderStyle('dashed')"
+                        >
+                            <app-ui-icon name="border-dashed"/>
+                        </app-ui-button>
+                        <app-ui-button
+                                variant="ghost"
+                                size="sm"
+                                [active]="selectedBorderStyle === 'dotted'"
+                                title="Bordo punteggiato"
+                                (click)="setBorderStyle('dotted')"
+                        >
+                            <app-ui-icon name="border-dotted"/>
+                        </app-ui-button>
+                    </div>
+                </div>
+            </section>
+
+            <app-ui-separator orientation="horizontal"/>
             <section class="settings-panel__section">
                 <div class="settings-panel__section-label">Widget Content</div>
 

@@ -221,6 +221,11 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     flex: 1;
     text-align: left;
+    transition: opacity var(--ds-duration-default) var(--ds-easing);
+
+    &--muted {
+      opacity: 0.35;
+    }
   }
 
   &__background-color-group {
@@ -258,6 +263,17 @@
   &__alignment-group {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ds-space-1);
+
+    app-ui-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  &__border-style-group {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--ds-space-1);
 
     app-ui-button {

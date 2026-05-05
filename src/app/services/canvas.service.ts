@@ -8,6 +8,7 @@ import {
     WidgetTextFontFamily,
     WidgetContentType,
     WidgetStateItem,
+    WidgetBorderStyle,
 } from '../models/canvas-widget-state.models';
 import {AxisGuides, Point2D, Rect2D, ResizeHandle} from '../models/geometry.models';
 import {CanvasWidgetStateService} from './canvas-widget-state.service';
@@ -497,14 +498,35 @@ export class CanvasService {
 
     public setSelectedWidgetBackground(background: string | null) {
         const widget = this.selectedWidget();
-        if (!widget) {
-            return;
-        }
-
+        if (!widget) { return; }
         this.widgetsState.update({
             ...widget,
             background: background && background.trim() ? background.trim() : undefined,
         });
+    }
+
+    public setSelectedWidgetBorderRadius(borderRadius: number) {
+        const widget = this.selectedWidget();
+        if (!widget) { return; }
+        this.widgetsState.update({ ...widget, borderRadius: Math.max(0, borderRadius) });
+    }
+
+    public setSelectedWidgetBorderWidth(borderWidth: number) {
+        const widget = this.selectedWidget();
+        if (!widget) { return; }
+        this.widgetsState.update({ ...widget, borderWidth: Math.max(0, borderWidth) });
+    }
+
+    public setSelectedWidgetBorderColor(borderColor: string) {
+        const widget = this.selectedWidget();
+        if (!widget) { return; }
+        this.widgetsState.update({ ...widget, borderColor });
+    }
+
+    public setSelectedWidgetBorderStyle(borderStyle: WidgetBorderStyle) {
+        const widget = this.selectedWidget();
+        if (!widget) { return; }
+        this.widgetsState.update({ ...widget, borderStyle });
     }
 
     public setSelectedWidgetX(value: number) {

@@ -9,6 +9,9 @@ import {
   WIDGET_CONTENT_TYPES,
   WIDGET_TEXT_FONT_FAMILIES,
   WidgetContentType,
+  WidgetBorderStyle,
+  WIDGET_BORDER_STYLES,
+  DEFAULT_WIDGET_BORDER,
 } from '../../models/canvas-widget-state.models';
 import { CanvasService } from '../../services/canvas.service';
 import { SelectOption, UiSelectComponent, UiSeparatorComponent, UiToggleComponent, UiButtonComponent, UiIconComponent } from '../../ui';
@@ -186,6 +189,28 @@ export class CanvasSettingsPanelComponent {
       : '#ffffff';
   }
 
+  protected get selectedBorderRadius(): number {
+    return this.selectedWidget?.borderRadius ?? DEFAULT_WIDGET_BORDER.borderRadius;
+  }
+
+  protected get selectedBorderWidth(): number {
+    return this.selectedWidget?.borderWidth ?? DEFAULT_WIDGET_BORDER.borderWidth;
+  }
+
+  protected get selectedBorderColor(): string {
+    return this.selectedWidget?.borderColor ?? DEFAULT_WIDGET_BORDER.borderColor;
+  }
+
+  protected get selectedBorderStyle(): WidgetBorderStyle {
+    return this.selectedWidget?.borderStyle ?? DEFAULT_WIDGET_BORDER.borderStyle;
+  }
+
+  protected get hasBorder(): boolean {
+    return (this.selectedWidget?.borderWidth ?? 0) > 0;
+  }
+
+  protected readonly borderStyleOptions = WIDGET_BORDER_STYLES;
+
   protected get widgetInputStep(): number {
     return this.cs.canSnapToGrid() ? this.cs.snapSize() : 1;
   }
@@ -302,6 +327,30 @@ export class CanvasSettingsPanelComponent {
    protected onWidgetBackgroundColorChange(event: Event): void {
      const color = (event.target as HTMLInputElement).value;
      this.cs.setSelectedWidgetBackground(color || null);
+   }
+
+   protected onBorderRadiusChange(event: Event): void {
+     const value = Number((event.target as HTMLInputElement).value);
+     if (Number.isFinite(value)) { this.cs.setSelectedWidgetBorderRadius(value); }
+   }
+
+   protected onBorderWidthChange(event: Event): void {
+     const value = Number((event.target as HTMLInputElement).value);
+     if (Number.isFinite(value)) { this.cs.setSelectedWidgetBorderWidth(value); }
+   }
+
+   protected onBorderColorChange(event: Event): void {
+     const color = (event.target as HTMLInputElement).value;
+     this.cs.setSelectedWidgetBorderColor(color);
+   }
+
+
+   protected setBorderStyle(style: WidgetBorderStyle): void {
+     this.cs.setSelectedWidgetBorderStyle(style);
+     // Se si sceglie uno stile != none e width è 0, imposta un valore iniziale
+     if (style !== 'none' && !this.hasBorder) {
+       this.cs.setSelectedWidgetBorderWidth(1);
+     }
    }
 
    protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {

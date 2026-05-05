@@ -53,6 +53,8 @@ export class CanvasWidgetDirective implements AfterViewInit {
     @HostBinding('style')
     get style() {
         const widget = this.widget();
+        const bw = widget.borderWidth ?? 0;
+        const bs = widget.borderStyle ?? 'none';
 
         return {
             top: widget.y + 'px',
@@ -61,7 +63,12 @@ export class CanvasWidgetDirective implements AfterViewInit {
             height: widget.height + 'px',
             backgroundColor: widget.background ?? 'transparent',
             zIndex: this.canvasService.getWidgetRenderZIndex(widget),
-            position: "absolute"
+            position: 'absolute',
+            borderRadius: (widget.borderRadius ?? 0) + 'px',
+            borderWidth: bw + 'px',
+            borderStyle: bw > 0 ? bs : 'none',
+            borderColor: bw > 0 ? (widget.borderColor ?? '#000000') : 'transparent',
+            boxSizing: 'border-box',
         };
     }
 
