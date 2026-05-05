@@ -42,7 +42,7 @@ export class CanvasWidgetStateService {
         type: 'image',
         src: 'https://danielzotti.it/_next/static/media/danielzotti-logo-medium.856a381a.webp',
         alt: 'Logo Daniel Zotti',
-        fitMode: 'cover',
+        fitMode: 'contain',
       },
     },
     '3': {

@@ -1,0 +1,27 @@
+:host {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.widget-image-content {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.widget-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.3;
+  box-sizing: border-box;
+  color: var(--ds-text-secondary);
+  background: var(--ds-surface-0);
+}

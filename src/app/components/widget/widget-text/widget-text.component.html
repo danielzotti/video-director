@@ -1,0 +1,12 @@
+<div
+    #textContentEl
+    class="widget-text-content"
+    [style.font-size.px]="computedFontSize"
+    [style.font-family]="computedFontFamily"
+    [style.color]="computedColor"
+    [style.align-items]="horizontalAlignStyle"
+    [style.justify-content]="verticalAlignStyle"
+    [style.text-align]="content().style.alignHorizontal"
+    [style.white-space]="whiteSpaceStyle"
+    [style.overflow-wrap]="overflowWrapStyle"
+>{{ content().text }}</div>

@@ -1,35 +1,26 @@
 <div class="widget-content-wrapper">
-    @if (textContent; as content) {
-        <div
-            #textContentEl
-            class="widget-content widget-content--text"
-            [style.font-size.px]="textComputedFontSize"
-            [style.font-family]="textComputedFontFamily"
-            [style.color]="textComputedColor"
-            [style.align-items]="textHorizontalAlignStyle"
-            [style.justify-content]="textVerticalAlignStyle"
-            [style.text-align]="content.style.alignHorizontal"
-            [style.white-space]="textWhiteSpaceStyle"
-            [style.overflow-wrap]="textOverflowWrapStyle"
-        >{{ content.text }}
-        </div>
-    } @else {
-        @if (imageContent && isImageUrlValid) {
-            <img
-                    class="widget-content widget-content--image"
-                    [src]="imageContent.src"
-                    [alt]="imageContent.alt || 'Contenuto widget'"
-                    [style.object-fit]="imageContent.fitMode"
-                    draggable="false"
+    @switch (item().content.type) {
+        @case ('text') {
+            <app-widget-text
+                    [content]="textContent"
+                    [widgetWidth]="item().width"
+                    [widgetHeight]="item().height"
             />
-        } @else {
-            <div class="widget-content widget-content--placeholder">Inserisci un URL immagine valido (http/https)</div>
+        }
+        @case ('image') {
+            <app-widget-image [content]="imageContent"/>
+        }
+        @default {
+            <ng-content></ng-content>
         }
     }
 
     @if (activeDebug()) {
         <div class="widget-debug-info">
-            <ng-content></ng-content>
+            <pre>UUID: {{ item().uuid }}
+{{ item().content.type }}
+{{ item().width }} x {{ item().height }}
+&#123;x:{{ item().x }}, y:{{ item().y }}&#125;</pre>
         </div>
     }
 </div>

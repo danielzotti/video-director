@@ -1,0 +1,11 @@
+@if (isUrlValid) {
+    <img
+        class="widget-image-content"
+        [src]="content().src"
+        [alt]="content().alt || 'Contenuto widget'"
+        [style.object-fit]="content().fitMode"
+        draggable="false"
+    />
+} @else {
+    <div class="widget-image-placeholder">Inserisci un URL immagine valido (http/https)</div>
+}
