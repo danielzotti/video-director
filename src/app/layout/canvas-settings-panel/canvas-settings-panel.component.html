@@ -45,6 +45,22 @@
                             (input)="onWidgetNameChange($event)"
                     />
                 </div>
+
+                <div class="settings-panel__row">
+                    <app-ui-toggle
+                            label="Lock widget"
+                            [checked]="isWidgetLocked"
+                            (checkedChange)="setWidgetLocked($event)"
+                    />
+                </div>
+
+                <div class="settings-panel__row">
+                    <app-ui-toggle
+                            label="Visible"
+                            [checked]="isWidgetVisible"
+                            (checkedChange)="setWidgetVisible($event)"
+                    />
+                </div>
             </section>
 
             <app-ui-separator orientation="horizontal"/>
@@ -61,6 +77,7 @@
                                 class="settings-panel__input"
                                 type="number"
                                 [step]="widgetInputStep"
+                                [disabled]="isWidgetLocked"
                                 [value]="geometryDraft().x"
                                 (input)="onWidgetGeometryInput($event, 'x')"
                                 (blur)="onWidgetGeometryCommit($event, 'x')"
@@ -74,6 +91,7 @@
                                 class="settings-panel__input"
                                 type="number"
                                 [step]="widgetInputStep"
+                                [disabled]="isWidgetLocked"
                                 [value]="geometryDraft().y"
                                 (input)="onWidgetGeometryInput($event, 'y')"
                                 (blur)="onWidgetGeometryCommit($event, 'y')"
@@ -91,7 +109,7 @@
                                 type="number"
                                 min="1"
                                 [step]="widgetInputStep"
-                                [disabled]="!cs.canResizeWidget()"
+                                [disabled]="!cs.canResizeWidget() || isWidgetLocked"
                                 [value]="geometryDraft().width"
                                 (input)="onWidgetGeometryInput($event, 'width')"
                                 (blur)="onWidgetGeometryCommit($event, 'width')"
@@ -106,7 +124,7 @@
                                 type="number"
                                 min="1"
                                 [step]="widgetInputStep"
-                                [disabled]="!cs.canResizeWidget()"
+                                [disabled]="!cs.canResizeWidget() || isWidgetLocked"
                                 [value]="geometryDraft().height"
                                 (input)="onWidgetGeometryInput($event, 'height')"
                                 (blur)="onWidgetGeometryCommit($event, 'height')"

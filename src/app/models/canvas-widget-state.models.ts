@@ -92,6 +92,8 @@ export const DEFAULT_WIDGET_CONTENT: WidgetContent = {
 export interface WidgetStateItem extends Rect2D, Partial<WidgetStateItemStyle> {
   uuid: string;
   z: number;
+  locked?: boolean;
+  visible?: boolean;
   content: WidgetContent;
   name?: string;
 }

@@ -213,6 +213,14 @@ export class CanvasSettingsPanelComponent {
     return this.selectedWidget?.padding ?? DEFAULT_WIDGET_BORDER.padding;
   }
 
+  protected get isWidgetLocked(): boolean {
+    return !!this.selectedWidget?.locked;
+  }
+
+  protected get isWidgetVisible(): boolean {
+    return this.selectedWidget?.visible ?? true;
+  }
+
   protected readonly borderStyleOptions = WIDGET_BORDER_STYLES;
 
   protected get widgetInputStep(): number {
@@ -360,6 +368,14 @@ export class CanvasSettingsPanelComponent {
    protected onPaddingChange(event: Event): void {
      const value = Number((event.target as HTMLInputElement).value);
      if (Number.isFinite(value)) { this.cs.setSelectedWidgetPadding(value); }
+   }
+
+   protected setWidgetLocked(value: boolean): void {
+     this.cs.setSelectedWidgetLocked(value);
+   }
+
+   protected setWidgetVisible(value: boolean): void {
+     this.cs.setSelectedWidgetVisible(value);
    }
 
    protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {

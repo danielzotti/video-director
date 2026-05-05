@@ -2,12 +2,13 @@ import {ChangeDetectionStrategy, Component, computed, effect, inject, input, out
 import {CommonModule} from '@angular/common';
 import {CanvasWidgetStateService} from '../../services/canvas-widget-state.service';
 import {CanvasService} from '../../services/canvas.service';
+import {UiIconComponent} from '../../ui';
 
 @Component({
   selector: 'app-canvas-layers-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
+  imports: [CommonModule, UiIconComponent],
   templateUrl: './canvas-layers-panel.component.html',
   styleUrl: './canvas-layers-panel.component.scss',
 })
@@ -132,10 +133,10 @@ export class CanvasLayersPanelComponent {
     try {
       const url = new URL(value);
       const pathSegments = url.pathname.split('/').filter(Boolean);
-      return pathSegments[pathSegments.length - 1] || 'Immagine senza nome';
+      return pathSegments.at(-1) || 'Immagine senza nome';
     } catch {
       const pathSegments = value.split('/').filter(Boolean);
-      return pathSegments[pathSegments.length - 1] || 'Immagine senza nome';
+      return pathSegments.at(-1) || 'Immagine senza nome';
     }
   }
 
@@ -144,13 +145,22 @@ export class CanvasLayersPanelComponent {
     this.cs.selectWidget(uuid);
   }
 
-  protected onLayerKeydown(uuid: string, event: Event): void {
-    if (!(event instanceof KeyboardEvent)) {
-      return;
-    }
-    event.preventDefault();
+  protected isLayerLocked(uuid: string): boolean {
+    return !!this.widgetsState.getById(uuid)?.locked;
+  }
+
+  protected isLayerVisible(uuid: string): boolean {
+    return this.widgetsState.getById(uuid)?.visible ?? true;
+  }
+
+  protected toggleLayerLocked(uuid: string, event: MouseEvent): void {
     event.stopPropagation();
-    this.cs.selectWidget(uuid);
+    this.cs.setWidgetLocked(uuid, !this.isLayerLocked(uuid));
+  }
+
+  protected toggleLayerVisible(uuid: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.cs.setWidgetVisible(uuid, !this.isLayerVisible(uuid));
   }
 
   protected onLayerDragStart(uuid: string, event: DragEvent): void {

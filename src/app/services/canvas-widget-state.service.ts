@@ -184,6 +184,8 @@ export class CanvasWidgetStateService {
   private normalizeWidget(widget: WidgetStateItem): WidgetStateItem {
     return {
       ...widget,
+      locked: widget.locked ?? false,
+      visible: widget.visible ?? true,
       content: this.normalizeContent(widget.content),
     };
   }

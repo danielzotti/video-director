@@ -23,7 +23,11 @@ export type UiIconName =
   | 'border-none'
   | 'border-solid'
   | 'border-dashed'
-  | 'border-dotted';
+  | 'border-dotted'
+  | 'lock'
+  | 'unlock'
+  | 'eye'
+  | 'eye-off';
 
 @Component({
   selector: 'app-ui-icon',
@@ -164,6 +168,23 @@ export type UiIconName =
         }
         @case ('border-dotted') {
           <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="1.5 3" stroke-linecap="round"/>
+        }
+        @case ('lock') {
+          <rect x="5" y="11" width="14" height="10" rx="2"/>
+          <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+        }
+        @case ('unlock') {
+          <rect x="5" y="11" width="14" height="10" rx="2"/>
+          <path d="M16 11V8a4 4 0 0 0-8 0"/>
+        }
+        @case ('eye') {
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+          <circle cx="12" cy="12" r="3"/>
+        }
+        @case ('eye-off') {
+          <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.77 21.77 0 0 1 5.08-5.94"/>
+          <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a21.76 21.76 0 0 1-3.17 4.39"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>
         }
       }
     </svg>

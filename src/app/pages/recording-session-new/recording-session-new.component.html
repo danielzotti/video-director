@@ -64,18 +64,22 @@
                        <pre><strong>Capabilities:</strong>{{ item.mediaStream?.getVideoTracks()?.[0]?.getCapabilities() | json }}</pre>
                        <pre><strong>Constraints:</strong>{{ item.constraints | json }}</pre>
                      </div>-->
-                    <app-widget
-                            [appCanvasWidget]="item"
-                            [item]="item"
-                            [activeDebug]="canvasService.debugMode()"
-                            [debugMode]="canvasService.debugMode()"
-                            [class.app-canvas-widget--show-container]="canvasService.showContainer()"
-                            class="widget"
-                    ></app-widget>
+                    @if (item.visible ?? true) {
+                        <app-widget
+                                [appCanvasWidget]="item"
+                                [item]="item"
+                                [activeDebug]="canvasService.debugMode()"
+                                [debugMode]="canvasService.debugMode()"
+                                [class.app-canvas-widget--show-container]="canvasService.showContainer()"
+                                class="widget"
+                        ></app-widget>
+                    }
                 } @empty {
                     <p><em>No items.</em></p>
                 }
-                <div class="canvas-info">x: {{ canvasService.left() }}, y: {{ canvasService.top() }}</div>
+                @if (canvasService.debugMode()) {
+                    <div class="canvas-info">x: {{ canvasService.left() }}, y: {{ canvasService.top() }}</div>
+                }
             </div>
         </div>
 

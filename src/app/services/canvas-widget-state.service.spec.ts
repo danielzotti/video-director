@@ -72,5 +72,37 @@ describe('CanvasWidgetStateService', () => {
       style: DEFAULT_WIDGET_TEXT_STYLE,
     });
   });
+
+  it('normalizes missing locked flag to false', () => {
+    const legacyWidget = {
+      uuid: 'legacy-lock',
+      x: 0,
+      y: 0,
+      z: 30,
+      width: 120,
+      height: 60,
+      content: DEFAULT_WIDGET_CONTENT,
+    } as WidgetStateItem;
+
+    service.add(legacyWidget);
+
+    expect(service.getById('legacy-lock').locked).toBeFalse();
+  });
+
+  it('normalizes missing visible flag to true', () => {
+    const legacyWidget = {
+      uuid: 'legacy-visible',
+      x: 0,
+      y: 0,
+      z: 31,
+      width: 120,
+      height: 60,
+      content: DEFAULT_WIDGET_CONTENT,
+    } as WidgetStateItem;
+
+    service.add(legacyWidget);
+
+    expect(service.getById('legacy-visible').visible).toBeTrue();
+  });
 });
 

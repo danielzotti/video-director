@@ -209,6 +209,10 @@
     border-color: var(--ds-accent);
   }
 
+  &--hidden {
+    opacity: 0.55;
+  }
+
   &--drop-above::before,
   &--drop-below::after {
     content: '';
@@ -234,6 +238,11 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--ds-space-2);
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
   }
 
   &__info {
@@ -296,7 +305,6 @@
     font-size: var(--ds-font-xs);
     color: var(--ds-text-tertiary);
     font-family: monospace;
-    font-size: 11px;
     opacity: 0.7;
   }
 
@@ -341,6 +349,21 @@
     &--small {
       padding: 2px 6px;
       font-size: 10px;
+    }
+
+    &--icon {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    &--active {
+      color: var(--ds-accent);
+      border-color: var(--ds-accent);
+      background-color: var(--ds-accent-subtle);
     }
   }
 }

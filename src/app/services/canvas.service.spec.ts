@@ -121,6 +121,49 @@ describe('CanvasService', () => {
     expect(widgetEl.classList.contains(service.WIDGET_DRAGGING_CLASS)).toBeFalse();
   });
 
+  it('prevents drag start when widget is locked', () => {
+    service.canvasEl = document.createElement('div');
+    const widgetEl = document.createElement('div');
+    service.selectWidget(null);
+    const beforeSelected = service.selectedWidgetId();
+    service.setWidgetLocked('1', true);
+
+    const widget = service.widgetsState.getById('1');
+    expect(widget?.locked).toBeTrue();
+
+    const event = new PointerEvent('pointerdown', {button: 0});
+    service.widgetDragStart({
+      widget: widget!,
+      el: widgetEl,
+      event,
+    });
+
+    expect(service.selectedWidgetId()).toBe(beforeSelected);
+    expect(service.isDraggingWidget()).toBeFalse();
+    expect(widgetEl.classList.contains(service.WIDGET_DRAGGING_CLASS)).toBeFalse();
+  });
+
+  it('ignores geometry updates when selected widget is locked', () => {
+    service.selectWidget('1');
+    service.setWidgetResize(true);
+
+    const before = service.widgetsState.getById('1');
+    expect(before).toBeTruthy();
+
+    service.setSelectedWidgetLocked(true);
+    service.setSelectedWidgetX((before?.x ?? 0) + 10);
+    service.setSelectedWidgetY((before?.y ?? 0) + 10);
+    service.setSelectedWidgetWidth((before?.width ?? 0) + 10);
+    service.setSelectedWidgetHeight((before?.height ?? 0) + 10);
+
+    const after = service.widgetsState.getById('1');
+    expect(after).toBeTruthy();
+    expect(after!.x).toBe(before!.x);
+    expect(after!.y).toBe(before!.y);
+    expect(after!.width).toBe(before!.width);
+    expect(after!.height).toBe(before!.height);
+  });
+
   it('updates selected image fit mode', () => {
     service.selectWidget('2');
     service.setSelectedWidgetImageFitMode('contain');
@@ -163,6 +206,24 @@ describe('CanvasService', () => {
     service.setSelectedWidgetBackground(null);
     const transparent = service.widgetsState.getById('1');
     expect(transparent?.background).toBeUndefined();
+  });
+
+  it('updates selected widget visibility', () => {
+    service.selectWidget('1');
+    service.setSelectedWidgetVisible(false);
+    expect(service.widgetsState.getById('1')?.visible).toBeFalse();
+
+    service.setSelectedWidgetVisible(true);
+    expect(service.widgetsState.getById('1')?.visible).toBeTrue();
+  });
+
+  it('updates lock and visibility by widget id', () => {
+    service.setWidgetLocked('2', true);
+    service.setWidgetVisible('2', false);
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.locked).toBeTrue();
+    expect(widget?.visible).toBeFalse();
   });
 });
 

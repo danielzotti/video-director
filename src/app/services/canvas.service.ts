@@ -563,6 +563,42 @@ export class CanvasService {
         this.widgetsState.update({...widget, padding: Math.max(0, padding)});
     }
 
+    public setSelectedWidgetLocked(locked: boolean) {
+        const widget = this.selectedWidget();
+        if (!widget) {
+            return;
+        }
+
+        this.widgetsState.update({...widget, locked});
+    }
+
+    public setWidgetLocked(widgetId: string, locked: boolean) {
+        const widget = this.widgetsState.getById(widgetId);
+        if (!widget) {
+            return;
+        }
+
+        this.widgetsState.update({...widget, locked});
+    }
+
+    public setSelectedWidgetVisible(visible: boolean) {
+        const widget = this.selectedWidget();
+        if (!widget) {
+            return;
+        }
+
+        this.widgetsState.update({...widget, visible});
+    }
+
+    public setWidgetVisible(widgetId: string, visible: boolean) {
+        const widget = this.widgetsState.getById(widgetId);
+        if (!widget) {
+            return;
+        }
+
+        this.widgetsState.update({...widget, visible});
+    }
+
     public setSelectedWidgetX(value: number) {
         this.updateSelectedWidgetRect({x: value});
     }
@@ -596,6 +632,10 @@ export class CanvasService {
         const snap = this.snapSize();
 
         for (const widget of this.widgetsState.list()) {
+            if (widget.locked) {
+                continue;
+            }
+
             const snapped = snapPointToGrid({point: {x: widget.x, y: widget.y}, snap});
             this.widgetsState.update({
                 ...widget,
@@ -721,6 +761,10 @@ export class CanvasService {
             return;
         }
 
+        if (widget.locked) {
+            return;
+        }
+
         // Selection is independent from drag permission.
         this.selectWidget(widget.uuid);
 
@@ -804,7 +848,7 @@ export class CanvasService {
         event: PointerLikeEvent,
         position: ResizePosition
     }) {
-        if (event.button !== 0 || !this.canResizeWidget() || this.isSpacePressed()) {
+        if (event.button !== 0 || !this.canResizeWidget() || widget.locked || this.isSpacePressed()) {
             return;
         }
 
@@ -945,6 +989,15 @@ export class CanvasService {
     private updateSelectedWidgetRect(patch: Partial<Rect2D>) {
         const widget = this.selectedWidget();
         if (!widget) {
+            return;
+        }
+
+        if (widget.locked) {
+            return;
+        }
+
+        const isMovePatch = typeof patch.x === 'number' || typeof patch.y === 'number';
+        if (isMovePatch && !this.canMoveWidget()) {
             return;
         }
 

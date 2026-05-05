@@ -31,6 +31,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
     constructor() {
         effect(() => {
             this.canvasService.canResizeWidget();
+            this.widget().locked;
             this.applyResizerCursorState();
         });
     }
@@ -50,6 +51,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
     }
 
     ngAfterViewInit() {
+
         for (const position of CanvasWidgetDirective.RESIZE_HANDLES) {
             this.addResizer({position});
         }
@@ -79,7 +81,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
             borderColor: bw > 0 ? (widget.borderColor ?? '#000000') : 'transparent',
             padding: (widget.padding ?? 0) + 'px',
             boxSizing: 'border-box',
-            cursor: this.canvasService.canMoveWidget() ? 'move' : 'default',
+            cursor: this.canvasService.canMoveWidget() && !widget.locked ? 'move' : 'default',
         };
     }
 
@@ -181,7 +183,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
     }
 
     private applyResizerCursorState(): void {
-        const canResize = this.canvasService.canResizeWidget();
+        const canResize = this.canvasService.canResizeWidget() && !this.widget().locked;
 
         for (const resizer of this.resizerEls) {
             const resizeCursor = resizer.dataset['resizeCursor'] ?? 'default';
