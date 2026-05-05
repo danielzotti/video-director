@@ -173,6 +173,19 @@
                 </div>
 
                 <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-padding">Padding</label>
+                    <input
+                            id="widget-padding"
+                            class="settings-panel__input"
+                            type="number"
+                            min="0"
+                            step="1"
+                            [value]="selectedPadding"
+                            (input)="onPaddingChange($event)"
+                    />
+                </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
                     <label class="settings-panel__field-label" for="widget-border-color">Color</label>
                     <div class="settings-panel__color-row">
                         <input

@@ -529,6 +529,12 @@ export class CanvasService {
         this.widgetsState.update({ ...widget, borderStyle });
     }
 
+    public setSelectedWidgetPadding(padding: number) {
+        const widget = this.selectedWidget();
+        if (!widget) { return; }
+        this.widgetsState.update({ ...widget, padding: Math.max(0, padding) });
+    }
+
     public setSelectedWidgetX(value: number) {
         this.updateSelectedWidgetRect({x: value});
     }

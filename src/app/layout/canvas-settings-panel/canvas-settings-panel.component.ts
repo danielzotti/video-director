@@ -209,6 +209,10 @@ export class CanvasSettingsPanelComponent {
     return (this.selectedWidget?.borderWidth ?? 0) > 0;
   }
 
+  protected get selectedPadding(): number {
+    return this.selectedWidget?.padding ?? DEFAULT_WIDGET_BORDER.padding;
+  }
+
   protected readonly borderStyleOptions = WIDGET_BORDER_STYLES;
 
   protected get widgetInputStep(): number {
@@ -351,6 +355,11 @@ export class CanvasSettingsPanelComponent {
      if (style !== 'none' && !this.hasBorder) {
        this.cs.setSelectedWidgetBorderWidth(1);
      }
+   }
+
+   protected onPaddingChange(event: Event): void {
+     const value = Number((event.target as HTMLInputElement).value);
+     if (Number.isFinite(value)) { this.cs.setSelectedWidgetPadding(value); }
    }
 
    protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {

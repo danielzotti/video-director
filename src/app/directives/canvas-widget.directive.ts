@@ -68,6 +68,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
             borderWidth: bw + 'px',
             borderStyle: bw > 0 ? bs : 'none',
             borderColor: bw > 0 ? (widget.borderColor ?? '#000000') : 'transparent',
+            padding: (widget.padding ?? 0) + 'px',
             boxSizing: 'border-box',
         };
     }

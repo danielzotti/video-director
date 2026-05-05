@@ -9,8 +9,8 @@
   //min-width: 20px;
   //min-height: 20px;
   //outline: 1px solid black;
-  outline: 1px dashed var(--gray-dark);
-  overflow: hidden;
+  //outline: 1px dashed var(--gray-dark);
+  //overflow: hidden;
   //user-select: none;
   //resize: both;
   //overflow: hidden;
@@ -27,6 +27,14 @@
 
   &.app-canvas-widget--selected {
     outline: 2px solid var(--ds-accent);
+
+    .app-canvas-widget-resizer {
+      &-bottom-left, &-bottom-right, &-top-right, &-top-left {
+        background-color: var(--ds-accent);
+        width:6px !important;
+        height:6px !important;
+      }
+    }
   }
 
   &.app-canvas-widget-dragging {

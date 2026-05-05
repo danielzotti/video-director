@@ -169,16 +169,16 @@ export class WidgetComponent {
     return 'pre';
   }
 
-  protected get textOverflowWrapStyle(): string | null {
-    const content = this.textContent;
-    if (!content?.style.autoSize) {
-      return null;
+    protected get textOverflowWrapStyle(): string | null {
+      const content = this.textContent;
+      if (!content?.style.autoSize) {
+        return null;
+      }
+
+      return 'normal';
     }
 
-    return 'normal';
-  }
-
-  private scheduleAutoFontSizeRecompute(): void {
+    private scheduleAutoFontSizeRecompute(): void {
     if (this.pendingFontSizeRaf !== null) {
       cancelAnimationFrame(this.pendingFontSizeRaf);
     }

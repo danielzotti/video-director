@@ -20,16 +20,18 @@ export interface WidgetStateItemStyle {
   borderWidth: number;
   borderColor: string;
   borderStyle: WidgetBorderStyle;
+  padding: number;
 }
 
 export const WIDGET_BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted'] as const;
 export type WidgetBorderStyle = typeof WIDGET_BORDER_STYLES[number];
 
-export const DEFAULT_WIDGET_BORDER: Pick<WidgetStateItemStyle, 'borderRadius' | 'borderWidth' | 'borderColor' | 'borderStyle'> = {
+export const DEFAULT_WIDGET_BORDER: Pick<WidgetStateItemStyle, 'borderRadius' | 'borderWidth' | 'borderColor' | 'borderStyle' | 'padding'> = {
   borderRadius: 0,
   borderWidth: 0,
   borderColor: '#000000',
   borderStyle: 'none',
+  padding: 0,
 };
 
 export const WIDGET_CONTENT_TYPES = ['text', 'image'] as const;
