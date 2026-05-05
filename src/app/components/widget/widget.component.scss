@@ -25,6 +25,18 @@
     //background-color: red;
   }
 
+  &.app-canvas-widget--show-container {
+    outline: 2px solid #b8bec8;
+
+    .app-canvas-widget-resizer {
+      &-bottom-left, &-bottom-right, &-top-right, &-top-left {
+        background-color: #b8bec8;
+        width: 6px !important;
+        height: 6px !important;
+      }
+    }
+  }
+
   &.app-canvas-widget--selected {
     outline: 2px solid var(--ds-accent);
 

@@ -68,6 +68,7 @@ export class CanvasService {
     public canSnapToBorder = signal(true);
     public canResizeWidget = signal(false);
     public showGrid = signal(false);
+    public showContainer = signal(false);
     public debugMode = signal(false);
     public debugPanelVisible = signal(false);
     public settingsPanelLayout = signal<SettingsPanelLayout>('fixed-right');
@@ -268,6 +269,10 @@ export class CanvasService {
 
     public setShowGrid(value: boolean) {
         this.showGrid.set(value);
+    }
+
+    public setShowContainer(value: boolean) {
+        this.showContainer.set(value);
     }
 
     public setDebugMode(value: boolean) {

@@ -69,6 +69,7 @@
                             [item]="item"
                             [activeDebug]="canvasService.debugMode()"
                             [debugMode]="canvasService.debugMode()"
+                            [class.app-canvas-widget--show-container]="canvasService.showContainer()"
                             class="widget"
                     ></app-widget>
                 } @empty {
