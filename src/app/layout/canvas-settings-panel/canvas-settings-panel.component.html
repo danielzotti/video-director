@@ -53,64 +53,66 @@
             <section class="settings-panel__section">
                 <div class="settings-panel__section-label">Widget Geometry</div>
 
-                <div class="settings-panel__row settings-panel__row--column">
-                    <label class="settings-panel__field-label" for="widget-x">X</label>
-                    <input
-                            id="widget-x"
-                            class="settings-panel__input"
-                            type="number"
-                            [step]="widgetInputStep"
-                            [value]="geometryDraft().x"
-                            (input)="onWidgetGeometryInput($event, 'x')"
-                            (blur)="onWidgetGeometryCommit($event, 'x')"
-                            (keydown.enter)="onNumericEnter($event, 'x')"
-                    />
+                <div class="settings-panel__field-pair">
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-x">X</label>
+                        <input
+                                id="widget-x"
+                                class="settings-panel__input"
+                                type="number"
+                                [step]="widgetInputStep"
+                                [value]="geometryDraft().x"
+                                (input)="onWidgetGeometryInput($event, 'x')"
+                                (blur)="onWidgetGeometryCommit($event, 'x')"
+                                (keydown.enter)="onNumericEnter($event, 'x')"
+                        />
+                    </div>
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-y">Y</label>
+                        <input
+                                id="widget-y"
+                                class="settings-panel__input"
+                                type="number"
+                                [step]="widgetInputStep"
+                                [value]="geometryDraft().y"
+                                (input)="onWidgetGeometryInput($event, 'y')"
+                                (blur)="onWidgetGeometryCommit($event, 'y')"
+                                (keydown.enter)="onNumericEnter($event, 'y')"
+                        />
+                    </div>
                 </div>
 
-                <div class="settings-panel__row settings-panel__row--column">
-                    <label class="settings-panel__field-label" for="widget-y">Y</label>
-                    <input
-                            id="widget-y"
-                            class="settings-panel__input"
-                            type="number"
-                            [step]="widgetInputStep"
-                            [value]="geometryDraft().y"
-                            (input)="onWidgetGeometryInput($event, 'y')"
-                            (blur)="onWidgetGeometryCommit($event, 'y')"
-                            (keydown.enter)="onNumericEnter($event, 'y')"
-                    />
-                </div>
-
-                <div class="settings-panel__row settings-panel__row--column">
-                    <label class="settings-panel__field-label" for="widget-width">Width</label>
-                    <input
-                            id="widget-width"
-                            class="settings-panel__input"
-                            type="number"
-                            min="1"
-                            [step]="widgetInputStep"
-                            [disabled]="!cs.canResizeWidget()"
-                            [value]="geometryDraft().width"
-                            (input)="onWidgetGeometryInput($event, 'width')"
-                            (blur)="onWidgetGeometryCommit($event, 'width')"
-                            (keydown.enter)="onNumericEnter($event, 'width')"
-                    />
-                </div>
-
-                <div class="settings-panel__row settings-panel__row--column">
-                    <label class="settings-panel__field-label" for="widget-height">Height</label>
-                    <input
-                            id="widget-height"
-                            class="settings-panel__input"
-                            type="number"
-                            min="1"
-                            [step]="widgetInputStep"
-                            [disabled]="!cs.canResizeWidget()"
-                            [value]="geometryDraft().height"
-                            (input)="onWidgetGeometryInput($event, 'height')"
-                            (blur)="onWidgetGeometryCommit($event, 'height')"
-                            (keydown.enter)="onNumericEnter($event, 'height')"
-                    />
+                <div class="settings-panel__field-pair">
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-width">W</label>
+                        <input
+                                id="widget-width"
+                                class="settings-panel__input"
+                                type="number"
+                                min="1"
+                                [step]="widgetInputStep"
+                                [disabled]="!cs.canResizeWidget()"
+                                [value]="geometryDraft().width"
+                                (input)="onWidgetGeometryInput($event, 'width')"
+                                (blur)="onWidgetGeometryCommit($event, 'width')"
+                                (keydown.enter)="onNumericEnter($event, 'width')"
+                        />
+                    </div>
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-height">H</label>
+                        <input
+                                id="widget-height"
+                                class="settings-panel__input"
+                                type="number"
+                                min="1"
+                                [step]="widgetInputStep"
+                                [disabled]="!cs.canResizeWidget()"
+                                [value]="geometryDraft().height"
+                                (input)="onWidgetGeometryInput($event, 'height')"
+                                (blur)="onWidgetGeometryCommit($event, 'height')"
+                                (keydown.enter)="onNumericEnter($event, 'height')"
+                        />
+                    </div>
                 </div>
             </section>
 
@@ -119,40 +121,21 @@
             <section class="settings-panel__section">
                 <div class="settings-panel__section-label">Background</div>
 
-                <div class="settings-panel__row settings-panel__row--column">
+                <div class="settings-panel__font-size-group">
+                    <input
+                            id="widget-background-color"
+                            class="settings-panel__input settings-panel__input--color"
+                            type="color"
+                            [value]="selectedBackgroundColor"
+                            [disabled]="hasTransparentBackground"
+                            (input)="onWidgetBackgroundColorChange($event)"
+                    />
+
                     <app-ui-toggle
                             label="Transparent"
                             [checked]="hasTransparentBackground"
                             (checkedChange)="setBackgroundTransparent($event)"
                     />
-                </div>
-
-                <div class="settings-panel__row settings-panel__row--column">
-                    <label class="settings-panel__field-label" for="widget-background-color">Color</label>
-                    <input
-                            id="widget-background-color"
-                            class="settings-panel__input settings-panel__input--color"
-                            type="color"
-                            [disabled]="hasTransparentBackground"
-                            [value]="selectedBackgroundColor"
-                            (input)="onWidgetBackgroundColorChange($event)"
-                    />
-                </div>
-
-                <div class="settings-panel__row settings-panel__row--column">
-                    <span class="settings-panel__field-label">Preset</span>
-                    <div class="settings-panel__preset-list">
-                        @for (color of backgroundPresetColors; track color) {
-                            <button
-                                    class="settings-panel__color-preset"
-                                    type="button"
-                                    [class.settings-panel__color-preset--active]="!hasTransparentBackground && selectedBackgroundColor === color"
-                                    [style.background-color]="color"
-                                    [attr.aria-label]="'Set background ' + color"
-                                    (click)="setWidgetBackgroundColor(color)"
-                            ></button>
-                        }
-                    </div>
                 </div>
             </section>
 
@@ -184,36 +167,40 @@
                     </div>
 
                     <div class="settings-panel__row settings-panel__row--column">
-                        <app-ui-toggle
-                                label="Auto font-size"
-                                [checked]="textContent.style.autoSize"
-                                (checkedChange)="setTextAutoSize($event)"
-                        />
+                        <label class="settings-panel__field-label" for="widget-text-font-size">Font size</label>
+                        <div class="settings-panel__font-size-group">
+                            <input
+                                    id="widget-text-font-size"
+                                    class="settings-panel__input"
+                                    type="number"
+                                    min="8"
+                                    step="1"
+                                    [value]="textContent.style.fontSize"
+                                    (input)="onTextFontSizeChange($event)"
+                                    [disabled]="textContent.style.autoSize"
+                            />
+                            <app-ui-toggle
+                                    label="Auto font-size"
+                                    [checked]="textContent.style.autoSize"
+                                    (checkedChange)="setTextAutoSize($event)"
+                            />
+                        </div>
+
                     </div>
 
-                    <div class="settings-panel__row settings-panel__row--column">
-                        <label class="settings-panel__field-label" for="widget-text-font-size">Font size</label>
-                        <input
-                                id="widget-text-font-size"
-                                class="settings-panel__input"
-                                type="number"
-                                min="8"
-                                step="1"
-                                [disabled]="textContent.style.autoSize"
-                                [value]="textContent.style.fontSize"
-                                (input)="onTextFontSizeChange($event)"
-                        />
-                    </div>
 
                     <div class="settings-panel__row settings-panel__row--column">
                         <label class="settings-panel__field-label" for="widget-text-color">Text color</label>
-                        <input
-                                id="widget-text-color"
-                                class="settings-panel__input settings-panel__input--color"
-                                type="color"
-                                [value]="textContent.style.color"
-                                (input)="onTextColorChange($event)"
-                        />
+                        <div class="settings-panel__color-row">
+                            <input
+                                    id="widget-text-color"
+                                    class="settings-panel__input settings-panel__input--color"
+                                    type="color"
+                                    [value]="textContent.style.color"
+                                    (input)="onTextColorChange($event)"
+                            />
+                            <span class="settings-panel__color-value">{{ textContent.style.color }}</span>
+                        </div>
                     </div>
 
                     <div class="settings-panel__row settings-panel__row--column">
@@ -226,21 +213,69 @@
                     </div>
 
                     <div class="settings-panel__row settings-panel__row--column">
-                        <app-ui-select
-                                label="Allineamento orizzontale"
-                                [options]="textHorizontalAlignmentOptions"
-                                [value]="textContent.style.alignHorizontal"
-                                (valueChange)="setTextHorizontalAlignment($event)"
-                        />
+                        <span class="settings-panel__field-label">Horizontal alignment</span>
+                        <div class="settings-panel__alignment-group">
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.alignHorizontal === 'left'"
+                                    title="Allinea a sinistra"
+                                    (click)="setTextHorizontalAlignment('left')"
+                            >
+                                <app-ui-icon name="text-align-left"/>
+                            </app-ui-button>
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.alignHorizontal === 'center'"
+                                    title="Allinea al centro"
+                                    (click)="setTextHorizontalAlignment('center')"
+                            >
+                                <app-ui-icon name="text-align-center"/>
+                            </app-ui-button>
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.alignHorizontal === 'right'"
+                                    title="Allinea a destra"
+                                    (click)="setTextHorizontalAlignment('right')"
+                            >
+                                <app-ui-icon name="text-align-right"/>
+                            </app-ui-button>
+                        </div>
                     </div>
 
                     <div class="settings-panel__row settings-panel__row--column">
-                        <app-ui-select
-                                label="Allineamento verticale"
-                                [options]="textVerticalAlignmentOptions"
-                                [value]="textContent.style.alignVertical"
-                                (valueChange)="setTextVerticalAlignment($event)"
-                        />
+                        <span class="settings-panel__field-label">Vertical alignment</span>
+                        <div class="settings-panel__alignment-group">
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.alignVertical === 'top'"
+                                    title="Allinea in alto"
+                                    (click)="setTextVerticalAlignment('top')"
+                            >
+                                <app-ui-icon name="align-top"/>
+                            </app-ui-button>
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.alignVertical === 'center'"
+                                    title="Allinea al centro"
+                                    (click)="setTextVerticalAlignment('center')"
+                            >
+                                <app-ui-icon name="align-center"/>
+                            </app-ui-button>
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.alignVertical === 'bottom'"
+                                    title="Allinea in basso"
+                                    (click)="setTextVerticalAlignment('bottom')"
+                            >
+                                <app-ui-icon name="align-bottom"/>
+                            </app-ui-button>
+                        </div>
                     </div>
                 }
 

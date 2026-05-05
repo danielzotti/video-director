@@ -1,21 +1,17 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, computed } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import {
   WidgetImageFitMode,
   WIDGET_IMAGE_FIT_MODES,
-  WidgetTextAlignmentHorizontal,
-  WidgetTextAlignmentVertical,
   WidgetTextFontFamily,
   WidgetImageContent,
   WidgetTextContent,
   WIDGET_CONTENT_TYPES,
-  WIDGET_TEXT_ALIGNMENTS_HORIZONTAL,
-  WIDGET_TEXT_ALIGNMENTS_VERTICAL,
   WIDGET_TEXT_FONT_FAMILIES,
   WidgetContentType,
 } from '../../models/canvas-widget-state.models';
 import { CanvasService } from '../../services/canvas.service';
-import { SelectOption, UiSelectComponent, UiSeparatorComponent, UiToggleComponent } from '../../ui';
+import { SelectOption, UiSelectComponent, UiSeparatorComponent, UiToggleComponent, UiButtonComponent, UiIconComponent } from '../../ui';
 
 type WidgetGeometryField = 'x' | 'y' | 'width' | 'height';
 
@@ -23,12 +19,11 @@ type WidgetGeometryField = 'x' | 'y' | 'width' | 'height';
   selector: 'app-canvas-settings-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent],
+  imports: [CommonModule, DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent, UiButtonComponent, UiIconComponent],
   templateUrl: './canvas-settings-panel.component.html',
   styleUrl: './canvas-settings-panel.component.scss',
 })
 export class CanvasSettingsPanelComponent {
-  protected readonly backgroundPresetColors = ['#ffffff', '#000000'] as const;
 
   private static readonly CONTENT_LABELS: Record<WidgetContentType, string> = {
     text: 'Text',
@@ -40,27 +35,15 @@ export class CanvasSettingsPanelComponent {
     contain: 'Contain',
   };
 
-  private static readonly FONT_FAMILY_LABELS: Record<WidgetTextFontFamily, string> = {
-    roboto: 'Roboto (Sans)',
-    montserrat: 'Montserrat (Sans)',
-    exo: 'Exo (Sans)',
-    lora: 'Lora (Serif)',
-    'fira-code': 'Fira Code (Mono)',
-  };
+   private static readonly FONT_FAMILY_LABELS: Record<WidgetTextFontFamily, string> = {
+     roboto: 'Roboto (Sans)',
+     montserrat: 'Montserrat (Sans)',
+     exo: 'Exo (Sans)',
+     lora: 'Lora (Serif)',
+     'fira-code': 'Fira Code (Mono)',
+   };
 
-  private static readonly HORIZONTAL_ALIGNMENT_LABELS: Record<WidgetTextAlignmentHorizontal, string> = {
-    left: 'Sinistra',
-    center: 'Centro',
-    right: 'Destra',
-  };
-
-  private static readonly VERTICAL_ALIGNMENT_LABELS: Record<WidgetTextAlignmentVertical, string> = {
-    top: 'Alto',
-    center: 'Centro',
-    bottom: 'Basso',
-  };
-
-  isOpen = input<boolean>(false);
+   isOpen = input<boolean>(false);
   showBackdrop = input<boolean>(true);
   panelMode = input<'popover' | 'sidebar'>('popover');
   contentOnly = input<boolean>(false);
@@ -163,28 +146,14 @@ export class CanvasSettingsPanelComponent {
     }));
   }
 
-  protected get textFontFamilyOptions(): SelectOption[] {
-    return WIDGET_TEXT_FONT_FAMILIES.map((value) => ({
-      value,
-      label: CanvasSettingsPanelComponent.FONT_FAMILY_LABELS[value],
-    }));
-  }
+   protected get textFontFamilyOptions(): SelectOption[] {
+     return WIDGET_TEXT_FONT_FAMILIES.map((value) => ({
+       value,
+       label: CanvasSettingsPanelComponent.FONT_FAMILY_LABELS[value],
+     }));
+   }
 
-  protected get textHorizontalAlignmentOptions(): SelectOption[] {
-    return WIDGET_TEXT_ALIGNMENTS_HORIZONTAL.map((value) => ({
-      value,
-      label: CanvasSettingsPanelComponent.HORIZONTAL_ALIGNMENT_LABELS[value],
-    }));
-  }
-
-  protected get textVerticalAlignmentOptions(): SelectOption[] {
-    return WIDGET_TEXT_ALIGNMENTS_VERTICAL.map((value) => ({
-      value,
-      label: CanvasSettingsPanelComponent.VERTICAL_ALIGNMENT_LABELS[value],
-    }));
-  }
-
-  protected get isPopoverMode(): boolean {
+   protected get isPopoverMode(): boolean {
     return this.panelMode() === 'popover';
   }
 
@@ -330,16 +299,12 @@ export class CanvasSettingsPanelComponent {
     this.cs.setSelectedWidgetBackground(this.selectedBackgroundColor);
   }
 
-  protected onWidgetBackgroundColorChange(event: Event): void {
-    const color = (event.target as HTMLInputElement).value;
-    this.cs.setSelectedWidgetBackground(color || null);
-  }
+   protected onWidgetBackgroundColorChange(event: Event): void {
+     const color = (event.target as HTMLInputElement).value;
+     this.cs.setSelectedWidgetBackground(color || null);
+   }
 
-  protected setWidgetBackgroundColor(color: string): void {
-    this.cs.setSelectedWidgetBackground(color);
-  }
-
-  protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {
+   protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {
     const input = event.target as HTMLInputElement;
     this.updateGeometryDraftValue(field, input.value);
   }

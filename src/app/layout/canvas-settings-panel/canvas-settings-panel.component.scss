@@ -151,6 +151,12 @@
     }
   }
 
+  &__field-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ds-space-2);
+  }
+
   &__field-label {
     font-size: var(--ds-font-sm);
     color: var(--ds-text-secondary);
@@ -165,11 +171,18 @@
     color: var(--ds-text-primary);
     padding: 6px 8px;
     font-size: var(--ds-font-sm);
-    font-family: var(--font-family-text);
+    font-family: var(--font-family-text), sans-serif;
+    transition: opacity var(--ds-duration-default) var(--ds-easing);
 
     &:focus {
       outline: 1px solid var(--ds-accent);
       outline-offset: 0;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
     }
   }
 
@@ -182,24 +195,74 @@
     min-height: 36px;
     padding: 4px;
     cursor: pointer;
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
   }
 
-  &__preset-list {
+
+  &__color-row {
     display: flex;
     align-items: center;
     gap: var(--ds-space-2);
+
+    input {
+      flex-shrink: 0;
+      width: 80px;
+      padding: 2px;
+    }
   }
 
-  &__color-preset {
-    width: 24px;
-    height: 24px;
-    border-radius: var(--ds-radius-sm);
-    border: 1px solid var(--ds-border-default);
-    cursor: pointer;
+  &__color-value {
+    font-size: var(--ds-font-sm);
+    color: var(--ds-text-secondary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    flex: 1;
+    text-align: left;
+  }
 
-    &--active {
-      outline: 2px solid var(--ds-accent);
-      outline-offset: 1px;
+  &__background-color-group {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+
+    input {
+      width: 80px;
+      transition: opacity var(--ds-duration-default) var(--ds-easing);
+
+      &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  &__font-size-group {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+
+    input {
+      width: 80px;
+      transition: opacity var(--ds-duration-default) var(--ds-easing);
+
+      &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  &__alignment-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ds-space-1);
+
+    app-ui-button {
+      width: 100%;
+      justify-content: center;
     }
   }
 

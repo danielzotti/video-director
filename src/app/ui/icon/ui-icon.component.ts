@@ -13,7 +13,13 @@ export type UiIconName =
   | 'close'
   | 'check'
   | 'chevron-down'
-  | 'info';
+  | 'info'
+  | 'text-align-left'
+  | 'text-align-center'
+  | 'text-align-right'
+  | 'align-top'
+  | 'align-center'
+  | 'align-bottom';
 
 @Component({
   selector: 'app-ui-icon',
@@ -107,6 +113,40 @@ export type UiIconName =
           <circle cx="12" cy="12" r="10"/>
           <line x1="12" y1="8" x2="12" y2="12"/>
           <line x1="12" y1="16" x2="12.01" y2="16"/>
+        }
+        @case ('text-align-left') {
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="17" y2="12"/>
+          <line x1="3" y1="18" x2="15" y2="18"/>
+        }
+        @case ('text-align-center') {
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <line x1="6" y1="18" x2="18" y2="18"/>
+        }
+        @case ('text-align-right') {
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="7" y1="12" x2="21" y2="12"/>
+          <line x1="9" y1="18" x2="21" y2="18"/>
+        }
+        @case ('align-top') {
+          <line x1="3" y1="3" x2="21" y2="3"/>
+          <line x1="6" y1="8" x2="18" y2="8"/>
+          <line x1="6" y1="13" x2="18" y2="13"/>
+          <line x1="6" y1="18" x2="18" y2="18"/>
+        }
+        @case ('align-center') {
+          <line x1="6" y1="3" x2="18" y2="3"/>
+          <line x1="6" y1="8" x2="18" y2="8"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="6" y1="16" x2="18" y2="16"/>
+          <line x1="6" y1="21" x2="18" y2="21"/>
+        }
+        @case ('align-bottom') {
+          <line x1="6" y1="3" x2="18" y2="3"/>
+          <line x1="6" y1="8" x2="18" y2="8"/>
+          <line x1="6" y1="13" x2="18" y2="13"/>
+          <line x1="3" y1="21" x2="21" y2="21"/>
         }
       }
     </svg>
