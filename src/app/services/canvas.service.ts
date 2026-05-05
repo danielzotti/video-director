@@ -1,4 +1,4 @@
-import {computed, inject, Injectable, Renderer2, RendererFactory2, signal} from '@angular/core';
+import {computed, effect, inject, Injectable, Renderer2, RendererFactory2, signal} from '@angular/core';
 import {
     DEFAULT_WIDGET_TEXT_STYLE,
     DEFAULT_WIDGET_TEXT,
@@ -43,6 +43,33 @@ export type ResizePosition = ResizeHandle;
 export type SettingsPanelLayout = 'floating' | 'fixed-right' | 'closed';
 export type LayersPanelLayout = 'floating' | 'fixed-left' | 'closed';
 type PointerLikeEvent = MouseEvent | PointerEvent;
+
+interface CanvasSnapshot {
+    width: number;
+    height: number;
+    zoom: number;
+    top: number;
+    left: number;
+    snapSize: number;
+    canExitBorders: boolean;
+    canSnapToGrid: boolean;
+    canSnapToObjects: boolean;
+    canSnapToBorder: boolean;
+    canResizeWidget: boolean;
+    canMoveWidget: boolean;
+    showGrid: boolean;
+    showContainer: boolean;
+    debugMode: boolean;
+    debugPanelVisible: boolean;
+    settingsPanelLayout: SettingsPanelLayout;
+    layersPanelLayout: LayersPanelLayout;
+    selectedWidgetId: string | null;
+}
+
+interface EditorStateSnapshot {
+    canvas: CanvasSnapshot;
+    widgets: WidgetStateItem[];
+}
 
 @Injectable({
     providedIn: 'root'
@@ -114,6 +141,35 @@ export class CanvasService {
 
     private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(null, null);
 
+    private readonly STORAGE_KEY = 'video-director.editor-state.v1';
+    private readonly HISTORY_LIMIT = 100;
+    private readonly undoStack = signal<EditorStateSnapshot[]>([]);
+    private readonly redoStack = signal<EditorStateSnapshot[]>([]);
+    public readonly canUndo = computed(() => this.undoStack().length > 0);
+    public readonly canRedo = computed(() => this.redoStack().length > 0);
+
+    private currentSnapshot: EditorStateSnapshot | null = null;
+    private isApplyingSnapshot = false;
+    private isHistoryReady = false;
+    private pendingSnapshot: EditorStateSnapshot | null = null;
+    private isSnapshotFlushScheduled = false;
+
+    constructor() {
+        effect(() => {
+            if (!this.canManageCanvas()) {
+                return;
+            }
+
+            if (!this.isHistoryReady) {
+                return;
+            }
+
+            const snapshot = this.buildSnapshot();
+            this.pendingSnapshot = snapshot;
+            this.scheduleSnapshotFlush();
+        });
+    }
+
     public init({
                     canvas,
                     canvasWrapper,
@@ -130,29 +186,37 @@ export class CanvasService {
                     allowWidgetMove = true,
                     zoom = 1,
                 }: CanvasServiceInitModel) {
+        this.isHistoryReady = false;
         this.canvasEl = canvas;
         this.canvasWrapperEl = canvasWrapper ?? null;
 
-        this.canManageCanvas.set(true); // !!this.canvasWrapperEl
-        this.canExitBorders.set(allowExitBorders);
-        this.canSnapToGrid.set(allowSnapToGrid);
-        this.canSnapToObjects.set(allowSnapToObjects);
-        this.canSnapToBorder.set(allowSnapToBorder);
-        this.canResizeWidget.set(allowWidgetResize);
-        this.canMoveWidget.set(allowWidgetMove);
-        this.showGrid.set(allowShowGrid);
-        this.showContainer.set(allowShowContainer);
+        const savedSnapshot = this.loadSnapshotFromStorage();
 
-        this.width.set(width);
-        this.height.set(height);
-        this.zoom.set(this.viewportService.clampZoom(zoom));
-        this.snapSize.set(allowSnapToGrid ? Math.max(1, snapSize) : 1);
+        this.canManageCanvas.set(true); // !!this.canvasWrapperEl
+
+        if (savedSnapshot) {
+            this.applySnapshot(savedSnapshot);
+        } else {
+            this.canExitBorders.set(allowExitBorders);
+            this.canSnapToGrid.set(allowSnapToGrid);
+            this.canSnapToObjects.set(allowSnapToObjects);
+            this.canSnapToBorder.set(allowSnapToBorder);
+            this.canResizeWidget.set(allowWidgetResize);
+            this.canMoveWidget.set(allowWidgetMove);
+            this.showGrid.set(allowShowGrid);
+            this.showContainer.set(allowShowContainer);
+
+            this.width.set(width);
+            this.height.set(height);
+            this.zoom.set(this.viewportService.clampZoom(zoom));
+            this.snapSize.set(allowSnapToGrid ? Math.max(1, snapSize) : 1);
+        }
 
         this.renderer.setStyle(this.canvasEl, 'position', 'relative');
         this.renderer.setStyle(this.canvasEl, 'top', '0px');
         this.renderer.setStyle(this.canvasEl, 'left', '0px');
-        this.renderer.setStyle(this.canvasEl, 'width', `${width}px`);
-        this.renderer.setStyle(this.canvasEl, 'height', `${height}px`);
+        this.renderer.setStyle(this.canvasEl, 'width', `${this.width()}px`);
+        this.renderer.setStyle(this.canvasEl, 'height', `${this.height()}px`);
         this.renderer.setStyle(this.canvasEl, 'transform', `scale(${this.zoom()})`);
         this.renderer.setStyle(this.canvasEl, 'transformOrigin', 'top left');
 
@@ -160,11 +224,51 @@ export class CanvasService {
             this.renderer.setStyle(this.canvasWrapperEl, 'overflow', 'hidden');
         }
 
-        if (allowSnapToGrid) {
+        if (!savedSnapshot && allowSnapToGrid) {
             this.resetWidgetToSnapSize();
         }
 
-        this.canvasCenter();
+        if (!savedSnapshot) {
+            this.canvasCenter();
+        }
+
+        this.undoStack.set([]);
+        this.redoStack.set([]);
+        this.currentSnapshot = this.buildSnapshot();
+        this.writeSnapshotToStorage(this.currentSnapshot);
+        this.isHistoryReady = true;
+    }
+
+    public undo() {
+        const stack = this.undoStack();
+        if (stack.length === 0) {
+            return;
+        }
+
+        const previous = stack[stack.length - 1];
+        const current = this.buildSnapshot();
+
+        this.undoStack.set(stack.slice(0, -1));
+        this.redoStack.update((items) => this.limitHistory([...items, current]));
+        this.applySnapshot(previous);
+        this.currentSnapshot = this.buildSnapshot();
+        this.writeSnapshotToStorage(this.currentSnapshot);
+    }
+
+    public redo() {
+        const stack = this.redoStack();
+        if (stack.length === 0) {
+            return;
+        }
+
+        const next = stack[stack.length - 1];
+        const current = this.buildSnapshot();
+
+        this.redoStack.set(stack.slice(0, -1));
+        this.undoStack.update((items) => this.limitHistory([...items, current]));
+        this.applySnapshot(next);
+        this.currentSnapshot = this.buildSnapshot();
+        this.writeSnapshotToStorage(this.currentSnapshot);
     }
 
     public setSpacePressed(pressed: boolean) {
@@ -1044,6 +1148,184 @@ export class CanvasService {
             ...widget,
             ...next,
         });
+    }
+
+    private scheduleSnapshotFlush() {
+        if (this.isSnapshotFlushScheduled) {
+            return;
+        }
+
+        this.isSnapshotFlushScheduled = true;
+
+        queueMicrotask(() => {
+            this.isSnapshotFlushScheduled = false;
+
+            if (!this.pendingSnapshot) {
+                return;
+            }
+
+            this.commitSnapshot(this.pendingSnapshot);
+            this.pendingSnapshot = null;
+        });
+    }
+
+    private commitSnapshot(nextSnapshot: EditorStateSnapshot) {
+        if (this.isApplyingSnapshot) {
+            this.currentSnapshot = nextSnapshot;
+            this.writeSnapshotToStorage(nextSnapshot);
+            return;
+        }
+
+        if (this.currentSnapshot && this.areSnapshotsEqual(this.currentSnapshot, nextSnapshot)) {
+            return;
+        }
+
+        if (this.currentSnapshot) {
+            const previousSnapshot = this.currentSnapshot;
+            this.undoStack.update((items) => this.limitHistory([...items, previousSnapshot]));
+            this.redoStack.set([]);
+        }
+
+        this.currentSnapshot = nextSnapshot;
+        this.writeSnapshotToStorage(nextSnapshot);
+    }
+
+    private limitHistory(items: EditorStateSnapshot[]): EditorStateSnapshot[] {
+        if (items.length <= this.HISTORY_LIMIT) {
+            return items;
+        }
+
+        return items.slice(items.length - this.HISTORY_LIMIT);
+    }
+
+    private buildSnapshot(): EditorStateSnapshot {
+        return {
+            canvas: {
+                width: this.width(),
+                height: this.height(),
+                zoom: this.zoom(),
+                top: this.top(),
+                left: this.left(),
+                snapSize: this.snapSize(),
+                canExitBorders: this.canExitBorders(),
+                canSnapToGrid: this.canSnapToGrid(),
+                canSnapToObjects: this.canSnapToObjects(),
+                canSnapToBorder: this.canSnapToBorder(),
+                canResizeWidget: this.canResizeWidget(),
+                canMoveWidget: this.canMoveWidget(),
+                showGrid: this.showGrid(),
+                showContainer: this.showContainer(),
+                debugMode: this.debugMode(),
+                debugPanelVisible: this.debugPanelVisible(),
+                settingsPanelLayout: this.settingsPanelLayout(),
+                layersPanelLayout: this.layersPanelLayout(),
+                selectedWidgetId: this.selectedWidgetId(),
+            },
+            widgets: this.widgetsState.list().map((widget) => this.cloneWidget(widget)),
+        };
+    }
+
+    private applySnapshot(snapshot: EditorStateSnapshot) {
+        this.isApplyingSnapshot = true;
+
+        const canvas = snapshot.canvas;
+
+        this.width.set(Math.max(1, Math.round(canvas.width)));
+        this.height.set(Math.max(1, Math.round(canvas.height)));
+        this.zoom.set(this.viewportService.clampZoom(canvas.zoom));
+        this.top.set(Math.round(canvas.top));
+        this.left.set(Math.round(canvas.left));
+        this.snapSize.set(Math.max(1, Math.round(canvas.snapSize)));
+
+        this.canExitBorders.set(canvas.canExitBorders);
+        this.canSnapToGrid.set(canvas.canSnapToGrid);
+        this.canSnapToObjects.set(canvas.canSnapToObjects);
+        this.canSnapToBorder.set(canvas.canSnapToBorder);
+        this.canResizeWidget.set(canvas.canResizeWidget);
+        this.canMoveWidget.set(canvas.canMoveWidget);
+        this.showGrid.set(canvas.showGrid);
+        this.showContainer.set(canvas.showContainer);
+        this.debugMode.set(canvas.debugMode);
+        this.debugPanelVisible.set(canvas.debugPanelVisible);
+        this.settingsPanelLayout.set(canvas.settingsPanelLayout);
+        this.layersPanelLayout.set(canvas.layersPanelLayout);
+
+        this.widgetsState.replaceAll(snapshot.widgets.map((widget) => this.cloneWidget(widget)));
+
+        const selectedWidgetExists = !!canvas.selectedWidgetId && !!this.widgetsState.getById(canvas.selectedWidgetId);
+        this.selectedWidgetId.set(selectedWidgetExists ? canvas.selectedWidgetId : null);
+        this.objectSnapGuides.set({});
+
+        this.isApplyingSnapshot = false;
+    }
+
+    private cloneWidget(widget: WidgetStateItem): WidgetStateItem {
+        if (widget.content.type === 'text') {
+            return {
+                ...widget,
+                content: {
+                    ...widget.content,
+                    style: {...widget.content.style},
+                },
+            };
+        }
+
+        return {
+            ...widget,
+            content: {...widget.content},
+        };
+    }
+
+    private areSnapshotsEqual(a: EditorStateSnapshot, b: EditorStateSnapshot): boolean {
+        return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    private loadSnapshotFromStorage(): EditorStateSnapshot | null {
+        const storage = this.getLocalStorage();
+        if (!storage) {
+            return null;
+        }
+
+        const raw = storage.getItem(this.STORAGE_KEY);
+        if (!raw) {
+            return null;
+        }
+
+        try {
+            const parsed = JSON.parse(raw) as Partial<EditorStateSnapshot>;
+
+            if (!parsed.canvas || !Array.isArray(parsed.widgets)) {
+                return null;
+            }
+
+            return {
+                canvas: parsed.canvas as CanvasSnapshot,
+                widgets: parsed.widgets as WidgetStateItem[],
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private writeSnapshotToStorage(snapshot: EditorStateSnapshot) {
+        const storage = this.getLocalStorage();
+        if (!storage) {
+            return;
+        }
+
+        storage.setItem(this.STORAGE_KEY, JSON.stringify(snapshot));
+    }
+
+    private getLocalStorage(): Storage | null {
+        try {
+            if (typeof window === 'undefined' || !window.localStorage) {
+                return null;
+            }
+
+            return window.localStorage;
+        } catch {
+            return null;
+        }
     }
 
     private getPointerCanvasPoint(event: PointerLikeEvent): Point2D {

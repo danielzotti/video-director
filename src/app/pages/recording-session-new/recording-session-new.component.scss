@@ -9,9 +9,11 @@
   gap: var(--margin-default);
 }
 
-.canvas-toolbar {
+.header-toolbar {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: var(--ds-space-2, 8px);
   padding-block: 5px;
 }
 

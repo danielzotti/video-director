@@ -29,7 +29,9 @@ export type UiIconName =
   | 'lock'
   | 'unlock'
   | 'eye'
-  | 'eye-off';
+  | 'eye-off'
+  | 'undo'
+  | 'redo';
 
 @Component({
   selector: 'app-ui-icon',
@@ -196,6 +198,14 @@ export type UiIconName =
           <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.77 21.77 0 0 1 5.08-5.94"/>
           <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a21.76 21.76 0 0 1-3.17 4.39"/>
           <line x1="1" y1="1" x2="23" y2="23"/>
+        }
+        @case ('undo') {
+          <path d="M3 7v6h6"/>
+          <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+        }
+        @case ('redo') {
+          <path d="M21 7v6h-6"/>
+          <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3-2.3"/>
         }
       }
     </svg>

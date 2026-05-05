@@ -3,8 +3,20 @@ import {CanvasService} from './canvas.service';
 
 describe('CanvasService', () => {
   let service: CanvasService;
+  const editorStorageKey = 'video-director.editor-state.v1';
+
+  const createCanvasElements = () => {
+    const canvas = document.createElement('div');
+    const wrapper = document.createElement('div');
+
+    spyOn(wrapper, 'getBoundingClientRect').and.returnValue(new DOMRect(0, 0, 1280, 720));
+    spyOn(canvas, 'getBoundingClientRect').and.returnValue(new DOMRect(0, 0, 1280, 720));
+
+    return { canvas, wrapper };
+  };
 
   beforeEach(() => {
+    localStorage.removeItem(editorStorageKey);
     TestBed.configureTestingModule({});
     service = TestBed.inject(CanvasService);
   });
@@ -224,6 +236,67 @@ describe('CanvasService', () => {
     const widget = service.widgetsState.getById('2');
     expect(widget?.locked).toBeTrue();
     expect(widget?.visible).toBeFalse();
+  });
+
+  it('supports undo and redo for editor actions', async () => {
+    const { canvas, wrapper } = createCanvasElements();
+    service.init({ canvas, canvasWrapper: wrapper });
+
+    const initialShowGrid = service.showGrid();
+    service.setShowGrid(!initialShowGrid);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(service.canUndo()).toBeTrue();
+    service.undo();
+    expect(service.showGrid()).toBe(initialShowGrid);
+    expect(service.canRedo()).toBeTrue();
+
+    service.redo();
+    expect(service.showGrid()).toBe(!initialShowGrid);
+  });
+
+  it('restores saved editor state from localStorage on init', () => {
+    const { canvas, wrapper } = createCanvasElements();
+    const savedSnapshot = {
+      canvas: {
+        width: 1024,
+        height: 576,
+        zoom: 1.5,
+        top: 12,
+        left: 24,
+        snapSize: 8,
+        canExitBorders: true,
+        canSnapToGrid: true,
+        canSnapToObjects: true,
+        canSnapToBorder: true,
+        canResizeWidget: true,
+        canMoveWidget: true,
+        showGrid: true,
+        showContainer: false,
+        debugMode: false,
+        debugPanelVisible: false,
+        settingsPanelLayout: 'floating' as const,
+        layersPanelLayout: 'fixed-left' as const,
+        selectedWidgetId: '1',
+      },
+      widgets: service.widgetsState.list().map((widget) =>
+        widget.uuid === '1' ? { ...widget, x: 333, y: 111 } : widget,
+      ),
+    };
+
+    localStorage.setItem(editorStorageKey, JSON.stringify(savedSnapshot));
+    service.init({ canvas, canvasWrapper: wrapper, width: 1280, height: 720, zoom: 1 });
+
+    expect(service.width()).toBe(1024);
+    expect(service.height()).toBe(576);
+    expect(service.zoom()).toBe(1.5);
+    expect(service.left()).toBe(24);
+    expect(service.top()).toBe(12);
+    expect(service.showGrid()).toBeTrue();
+    expect(service.settingsPanelLayout()).toBe('floating');
+    expect(service.widgetsState.getById('1')?.x).toBe(333);
+    expect(service.widgetsState.getById('1')?.y).toBe(111);
   });
 });
 

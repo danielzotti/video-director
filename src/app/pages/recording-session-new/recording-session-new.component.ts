@@ -21,6 +21,7 @@ import {CanvasDebugPanelComponent} from '../../components/canvas-debug-panel/can
 import {CanvasSettingsPanelComponent} from '../../layout/canvas-settings-panel/canvas-settings-panel.component';
 import {CanvasLayersPanelComponent} from '../../layout/canvas-layers-panel/canvas-layers-panel.component';
 import {CanvasToolbarComponent} from '../../layout/canvas-toolbar/canvas-toolbar.component';
+import {ActionsToolbarComponent} from '../../layout/actions-toolbar/actions-toolbar.component';
 import {Point2D} from '../../models/geometry.models';
 
 @Component({
@@ -34,6 +35,7 @@ import {Point2D} from '../../models/geometry.models';
         CanvasSettingsPanelComponent,
         CanvasLayersPanelComponent,
         CanvasToolbarComponent,
+        ActionsToolbarComponent,
     ],
     templateUrl: './recording-session-new.component.html',
     styleUrl: './recording-session-new.component.scss',

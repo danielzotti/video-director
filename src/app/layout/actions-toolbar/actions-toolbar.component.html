@@ -1,0 +1,10 @@
+<div class="actions-toolbar">
+  <app-ui-button variant="icon" title="Undo" [disabled]="!cs.canUndo()" (click)="undo()">
+    <app-ui-icon name="undo"/>
+  </app-ui-button>
+
+  <app-ui-button variant="icon" title="Redo" [disabled]="!cs.canRedo()" (click)="redo()">
+    <app-ui-icon name="redo"/>
+  </app-ui-button>
+</div>
+

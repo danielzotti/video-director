@@ -1,7 +1,8 @@
 <div class="editor">
     <div class="editor-header">
         @if (canvasService.canManageCanvas()) {
-            <div class="canvas-toolbar">
+            <div class="header-toolbar">
+                <app-actions-toolbar/>
                 <app-canvas-toolbar/>
             </div>
         }

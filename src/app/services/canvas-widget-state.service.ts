@@ -114,6 +114,23 @@ export class CanvasWidgetStateService {
     this.state.update((s) => ({...s, [widget.uuid]: this.normalizeWidget(widget)}));
   }
 
+  public replaceAll(widgets: WidgetStateList) {
+    const ordered = [...widgets].sort((a, b) => a.z - b.z);
+    const nextState: WidgetState = {};
+
+    ordered.forEach((widget, index) => {
+      const normalized = this.normalizeWidget({
+        ...widget,
+        z: Number.isFinite(widget.z) ? Math.max(1, Math.round(widget.z)) : index + 1,
+      });
+
+      nextState[normalized.uuid] = normalized;
+    });
+
+    this.state.set(nextState);
+    this.lastUpdate.set(new Date());
+  }
+
    public remove({uuid}: { uuid: string; }) {
      const newState = {...this.state()};
      delete newState[uuid];
