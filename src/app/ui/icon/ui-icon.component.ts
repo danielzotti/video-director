@@ -17,6 +17,8 @@ export type UiIconName =
   | 'text-align-left'
   | 'text-align-center'
   | 'text-align-right'
+  | 'text'
+  | 'image'
   | 'align-top'
   | 'align-center'
   | 'align-bottom'
@@ -136,6 +138,15 @@ export type UiIconName =
           <line x1="3" y1="6" x2="21" y2="6"/>
           <line x1="7" y1="12" x2="21" y2="12"/>
           <line x1="9" y1="18" x2="21" y2="18"/>
+        }
+        @case ('text') {
+          <line x1="5" y1="6" x2="19" y2="6"/>
+          <line x1="12" y1="6" x2="12" y2="18"/>
+        }
+        @case ('image') {
+          <rect x="3" y="4" width="18" height="16" rx="2"/>
+          <circle cx="9" cy="9" r="1.5"/>
+          <path d="M4 17l5-5 3 3 4-4 4 6"/>
         }
         @case ('align-top') {
           <line x1="3" y1="3" x2="21" y2="3"/>

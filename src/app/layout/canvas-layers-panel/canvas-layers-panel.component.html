@@ -54,8 +54,9 @@
 
                                 <div class="layer-item__name-container">
                                     <div class="layer-item__header">
-                                        <span class="layer-item__icon"
-                                              [title]="getLayerContentType(item.uuid)">{{ getLayerContentIcon(item.uuid) }}</span>
+                                        <span class="layer-item__icon" [title]="getLayerContentType(item.uuid)">
+                                            <app-ui-icon [name]="getLayerContentIcon(item.uuid)"></app-ui-icon>
+                                        </span>
                                         @if (renamingLayerId === item.uuid) {
                                             <input
                                                 #renameField

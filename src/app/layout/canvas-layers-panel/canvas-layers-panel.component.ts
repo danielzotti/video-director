@@ -3,6 +3,7 @@ import {CommonModule} from '@angular/common';
 import {CanvasWidgetStateService} from '../../services/canvas-widget-state.service';
 import {CanvasService} from '../../services/canvas.service';
 import {UiIconComponent} from '../../ui';
+import type {UiIconName} from '../../ui';
 
 @Component({
   selector: 'app-canvas-layers-panel',
@@ -99,10 +100,10 @@ export class CanvasLayersPanelComponent {
     return widget.name || `Layer ${widget.uuid}`;
   }
 
-  protected getLayerContentIcon(uuid: string): string {
+  protected getLayerContentIcon(uuid: string): UiIconName {
     const widget = this.widgetsState.getById(uuid);
-    if (!widget) return '?';
-    return widget.content.type === 'text' ? 'T' : '🖼';
+    if (!widget) return 'info';
+    return widget.content.type === 'text' ? 'text' : 'image';
   }
 
   protected getLayerContentType(uuid: string): string {
