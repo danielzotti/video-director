@@ -412,6 +412,26 @@ export class CanvasService {
         });
     }
 
+    public setSelectedWidgetTextColor(color: string) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'text') {
+            return;
+        }
+
+        const nextColor = color.trim() || DEFAULT_WIDGET_TEXT_STYLE.color;
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                style: {
+                    ...widget.content.style,
+                    color: nextColor,
+                },
+            },
+        });
+    }
+
     public setSelectedWidgetTextAutoSize(autoSize: boolean) {
         const widget = this.selectedWidget();
         if (!widget || widget.content.type !== 'text') {
@@ -473,6 +493,18 @@ export class CanvasService {
         }
 
         this.widgetsState.renameLayer(widget.uuid, name);
+    }
+
+    public setSelectedWidgetBackground(background: string | null) {
+        const widget = this.selectedWidget();
+        if (!widget) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            background: background && background.trim() ? background.trim() : undefined,
+        });
     }
 
     public setSelectedWidgetX(value: number) {

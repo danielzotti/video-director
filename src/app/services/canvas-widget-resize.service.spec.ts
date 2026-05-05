@@ -2,18 +2,33 @@ import {CanvasWidgetResizeService} from './canvas-widget-resize.service';
 
 describe('CanvasWidgetResizeService', () => {
   const service = new CanvasWidgetResizeService();
+  const defaultRectInput = {
+    min: {width: 10, height: 10},
+    snapToGrid: false,
+    snapSize: 1,
+    canExitBorders: true,
+    canvas: {width: 1920, height: 1080},
+    keepAspectRatio: false,
+    snapToObjects: false,
+    objectSnapDistance: 8,
+    snapToBorder: false,
+    borderSnapDistance: 8,
+    siblings: [],
+    zoom: 1,
+  };
+
+  const computeRect = (overrides: Partial<Parameters<CanvasWidgetResizeService['computeNextRect']>[0]>) =>
+    service.computeNextRect({
+      ...defaultRectInput,
+      ...overrides,
+    } as Parameters<CanvasWidgetResizeService['computeNextRect']>[0]).rect;
 
   it('locks aspect ratio on corner resize while Shift is pressed', () => {
     const initialRect = {x: 100, y: 80, width: 160, height: 90};
-    const nextRect = service.computeNextRect({
+    const nextRect = computeRect({
       handle: 'bottom-right',
       initialRect,
       delta: {x: 100, y: 10},
-      min: {width: 10, height: 10},
-      snapToGrid: false,
-      snapSize: 1,
-      canExitBorders: true,
-      canvas: {width: 1920, height: 1080},
       keepAspectRatio: true,
       aspectRatio: initialRect.width / initialRect.height,
     });
@@ -22,13 +37,10 @@ describe('CanvasWidgetResizeService', () => {
   });
 
   it('keeps widget inside canvas on Shift side-resize when exit borders are disabled', () => {
-    const nextRect = service.computeNextRect({
+    const nextRect = computeRect({
       handle: 'left',
       initialRect: {x: 100, y: 40, width: 160, height: 90},
       delta: {x: -60, y: 0},
-      min: {width: 10, height: 10},
-      snapToGrid: false,
-      snapSize: 1,
       canExitBorders: false,
       canvas: {width: 400, height: 150},
       keepAspectRatio: true,
@@ -43,15 +55,10 @@ describe('CanvasWidgetResizeService', () => {
   });
 
   it('preserves previous behavior when Shift is not pressed', () => {
-    const nextRect = service.computeNextRect({
+    const nextRect = computeRect({
       handle: 'right',
       initialRect: {x: 20, y: 20, width: 160, height: 90},
       delta: {x: 20, y: 50},
-      min: {width: 10, height: 10},
-      snapToGrid: false,
-      snapSize: 1,
-      canExitBorders: true,
-      canvas: {width: 1920, height: 1080},
       keepAspectRatio: false,
     });
 
@@ -60,15 +67,12 @@ describe('CanvasWidgetResizeService', () => {
 
   it('applies grid snap and still restores locked ratio when Shift is pressed', () => {
     const initialRect = {x: 0, y: 0, width: 160, height: 90};
-    const nextRect = service.computeNextRect({
+    const nextRect = computeRect({
       handle: 'bottom-right',
       initialRect,
       delta: {x: 33, y: 17},
-      min: {width: 10, height: 10},
       snapToGrid: true,
       snapSize: 20,
-      canExitBorders: true,
-      canvas: {width: 1920, height: 1080},
       keepAspectRatio: true,
       aspectRatio: initialRect.width / initialRect.height,
     });
@@ -80,15 +84,12 @@ describe('CanvasWidgetResizeService', () => {
 
   it('maps right side to bottom-right when Shift is pressed', () => {
     const initialRect = {x: 40, y: 30, width: 160, height: 90};
-    const nextRect = service.computeNextRect({
+    const nextRect = computeRect({
       handle: 'right',
       initialRect,
       delta: {x: 26, y: 0},
-      min: {width: 10, height: 10},
       snapToGrid: true,
       snapSize: 10,
-      canExitBorders: true,
-      canvas: {width: 1920, height: 1080},
       keepAspectRatio: true,
       aspectRatio: initialRect.width / initialRect.height,
     });
@@ -102,15 +103,10 @@ describe('CanvasWidgetResizeService', () => {
 
   it('maps top side to top-left when Shift is pressed', () => {
     const initialRect = {x: 100, y: 100, width: 160, height: 90};
-    const nextRect = service.computeNextRect({
+    const nextRect = computeRect({
       handle: 'top',
       initialRect,
       delta: {x: 0, y: -30},
-      min: {width: 10, height: 10},
-      snapToGrid: false,
-      snapSize: 1,
-      canExitBorders: true,
-      canvas: {width: 1920, height: 1080},
       keepAspectRatio: true,
       aspectRatio: initialRect.width / initialRect.height,
     });
@@ -122,13 +118,10 @@ describe('CanvasWidgetResizeService', () => {
 
   it('keeps aspect ratio when resizing outside canvas bounds with Shift and borders locked', () => {
     const initialRect = {x: 300, y: 180, width: 160, height: 90};
-    const nextRect = service.computeNextRect({
+    const nextRect = computeRect({
       handle: 'bottom-right',
       initialRect,
       delta: {x: 220, y: 220},
-      min: {width: 10, height: 10},
-      snapToGrid: false,
-      snapSize: 1,
       canExitBorders: false,
       canvas: {width: 400, height: 240},
       keepAspectRatio: true,

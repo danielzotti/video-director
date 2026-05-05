@@ -116,6 +116,48 @@
 
             <app-ui-separator orientation="horizontal"/>
 
+            <section class="settings-panel__section">
+                <div class="settings-panel__section-label">Background</div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <app-ui-toggle
+                            label="Transparent"
+                            [checked]="hasTransparentBackground"
+                            (checkedChange)="setBackgroundTransparent($event)"
+                    />
+                </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-background-color">Color</label>
+                    <input
+                            id="widget-background-color"
+                            class="settings-panel__input settings-panel__input--color"
+                            type="color"
+                            [disabled]="hasTransparentBackground"
+                            [value]="selectedBackgroundColor"
+                            (input)="onWidgetBackgroundColorChange($event)"
+                    />
+                </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <span class="settings-panel__field-label">Preset</span>
+                    <div class="settings-panel__preset-list">
+                        @for (color of backgroundPresetColors; track color) {
+                            <button
+                                    class="settings-panel__color-preset"
+                                    type="button"
+                                    [class.settings-panel__color-preset--active]="!hasTransparentBackground && selectedBackgroundColor === color"
+                                    [style.background-color]="color"
+                                    [attr.aria-label]="'Set background ' + color"
+                                    (click)="setWidgetBackgroundColor(color)"
+                            ></button>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <app-ui-separator orientation="horizontal"/>
+
             <!-- WIDGET CONTENT section -->
             <section class="settings-panel__section">
                 <div class="settings-panel__section-label">Widget Content</div>
@@ -160,6 +202,17 @@
                                 [disabled]="textContent.style.autoSize"
                                 [value]="textContent.style.fontSize"
                                 (input)="onTextFontSizeChange($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-text-color">Text color</label>
+                        <input
+                                id="widget-text-color"
+                                class="settings-panel__input settings-panel__input--color"
+                                type="color"
+                                [value]="textContent.style.color"
+                                (input)="onTextColorChange($event)"
                         />
                     </div>
 

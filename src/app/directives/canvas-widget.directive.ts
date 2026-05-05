@@ -59,6 +59,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
             left: widget.x + 'px',
             width: widget.width + 'px',
             height: widget.height + 'px',
+            backgroundColor: widget.background ?? 'transparent',
             zIndex: this.canvasService.getWidgetRenderZIndex(widget),
             position: "absolute"
         };

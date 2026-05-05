@@ -136,6 +136,11 @@ export class WidgetComponent {
     return WidgetComponent.FONT_FAMILY_MAP[content.style.fontFamily];
   }
 
+  protected get textComputedColor(): string {
+    const content = this.textContent;
+    return content?.style.color ?? '#000000';
+  }
+
   protected get textHorizontalAlignStyle(): string {
     const content = this.textContent;
     if (!content) {

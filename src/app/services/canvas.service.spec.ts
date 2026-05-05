@@ -106,6 +106,7 @@ describe('CanvasService', () => {
     service.selectWidget('1');
     service.setSelectedWidgetTextFontFamily('fira-code');
     service.setSelectedWidgetTextFontSize(32);
+    service.setSelectedWidgetTextColor('#ff00aa');
     service.setSelectedWidgetTextHorizontalAlignment('left');
     service.setSelectedWidgetTextVerticalAlignment('bottom');
     service.setSelectedWidgetTextAutoSize(true);
@@ -115,10 +116,23 @@ describe('CanvasService', () => {
     if (widget?.content.type === 'text') {
       expect(widget.content.style.fontFamily).toBe('fira-code');
       expect(widget.content.style.fontSize).toBe(32);
+      expect(widget.content.style.color).toBe('#ff00aa');
       expect(widget.content.style.alignHorizontal).toBe('left');
       expect(widget.content.style.alignVertical).toBe('bottom');
       expect(widget.content.style.autoSize).toBeTrue();
     }
+  });
+
+  it('updates and clears selected widget background', () => {
+    service.selectWidget('1');
+    service.setSelectedWidgetBackground('#12ab34');
+
+    const withBackground = service.widgetsState.getById('1');
+    expect(withBackground?.background).toBe('#12ab34');
+
+    service.setSelectedWidgetBackground(null);
+    const transparent = service.widgetsState.getById('1');
+    expect(transparent?.background).toBeUndefined();
   });
 });
 

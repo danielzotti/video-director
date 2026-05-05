@@ -178,6 +178,31 @@
     min-height: 72px;
   }
 
+  &__input--color {
+    min-height: 36px;
+    padding: 4px;
+    cursor: pointer;
+  }
+
+  &__preset-list {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+  }
+
+  &__color-preset {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--ds-radius-sm);
+    border: 1px solid var(--ds-border-default);
+    cursor: pointer;
+
+    &--active {
+      outline: 2px solid var(--ds-accent);
+      outline-offset: 1px;
+    }
+  }
+
   &__help {
     font-size: var(--ds-font-xs);
     color: var(--ds-text-secondary);

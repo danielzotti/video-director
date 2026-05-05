@@ -211,6 +211,7 @@ export class CanvasWidgetStateService {
       style: {
         fontSize: this.normalizeFontSize(content.style?.fontSize),
         fontFamily: this.normalizeFontFamily(content.style?.fontFamily),
+        color: this.normalizeTextColor(content.style?.color),
         autoSize: content.style?.autoSize ?? DEFAULT_WIDGET_TEXT_STYLE.autoSize,
         alignHorizontal: this.normalizeHorizontalAlignment(content.style?.alignHorizontal),
         alignVertical: this.normalizeVerticalAlignment(content.style?.alignVertical),
@@ -232,6 +233,15 @@ export class CanvasWidgetStateService {
     }
 
     return DEFAULT_WIDGET_TEXT_STYLE.fontFamily;
+  }
+
+  private normalizeTextColor(value?: string): string {
+    if (typeof value !== 'string') {
+      return DEFAULT_WIDGET_TEXT_STYLE.color;
+    }
+
+    const color = value.trim();
+    return color || DEFAULT_WIDGET_TEXT_STYLE.color;
   }
 
   private normalizeHorizontalAlignment(value?: string): WidgetTextAlignmentHorizontal {

@@ -28,6 +28,8 @@ type WidgetGeometryField = 'x' | 'y' | 'width' | 'height';
   styleUrl: './canvas-settings-panel.component.scss',
 })
 export class CanvasSettingsPanelComponent {
+  protected readonly backgroundPresetColors = ['#ffffff', '#000000'] as const;
+
   private static readonly CONTENT_LABELS: Record<WidgetContentType, string> = {
     text: 'Text',
     image: 'Image',
@@ -204,6 +206,17 @@ export class CanvasSettingsPanelComponent {
     return content?.type === 'image' ? content : null;
   }
 
+  protected get hasTransparentBackground(): boolean {
+    const background = this.selectedWidget?.background;
+    return !background || background === 'transparent';
+  }
+
+  protected get selectedBackgroundColor(): string {
+    return this.selectedWidget?.background && this.selectedWidget.background !== 'transparent'
+      ? this.selectedWidget.background
+      : '#ffffff';
+  }
+
   protected get widgetInputStep(): number {
     return this.cs.canSnapToGrid() ? this.cs.snapSize() : 1;
   }
@@ -250,6 +263,11 @@ export class CanvasSettingsPanelComponent {
     }
 
     this.cs.setSelectedWidgetTextFontSize(value);
+  }
+
+  protected onTextColorChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.cs.setSelectedWidgetTextColor(value);
   }
 
   protected setTextFontFamily(value: string | number): void {
@@ -301,6 +319,24 @@ export class CanvasSettingsPanelComponent {
   protected onWidgetNameChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.cs.setSelectedWidgetName(value);
+  }
+
+  protected setBackgroundTransparent(value: boolean): void {
+    if (value) {
+      this.cs.setSelectedWidgetBackground(null);
+      return;
+    }
+
+    this.cs.setSelectedWidgetBackground(this.selectedBackgroundColor);
+  }
+
+  protected onWidgetBackgroundColorChange(event: Event): void {
+    const color = (event.target as HTMLInputElement).value;
+    this.cs.setSelectedWidgetBackground(color || null);
+  }
+
+  protected setWidgetBackgroundColor(color: string): void {
+    this.cs.setSelectedWidgetBackground(color);
   }
 
   protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {

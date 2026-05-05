@@ -38,6 +38,7 @@ export type WidgetTextAlignmentVertical = typeof WIDGET_TEXT_ALIGNMENTS_VERTICAL
 export interface WidgetTextStyle {
   fontSize: number;
   fontFamily: WidgetTextFontFamily;
+  color: string;
   autoSize: boolean;
   alignHorizontal: WidgetTextAlignmentHorizontal;
   alignVertical: WidgetTextAlignmentVertical;
@@ -46,6 +47,7 @@ export interface WidgetTextStyle {
 export const DEFAULT_WIDGET_TEXT_STYLE: WidgetTextStyle = {
   fontSize: 24,
   fontFamily: 'roboto',
+  color: '#000000',
   autoSize: false,
   alignHorizontal: 'center',
   alignVertical: 'center',
