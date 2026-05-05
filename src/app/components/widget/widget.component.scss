@@ -31,8 +31,8 @@
     .app-canvas-widget-resizer {
       &-bottom-left, &-bottom-right, &-top-right, &-top-left {
         background-color: var(--ds-accent);
-        width:6px !important;
-        height:6px !important;
+        width: 6px !important;
+        height: 6px !important;
       }
     }
   }
@@ -44,6 +44,12 @@
   .app-canvas-widget-resizer {
     background-color: transparent;
     z-index: 2;
+  }
+
+  .widget-content-wrapper {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
   }
 
   .widget-content {
@@ -90,7 +96,7 @@
   .widget-debug-info {
     position: absolute;
     background: #00000080;
-    inset:0;
+    inset: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;

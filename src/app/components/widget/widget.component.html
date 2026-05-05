@@ -1,6 +1,6 @@
-<div style="width: 100%; height: 100%; overflow:hidden">
-@if (textContent; as content) {
-    <div
+<div class="widget-content-wrapper">
+    @if (textContent; as content) {
+        <div
             #textContentEl
             class="widget-content widget-content--text"
             [style.font-size.px]="textComputedFontSize"
@@ -11,26 +11,25 @@
             [style.text-align]="content.style.alignHorizontal"
             [style.white-space]="textWhiteSpaceStyle"
             [style.overflow-wrap]="textOverflowWrapStyle"
-    >{{ content.text }}</div>
-} @else {
-    @if (imageContent && isImageUrlValid) {
-        <img
-                class="widget-content widget-content--image"
-                [src]="imageContent.src"
-                [alt]="imageContent.alt || 'Contenuto widget'"
-                [style.object-fit]="imageContent.fitMode"
-                draggable="false"
-        />
+        >{{ content.text }}
+        </div>
     } @else {
-        <div class="widget-content widget-content--placeholder">Inserisci un URL immagine valido (http/https)</div>
+        @if (imageContent && isImageUrlValid) {
+            <img
+                    class="widget-content widget-content--image"
+                    [src]="imageContent.src"
+                    [alt]="imageContent.alt || 'Contenuto widget'"
+                    [style.object-fit]="imageContent.fitMode"
+                    draggable="false"
+            />
+        } @else {
+            <div class="widget-content widget-content--placeholder">Inserisci un URL immagine valido (http/https)</div>
+        }
     }
-}
 
-@if (activeDebug()) {
-    <div class="widget-debug-info">
-        <ng-content></ng-content>
-        <div>x: {{ elRef.nativeElement.style?.left }}, y: {{ elRef.nativeElement.style?.top }}</div>
-        <div>{{ elRef.nativeElement.style?.width }} x {{ elRef.nativeElement.style?.height }}</div>
-    </div>
-}
+    @if (activeDebug()) {
+        <div class="widget-debug-info">
+            <ng-content></ng-content>
+        </div>
+    }
 </div>
