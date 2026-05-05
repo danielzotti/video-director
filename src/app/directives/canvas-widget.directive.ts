@@ -1,4 +1,4 @@
-import {AfterViewInit, Directive, ElementRef, HostBinding, HostListener, inject, input, Renderer2} from '@angular/core';
+import {AfterViewInit, Directive, effect, ElementRef, HostBinding, HostListener, inject, input, Renderer2} from '@angular/core';
 import {WidgetStateItem} from '../models/canvas-widget-state.models';
 
 import {CanvasService, ResizePosition} from "../services/canvas.service";
@@ -24,8 +24,16 @@ export class CanvasWidgetDirective implements AfterViewInit {
 
     private readonly renderer = inject(Renderer2);
     private readonly elRef = inject(ElementRef<HTMLElement>);
+    private readonly resizerEls: HTMLElement[] = [];
 
     canvasService = inject(CanvasService);
+
+    constructor() {
+        effect(() => {
+            this.canvasService.canResizeWidget();
+            this.applyResizerCursorState();
+        });
+    }
 
     // INPUTS
     widget = input.required<WidgetStateItem>({alias: 'appCanvasWidget'});
@@ -45,6 +53,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
         for (const position of CanvasWidgetDirective.RESIZE_HANDLES) {
             this.addResizer({position});
         }
+        this.applyResizerCursorState();
     }
 
     @HostBinding('class')
@@ -70,6 +79,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
             borderColor: bw > 0 ? (widget.borderColor ?? '#000000') : 'transparent',
             padding: (widget.padding ?? 0) + 'px',
             boxSizing: 'border-box',
+            cursor: this.canvasService.canMoveWidget() ? 'move' : 'default',
         };
     }
 
@@ -109,6 +119,8 @@ export class CanvasWidgetDirective implements AfterViewInit {
         this.renderer.addClass(resizer, `${this.canvasService.WIDGET_RESIZER_CLASS}`);
         this.renderer.addClass(resizer, `${this.canvasService.WIDGET_RESIZER_CLASS}-${position}`);
 
+        let resizeCursor = 'default';
+
         switch (position) {
             case "top":
             case "bottom":
@@ -117,7 +129,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
                 this.renderer.setStyle(resizer, position, `${edgeOffset}px`);
                 this.renderer.setStyle(resizer, "transform", `translate(-50%, 0%)`);
                 this.renderer.setStyle(resizer, "left", "50%");
-                this.renderer.setStyle(resizer, "cursor", "ns-resize");
+                resizeCursor = 'ns-resize';
                 break;
             case "right":
             case "left":
@@ -126,7 +138,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
                 this.renderer.setStyle(resizer, position, `${edgeOffset}px`);
                 this.renderer.setStyle(resizer, "transform", `translate(0%, -50%)`);
                 this.renderer.setStyle(resizer, "top", "50%");
-                this.renderer.setStyle(resizer, "cursor", "ew-resize");
+                resizeCursor = 'ew-resize';
                 break;
             case 'top-left':
             case 'top-right':
@@ -147,13 +159,11 @@ export class CanvasWidgetDirective implements AfterViewInit {
                 if (position.includes('right')) {
                     this.renderer.setStyle(resizer, 'right', `${cornerOffset}px`);
                 }
-                this.renderer.setStyle(
-                    resizer,
-                    'cursor',
-                    position === 'top-left' || position === 'bottom-right' ? 'nwse-resize' : 'nesw-resize'
-                );
+                resizeCursor = position === 'top-left' || position === 'bottom-right' ? 'nwse-resize' : 'nesw-resize';
                 break;
         }
+
+        (resizer as HTMLElement).dataset['resizeCursor'] = resizeCursor;
 
         this.renderer.listen(resizer, 'pointerdown', (event: PointerEvent) => {
             this.canvasService.widgetResizeStart({
@@ -164,8 +174,19 @@ export class CanvasWidgetDirective implements AfterViewInit {
             })
         })
 
+        this.resizerEls.push(resizer as HTMLElement);
+
         // Append the new element to the host element
         this.renderer.appendChild(this.elRef.nativeElement, resizer);
+    }
+
+    private applyResizerCursorState(): void {
+        const canResize = this.canvasService.canResizeWidget();
+
+        for (const resizer of this.resizerEls) {
+            const resizeCursor = resizer.dataset['resizeCursor'] ?? 'default';
+            this.renderer.setStyle(resizer, 'cursor', canResize ? resizeCursor : 'default');
+        }
     }
 
 }

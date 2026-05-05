@@ -30,7 +30,9 @@ export interface CanvasServiceInitModel {
     allowSnapToObjects?: boolean;
     allowSnapToBorder?: boolean;
     allowWidgetResize?: boolean;
+    allowWidgetMove?: boolean;
     allowShowGrid?: boolean;
+    allowShowContainer?: boolean;
     width?: number;
     height?: number;
     snapSize?: number;
@@ -67,6 +69,7 @@ export class CanvasService {
     public canSnapToObjects = signal(true);
     public canSnapToBorder = signal(true);
     public canResizeWidget = signal(false);
+    public canMoveWidget = signal(true);
     public showGrid = signal(false);
     public showContainer = signal(false);
     public debugMode = signal(false);
@@ -119,10 +122,12 @@ export class CanvasService {
                     allowSnapToObjects = false,
                     allowSnapToBorder = false,
                     allowShowGrid = true,
+                    allowShowContainer = true,
                     width = 800,
                     height = 600,
                     snapSize = 1,
                     allowWidgetResize = true,
+                    allowWidgetMove = true,
                     zoom = 1,
                 }: CanvasServiceInitModel) {
         this.canvasEl = canvas;
@@ -134,7 +139,9 @@ export class CanvasService {
         this.canSnapToObjects.set(allowSnapToObjects);
         this.canSnapToBorder.set(allowSnapToBorder);
         this.canResizeWidget.set(allowWidgetResize);
+        this.canMoveWidget.set(allowWidgetMove);
         this.showGrid.set(allowShowGrid);
+        this.showContainer.set(allowShowContainer);
 
         this.width.set(width);
         this.height.set(height);
@@ -265,6 +272,10 @@ export class CanvasService {
 
     public setWidgetResize(value: boolean) {
         this.canResizeWidget.set(value);
+    }
+
+    public setWidgetMove(value: boolean) {
+        this.canMoveWidget.set(value);
     }
 
     public setShowGrid(value: boolean) {
@@ -503,7 +514,9 @@ export class CanvasService {
 
     public setSelectedWidgetBackground(background: string | null) {
         const widget = this.selectedWidget();
-        if (!widget) { return; }
+        if (!widget) {
+            return;
+        }
         this.widgetsState.update({
             ...widget,
             background: background && background.trim() ? background.trim() : undefined,
@@ -512,32 +525,42 @@ export class CanvasService {
 
     public setSelectedWidgetBorderRadius(borderRadius: number) {
         const widget = this.selectedWidget();
-        if (!widget) { return; }
-        this.widgetsState.update({ ...widget, borderRadius: Math.max(0, borderRadius) });
+        if (!widget) {
+            return;
+        }
+        this.widgetsState.update({...widget, borderRadius: Math.max(0, borderRadius)});
     }
 
     public setSelectedWidgetBorderWidth(borderWidth: number) {
         const widget = this.selectedWidget();
-        if (!widget) { return; }
-        this.widgetsState.update({ ...widget, borderWidth: Math.max(0, borderWidth) });
+        if (!widget) {
+            return;
+        }
+        this.widgetsState.update({...widget, borderWidth: Math.max(0, borderWidth)});
     }
 
     public setSelectedWidgetBorderColor(borderColor: string) {
         const widget = this.selectedWidget();
-        if (!widget) { return; }
-        this.widgetsState.update({ ...widget, borderColor });
+        if (!widget) {
+            return;
+        }
+        this.widgetsState.update({...widget, borderColor});
     }
 
     public setSelectedWidgetBorderStyle(borderStyle: WidgetBorderStyle) {
         const widget = this.selectedWidget();
-        if (!widget) { return; }
-        this.widgetsState.update({ ...widget, borderStyle });
+        if (!widget) {
+            return;
+        }
+        this.widgetsState.update({...widget, borderStyle});
     }
 
     public setSelectedWidgetPadding(padding: number) {
         const widget = this.selectedWidget();
-        if (!widget) { return; }
-        this.widgetsState.update({ ...widget, padding: Math.max(0, padding) });
+        if (!widget) {
+            return;
+        }
+        this.widgetsState.update({...widget, padding: Math.max(0, padding)});
     }
 
     public setSelectedWidgetX(value: number) {
@@ -698,11 +721,17 @@ export class CanvasService {
             return;
         }
 
+        // Selection is independent from drag permission.
+        this.selectWidget(widget.uuid);
+
+        if (!this.canMoveWidget()) {
+            return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
 
         this.isDraggingWidget.set(true);
-        this.selectWidget(widget.uuid);
         this.activeWidgetEl = el;
         el.classList.add(this.WIDGET_DRAGGING_CLASS);
         el.style.zIndex = '9999';

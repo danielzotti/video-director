@@ -480,6 +480,7 @@
                         />
                     </div>
                 </section>
+
                 <!-- SNAP section -->
                 <section class="settings-panel__section">
 
@@ -509,8 +510,6 @@
                     </div>
                 </section>
 
-                <app-ui-separator orientation="horizontal"/>
-
                 <!-- BEHAVIOUR section -->
                 <section class="settings-panel__section">
                     <div class="settings-panel__section-label">Behaviour</div>
@@ -528,6 +527,14 @@
                                 label="Widget resize"
                                 [checked]="cs.canResizeWidget()"
                                 (checkedChange)="cs.setWidgetResize($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Widget move"
+                                [checked]="cs.canMoveWidget()"
+                                (checkedChange)="cs.setWidgetMove($event)"
                         />
                     </div>
                 </section>

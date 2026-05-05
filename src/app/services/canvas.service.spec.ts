@@ -91,6 +91,36 @@ describe('CanvasService', () => {
     expect(after!.height).toBe(before!.height);
   });
 
+  it('toggles widget move flag', () => {
+    service.setWidgetMove(false);
+    expect(service.canMoveWidget()).toBeFalse();
+
+    service.setWidgetMove(true);
+    expect(service.canMoveWidget()).toBeTrue();
+  });
+
+  it('selects widget on pointerdown even when widget move is disabled', () => {
+    service.canvasEl = document.createElement('div');
+    const widgetEl = document.createElement('div');
+    const widget = service.widgetsState.getById('2');
+    expect(widget).toBeTruthy();
+
+    service.selectWidget(null);
+    service.setWidgetMove(false);
+
+    const event = new PointerEvent('pointerdown', {button: 0});
+
+    service.widgetDragStart({
+      widget: widget!,
+      el: widgetEl,
+      event,
+    });
+
+    expect(service.selectedWidgetId()).toBe('2');
+    expect(service.isDraggingWidget()).toBeFalse();
+    expect(widgetEl.classList.contains(service.WIDGET_DRAGGING_CLASS)).toBeFalse();
+  });
+
   it('updates selected image fit mode', () => {
     service.selectWidget('2');
     service.setSelectedWidgetImageFitMode('contain');
