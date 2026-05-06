@@ -132,6 +132,14 @@ type ProjectImportNotice = {
 })
 export class CanvasService {
 
+    private static readonly TEXT_FONT_FAMILY_MAP: Record<WidgetTextFontFamily, string> = {
+        roboto: 'Roboto, Arial, Helvetica, sans-serif',
+        montserrat: 'Montserrat, Arial, Helvetica, sans-serif',
+        exo: 'Exo, Arial, Helvetica, sans-serif',
+        lora: 'Lora, Georgia, "Times New Roman", serif',
+        'fira-code': '"Fira Code", "SFMono-Regular", Menlo, Consolas, monospace',
+    };
+
     public readonly WIDGET_DRAGGING_CLASS = "app-canvas-widget-dragging" // TODO: should be customizable
     public readonly CANVAS_DRAGGING_CLASS = "app-canvas-dragging" // TODO: should be customizable
     public readonly WIDGET_RESIZING_CLASS = "app-canvas-widget-resizing" // TODO: should be customizable
@@ -765,6 +773,17 @@ export class CanvasService {
             return;
         }
 
+        const nextFontSize = widget.content.style.autoSize
+            ? this.computeAutoTextFontSize({
+                text: widget.content.text,
+                fontFamily,
+                widgetWidth: widget.width,
+                widgetHeight: widget.height,
+                widgetPadding: widget.padding ?? 0,
+                widgetBorderWidth: widget.borderWidth ?? 0,
+            })
+            : widget.content.style.fontSize;
+
         this.widgetsState.update({
             ...widget,
             content: {
@@ -772,6 +791,7 @@ export class CanvasService {
                 style: {
                     ...widget.content.style,
                     fontFamily,
+                    fontSize: nextFontSize,
                 },
             },
         });
@@ -2802,6 +2822,77 @@ export class CanvasService {
         }
 
         return window as unknown as FileSystemAccessApi;
+    }
+
+    private computeAutoTextFontSize({
+                                        text,
+                                        fontFamily,
+                                        widgetWidth,
+                                        widgetHeight,
+                                        widgetPadding,
+                                        widgetBorderWidth,
+                                    }: {
+        text: string;
+        fontFamily: WidgetTextFontFamily;
+        widgetWidth: number;
+        widgetHeight: number;
+        widgetPadding: number;
+        widgetBorderWidth: number;
+    }): number {
+        if (typeof document === 'undefined') {
+            return 1;
+        }
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) {
+            return 1;
+        }
+
+        const internalTextPadding = 8;
+        const horizontalInset = (widgetPadding + widgetBorderWidth + internalTextPadding) * 2;
+        const verticalInset = (widgetPadding + widgetBorderWidth + internalTextPadding) * 2;
+        const availableWidth = Math.max(1, Math.floor(widgetWidth - horizontalInset));
+        const availableHeight = Math.max(1, Math.floor(widgetHeight - verticalInset));
+        const lines = (text || '').split(/\r?\n/);
+        const normalizedLines = lines.length > 0 ? lines : [''];
+        const lineHeightRatio = 1.2;
+        const fontStack = CanvasService.TEXT_FONT_FAMILY_MAP[fontFamily];
+
+        const fits = (size: number): boolean => {
+            context.font = `${size}px ${fontStack}`;
+            const widestLine = normalizedLines.reduce((maxWidth, line) => {
+                const lineWidth = context.measureText(line).width;
+                return Math.max(maxWidth, lineWidth);
+            }, 0);
+
+            const textHeight = normalizedLines.length * size * lineHeightRatio;
+            return widestLine <= availableWidth + 1 && textHeight <= availableHeight + 1;
+        };
+
+        const minSize = 1;
+        const maxSize = Math.max(minSize, Math.floor(Math.max(availableWidth, availableHeight) * 2));
+
+        if (!fits(minSize)) {
+            return minSize;
+        }
+
+        let low = minSize;
+        let high = maxSize;
+        let best = minSize;
+
+        while (low <= high) {
+            const mid = Math.floor((low + high) / 2);
+
+            if (fits(mid)) {
+                best = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        return best;
     }
 
     private createWidget(type: WidgetContentType): void {

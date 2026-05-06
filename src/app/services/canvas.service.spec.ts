@@ -481,6 +481,24 @@ describe('CanvasService', () => {
     }
   });
 
+  it('recomputes font size when font family changes and autoSize is enabled', () => {
+    service.selectWidget('1');
+    service.setSelectedWidgetTextAutoSize(true);
+
+    const recomputeSpy = spyOn<any>(service, 'computeAutoTextFontSize').and.returnValue(17);
+
+    service.setSelectedWidgetTextFontFamily('montserrat');
+
+    expect(recomputeSpy).toHaveBeenCalled();
+
+    const widget = service.widgetsState.getById('1');
+    expect(widget?.content.type).toBe('text');
+    if (widget?.content.type === 'text') {
+      expect(widget.content.style.fontFamily).toBe('montserrat');
+      expect(widget.content.style.fontSize).toBe(17);
+    }
+  });
+
   it('updates and clears selected widget background', () => {
     service.selectWidget('1');
     service.setSelectedWidgetBackground('#12ab34');
