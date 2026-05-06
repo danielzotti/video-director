@@ -91,7 +91,6 @@
                     <app-canvas-settings-panel
                             [isOpen]="true"
                             panelMode="sidebar"
-                            title="Editor Settings"
                             (closed)="canvasService.setSettingsPanelLayout('closed')"
                     />
                 </aside>
@@ -107,7 +106,6 @@
                             [isOpen]="true"
                             [showBackdrop]="false"
                             panelMode="popover"
-                            title="Editor Settings"
                             [maxHeight]="floatingPanelMaxHeight()"
                             (closed)="canvasService.setSettingsPanelLayout('closed')"
                     />

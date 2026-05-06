@@ -31,6 +31,29 @@
 
   --presentation-element-bg-color: var(--black-transparent);
   --presentation-element-text-color: var(--white);
+
+  // DESIGN SYSTEM (dark)
+  --ds-surface-0: #161616;
+  --ds-surface-1: #1e1e1e;
+  --ds-surface-2: #2a2a2a;
+  --ds-surface-3: #383838;
+  --ds-surface-overlay: rgba(0, 0, 0, 0.55);
+
+  --ds-border-subtle: rgba(255, 255, 255, 0.07);
+  --ds-border-default: rgba(255, 255, 255, 0.12);
+  --ds-border-strong: rgba(255, 255, 255, 0.22);
+
+  --ds-text-primary: #e2e2e2;
+  --ds-text-secondary: #888888;
+  --ds-text-tertiary: #6f6f6f;
+  --ds-text-disabled: #505050;
+
+  --ds-accent-muted: rgba(247, 183, 51, 0.15);
+  --ds-accent-subtle: var(--ds-accent-muted);
+
+  --ds-panel-bg: var(--ds-surface-1);
+  --ds-panel-border: var(--ds-border-default);
+  --ds-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 @mixin light {
@@ -42,17 +65,17 @@
   --text-bg-color: var(--white);
   --accent-color: var(--orange);
 
-  --navbar-bg-color: var(--black-light);
-  --navbar-text-color: var(--white);
+  --navbar-bg-color: var(--white);
+  --navbar-text-color: var(--black-light);
   --navbar-text-active-color: var(--accent-color);
 
-  --footer-bg-color: var(--black-light);
-  --footer-text-color: var(--white);
+  --footer-bg-color: var(--white);
+  --footer-text-color: var(--gray-dark);
 
   // BUTTONS
   --btn-border-radius: var(--border-radius);
-  --btn-default-text-color: var(--white);
-  --btn-default-bg-color: var(--gray-dark);
+  --btn-default-text-color: var(--black-light);
+  --btn-default-bg-color: var(--white);
   --btn-primary-text-color: var(--white);
   --btn-primary-bg-color: var(--accent-color);
   --btn-secondary-text-color: var(--accent-color);
@@ -67,4 +90,27 @@
 
   --presentation-element-bg-color: var(--white-transparent);
   --presentation-element-text-color: var(--black);
+
+  // DESIGN SYSTEM (light)
+  --ds-surface-0: #ffffff;
+  --ds-surface-1: #f6f8fb;
+  --ds-surface-2: #ebeef3;
+  --ds-surface-3: #dde3ea;
+  --ds-surface-overlay: rgba(15, 15, 15, 0.35);
+
+  --ds-border-subtle: rgba(15, 15, 15, 0.08);
+  --ds-border-default: rgba(15, 15, 15, 0.14);
+  --ds-border-strong: rgba(15, 15, 15, 0.24);
+
+  --ds-text-primary: #151515;
+  --ds-text-secondary: #4d5562;
+  --ds-text-tertiary: #6f7885;
+  --ds-text-disabled: #9aa2ad;
+
+  --ds-accent-muted: rgba(194, 86, 9, 0.14);
+  --ds-accent-subtle: var(--ds-accent-muted);
+
+  --ds-panel-bg: var(--ds-surface-1);
+  --ds-panel-border: var(--ds-border-default);
+  --ds-panel-shadow: 0 10px 28px rgba(15, 15, 15, 0.12), 0 2px 6px rgba(15, 15, 15, 0.08);
 }

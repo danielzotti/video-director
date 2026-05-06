@@ -57,8 +57,8 @@
 }
 
 .canvas-wrapper {
-  border: 1px solid #f7b733;
-  background-color: #333;
+  border: 1px solid var(--ds-border-default);
+  background-color: var(--ds-surface-2);
   touch-action: none;
   flex: 1;
 }

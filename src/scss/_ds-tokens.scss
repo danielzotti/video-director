@@ -20,11 +20,13 @@
   // Text
   --ds-text-primary: #e2e2e2;
   --ds-text-secondary: #888888;
+  --ds-text-tertiary: #6f6f6f;
   --ds-text-disabled: #505050;
 
   // Accent – reuses the existing theme accent
   --ds-accent: var(--accent-color, #f7b733);
   --ds-accent-muted: rgba(247, 183, 51, 0.15);
+  --ds-accent-subtle: var(--ds-accent-muted);
 
   // Danger
   --ds-danger: #e25555;
