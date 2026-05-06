@@ -32,6 +32,14 @@
                         <div class="layer-item__content">
                             <div class="layer-item__actions">
                                 <button
+                                        class="layer-item__btn layer-item__btn--icon layer-item__btn--danger"
+                                        type="button"
+                                        title="Delete widget"
+                                        (click)="deleteLayer(item.uuid, $event)"
+                                >
+                                    <app-ui-icon name="trash"></app-ui-icon>
+                                </button>
+                                <button
                                         class="layer-item__btn layer-item__btn--icon"
                                         type="button"
                                         [class.layer-item__btn--active]="isLayerVisible(item.uuid)"

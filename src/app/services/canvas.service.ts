@@ -382,7 +382,14 @@ export class CanvasService {
         this.projectDirectoryName.set(directoryHandle.name ?? 'Selected folder');
         this.projectSyncError.set(null);
         await this.persistProjectDirectoryHandle(directoryHandle);
-        await this.syncProjectToDirectoryNow();
+
+        const isDirectoryEmpty = await this.isDirectoryEmpty(directoryHandle);
+        if (isDirectoryEmpty) {
+            await this.syncProjectToDirectoryNow();
+            return;
+        }
+
+        await this.loadProjectFromDirectory();
     }
 
     public disconnectProjectDirectory(): void {
@@ -614,6 +621,30 @@ export class CanvasService {
 
     public selectWidget(widgetId: string | null) {
         this.selectedWidgetId.set(widgetId);
+    }
+
+    public deleteSelectedWidget(): void {
+        const selectedId = this.selectedWidgetId();
+        if (!selectedId) {
+            return;
+        }
+
+        this.deleteWidget(selectedId);
+    }
+
+    public deleteWidget(widgetId: string): void {
+        const widget = this.widgetsState.getById(widgetId);
+        if (!widget) {
+            return;
+        }
+
+        this.widgetsState.remove({uuid: widgetId});
+
+        if (this.selectedWidgetId() === widgetId) {
+            this.selectedWidgetId.set(null);
+        }
+
+        this.objectSnapGuides.set({});
     }
 
     public getWidgetRenderZIndex(widget: Pick<WidgetStateItem, 'uuid' | 'z'>): number {
@@ -1799,6 +1830,18 @@ export class CanvasService {
 
             await assetsDirectory.removeEntry(entryName);
         }
+    }
+
+    private async isDirectoryEmpty(directoryHandle: FileSystemDirectoryHandleLike): Promise<boolean> {
+        if (!directoryHandle.entries) {
+            return false;
+        }
+
+        for await (const _entry of directoryHandle.entries()) {
+            return false;
+        }
+
+        return true;
     }
 
     private async hydrateSnapshotAssetsFromDirectory(

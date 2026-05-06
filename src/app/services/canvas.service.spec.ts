@@ -511,6 +511,24 @@ describe('CanvasService', () => {
     expect(widget?.visible).toBeFalse();
   });
 
+  it('deletes selected widget and clears selection', () => {
+    service.selectWidget('1');
+
+    service.deleteSelectedWidget();
+
+    expect(service.widgetsState.getById('1')).toBeUndefined();
+    expect(service.selectedWidgetId()).toBeNull();
+  });
+
+  it('deletes widget by id and keeps selection when another widget is selected', () => {
+    service.selectWidget('1');
+
+    service.deleteWidget('2');
+
+    expect(service.widgetsState.getById('2')).toBeUndefined();
+    expect(service.selectedWidgetId()).toBe('1');
+  });
+
   it('supports undo and redo for editor actions', async () => {
     const { canvas, wrapper } = createCanvasElements();
     service.init({ canvas, canvasWrapper: wrapper });
@@ -590,10 +608,70 @@ describe('CanvasService', () => {
     expect(fileMap.has('assets/widget-2.png')).toBeTrue();
 
     const rawProject = await (fileMap.get('state.json') as Blob).text();
-    const parsedProject = JSON.parse(rawProject) as {widgets: Array<{uuid: string; content: {type: string; src?: string}}>};
+    const parsedProject = JSON.parse(rawProject) as {widgets: {uuid: string; content: {type: string; src?: string}}[]};
     const imageWidget = parsedProject.widgets.find((widget) => widget.uuid === '2');
     expect(imageWidget?.content.type).toBe('image');
     expect(imageWidget?.content.src).toBe('assets/widget-2.png');
+  });
+
+  it('loads project from folder when connecting a non-empty directory', async () => {
+    service.setShowGrid(false);
+    service.setSnapToGrid(true);
+
+    const persistedWidgets = createSeedWidgets().map((widget) => {
+      if (widget.uuid !== '1') {
+        return widget;
+      }
+
+      return {
+        ...widget,
+        x: 456,
+        y: 321,
+      };
+    });
+
+    const persistedSnapshot = {
+      canvas: {
+        width: 900,
+        height: 500,
+        zoom: 1,
+        top: 0,
+        left: 0,
+        snapSize: 5,
+        canExitBorders: false,
+        canSnapToGrid: false,
+        canSnapToObjects: true,
+        canSnapToBorder: true,
+        canResizeWidget: false,
+        canMoveWidget: true,
+        showGrid: true,
+        showContainer: false,
+        debugMode: false,
+        debugPanelVisible: false,
+        settingsPanelLayout: 'fixed-right' as const,
+        layersPanelLayout: 'fixed-left' as const,
+        selectedWidgetId: '1',
+      },
+      widgets: persistedWidgets,
+    };
+
+    const fileMap = new Map<string, Blob>([
+      ['state.json', new Blob([JSON.stringify(persistedSnapshot)], {type: 'application/json'})],
+    ]);
+
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    await service.connectProjectDirectory();
+
+    expect(service.width()).toBe(900);
+    expect(service.height()).toBe(500);
+    expect(service.showGrid()).toBeTrue();
+    expect(service.canSnapToGrid()).toBeFalse();
+    expect(service.widgetsState.getById('1')?.x).toBe(456);
+    expect(service.widgetsState.getById('1')?.y).toBe(321);
   });
 
   it('marks project as pending when local changes are not synced yet', async () => {

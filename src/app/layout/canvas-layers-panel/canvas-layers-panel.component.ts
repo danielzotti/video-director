@@ -168,6 +168,11 @@ export class CanvasLayersPanelComponent {
         this.cs.setWidgetVisible(uuid, !this.isLayerVisible(uuid));
     }
 
+    protected deleteLayer(uuid: string, event: MouseEvent): void {
+        event.stopPropagation();
+        this.cs.deleteWidget(uuid);
+    }
+
     protected onLayerDragStart(uuid: string, event: DragEvent): void {
         event.stopPropagation();
         this.draggedLayerId = uuid;

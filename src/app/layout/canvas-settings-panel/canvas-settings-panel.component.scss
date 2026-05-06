@@ -135,6 +135,10 @@
     letter-spacing: 0.08em;
     color: var(--ds-text-secondary);
     margin-bottom: var(--ds-space-1);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   &__row {
@@ -155,6 +159,25 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--ds-space-2);
+  }
+
+  &__field-triplet {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ds-space-2);
+  }
+
+  &__geometry-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 1px minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--ds-space-2);
+    align-items: end;
+  }
+
+  &__vertical-separator {
+    align-self: stretch;
+    background: var(--ds-border-subtle);
+    border-radius: 999px;
   }
 
   &__field-label {

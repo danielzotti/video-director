@@ -34,7 +34,8 @@ export type UiIconName =
   | 'redo'
   | 'export-file'
   | 'import-file'
-  | 'export-image';
+  | 'export-image'
+  | 'trash';
 
 @Component({
   selector: 'app-ui-icon',
@@ -225,6 +226,13 @@ export type UiIconName =
           <circle cx="8.5" cy="8.5" r="1.5"/>
           <polyline points="21 15 16 10 5 21"/>
           <polyline points="14 10 17 7 21 11"/>
+        }
+        @case ('trash') {
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/>
+          <path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
         }
       }
     </svg>

@@ -50,7 +50,7 @@ export class CanvasSettingsPanelComponent {
   showBackdrop = input<boolean>(true);
   panelMode = input<'popover' | 'sidebar'>('popover');
   contentOnly = input<boolean>(false);
-  title = input<string>('Canvas Settings');
+  title = input<string>('Settings');
   maxHeight = input<string | null>(null);
   closed = output<void>();
 
@@ -614,6 +614,10 @@ export class CanvasSettingsPanelComponent {
 
    protected setWidgetVisible(value: boolean): void {
      this.cs.setSelectedWidgetVisible(value);
+   }
+
+   protected deleteSelectedWidget(): void {
+     this.cs.deleteSelectedWidget();
    }
 
    protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {

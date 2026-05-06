@@ -366,5 +366,16 @@
       border-color: var(--ds-accent);
       background-color: var(--ds-accent-subtle);
     }
+
+    &--danger {
+      color: var(--ds-danger);
+      border-color: color-mix(in srgb, var(--ds-danger), transparent 60%);
+
+      &:hover {
+        background-color: var(--ds-danger);
+        border-color: var(--ds-danger);
+        color: #fff;
+      }
+    }
   }
 }
