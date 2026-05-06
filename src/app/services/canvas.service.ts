@@ -127,6 +127,8 @@ type ProjectImportNotice = {
     message: string;
 };
 
+type ArrowMoveKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
+
 @Injectable({
     providedIn: 'root'
 })
@@ -981,6 +983,40 @@ export class CanvasService {
 
     public setSelectedWidgetHeight(value: number) {
         this.updateSelectedWidgetRect({height: value});
+    }
+
+    public moveSelectedWidgetByArrowKey({key, shiftKey}: { key: ArrowMoveKey; shiftKey: boolean }): boolean {
+        const widget = this.selectedWidget();
+        if (!widget) {
+            return false;
+        }
+
+        if (widget.locked || !this.canMoveWidget() || this.isDraggingWidget() || this.isResizingWidget()) {
+            return true;
+        }
+
+        const step = this.canSnapToGrid()
+            ? Math.max(1, this.snapSize()) * (shiftKey ? 10 : 1)
+            : (shiftKey ? 10 : 1);
+
+        const delta: Point2D = {x: 0, y: 0};
+
+        if (key === 'ArrowLeft') {
+            delta.x = -step;
+        } else if (key === 'ArrowRight') {
+            delta.x = step;
+        } else if (key === 'ArrowUp') {
+            delta.y = -step;
+        } else {
+            delta.y = step;
+        }
+
+        this.updateSelectedWidgetRect({
+            x: widget.x + delta.x,
+            y: widget.y + delta.y,
+        });
+
+        return true;
     }
 
     public isValidImageUrl(src: string): boolean {

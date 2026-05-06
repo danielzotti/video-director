@@ -94,6 +94,18 @@ export class CanvasDirective implements OnInit {
             return;
         }
 
+        if (this.isArrowMoveKey(event.code)) {
+            const handled = this.canvasService.moveSelectedWidgetByArrowKey({
+                key: event.code,
+                shiftKey: event.shiftKey,
+            });
+
+            if (handled) {
+                event.preventDefault();
+            }
+            return;
+        }
+
         if (event.code !== 'Space') {
             return;
         }
@@ -280,6 +292,10 @@ export class CanvasDirective implements OnInit {
         return this.isPrimaryShortcutModifierPressed(event)
             && !event.altKey
             && event.code === 'KeyZ';
+    }
+
+    private isArrowMoveKey(code: string): code is 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' {
+        return code === 'ArrowUp' || code === 'ArrowDown' || code === 'ArrowLeft' || code === 'ArrowRight';
     }
 
     private isPrimaryShortcutModifierPressed(event: KeyboardEvent): boolean {

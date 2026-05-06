@@ -282,6 +282,87 @@ describe('CanvasService', () => {
     expect(service.canMoveWidget()).toBeTrue();
   });
 
+  it('moves selected widget by 1px with arrow keys when snap to grid is disabled', () => {
+    service.selectWidget('1');
+    service.setSnapToGrid(false);
+    service.setWidgetMove(true);
+
+    const handled = service.moveSelectedWidgetByArrowKey({key: 'ArrowRight', shiftKey: false});
+    const widget = service.widgetsState.getById('1');
+
+    expect(handled).toBeTrue();
+    expect(widget?.x).toBe(1);
+    expect(widget?.y).toBe(0);
+  });
+
+  it('moves selected widget by 10px with shift+arrow when snap to grid is disabled', () => {
+    service.selectWidget('1');
+    service.setSnapToGrid(false);
+    service.setWidgetMove(true);
+
+    const handled = service.moveSelectedWidgetByArrowKey({key: 'ArrowDown', shiftKey: true});
+    const widget = service.widgetsState.getById('1');
+
+    expect(handled).toBeTrue();
+    expect(widget?.x).toBe(0);
+    expect(widget?.y).toBe(10);
+  });
+
+  it('moves selected widget by one grid step with arrow keys when snap to grid is enabled', () => {
+    service.selectWidget('1');
+    service.setSnapToGrid(true);
+    service.setSnapSize(8);
+    service.setWidgetMove(true);
+
+    const handled = service.moveSelectedWidgetByArrowKey({key: 'ArrowRight', shiftKey: false});
+    const widget = service.widgetsState.getById('1');
+
+    expect(handled).toBeTrue();
+    expect(widget?.x).toBe(8);
+    expect(widget?.y).toBe(0);
+  });
+
+  it('moves selected widget by three grid steps with shift+arrow when snap to grid is enabled', () => {
+    service.selectWidget('1');
+    service.setSnapToGrid(true);
+    service.setSnapSize(8);
+    service.setWidgetMove(true);
+
+    const handled = service.moveSelectedWidgetByArrowKey({key: 'ArrowDown', shiftKey: true});
+    const widget = service.widgetsState.getById('1');
+
+    expect(handled).toBeTrue();
+    expect(widget?.x).toBe(0);
+    expect(widget?.y).toBe(24);
+  });
+
+  it('does not move selected widget with arrow keys when widget move is disabled', () => {
+    service.selectWidget('1');
+    service.setSnapToGrid(false);
+    service.setWidgetMove(false);
+
+    const handled = service.moveSelectedWidgetByArrowKey({key: 'ArrowRight', shiftKey: false});
+    const widget = service.widgetsState.getById('1');
+
+    expect(handled).toBeTrue();
+    expect(widget?.x).toBe(0);
+    expect(widget?.y).toBe(0);
+  });
+
+  it('keeps selected widget inside bounds with arrow keys when exit borders is disabled', () => {
+    service.selectWidget('1');
+    service.setSnapToGrid(false);
+    service.setWidgetMove(true);
+    service.setExitBorders(false);
+
+    const handled = service.moveSelectedWidgetByArrowKey({key: 'ArrowLeft', shiftKey: false});
+    const widget = service.widgetsState.getById('1');
+
+    expect(handled).toBeTrue();
+    expect(widget?.x).toBe(0);
+    expect(widget?.y).toBe(0);
+  });
+
   it('selects widget on pointerdown even when widget move is disabled', () => {
     service.canvasEl = document.createElement('div');
     const widgetEl = document.createElement('div');
