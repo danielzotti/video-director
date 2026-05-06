@@ -1,9 +1,99 @@
 import {TestBed} from '@angular/core/testing';
 import {CanvasService} from './canvas.service';
+import {DEFAULT_WIDGET_TEXT_STYLE, WidgetStateList} from '../models/canvas-widget-state.models';
 
 describe('CanvasService', () => {
   let service: CanvasService;
   const editorStorageKey = 'video-director.editor-state.v1';
+
+  type WritableLike = { write: (data: Blob) => Promise<void>; close: () => Promise<void> };
+
+  interface MemoryFileHandle {
+    getFile: () => Promise<File>;
+    createWritable: () => Promise<WritableLike>;
+  }
+
+  interface MemoryDirectoryHandle {
+    name: string;
+    getDirectoryHandle: (name: string, options?: { create?: boolean }) => Promise<MemoryDirectoryHandle>;
+    getFileHandle: (name: string, options?: { create?: boolean }) => Promise<MemoryFileHandle>;
+    entries: () => AsyncIterable<[string, unknown]>;
+    removeEntry: (name: string) => Promise<void>;
+  }
+
+  const createMemoryDirectoryHandle = (
+    name: string,
+    pathPrefix = '',
+    files = new Map<string, Blob>(),
+  ): MemoryDirectoryHandle => {
+    const directories = new Map<string, MemoryDirectoryHandle>();
+
+    return {
+      name,
+      async getDirectoryHandle(childName: string, options?: { create?: boolean }) {
+        const existing = directories.get(childName);
+        if (existing) {
+          return existing;
+        }
+
+        if (!options?.create) {
+          throw new Error(`Directory not found: ${childName}`);
+        }
+
+        const childPath = pathPrefix ? `${pathPrefix}/${childName}` : childName;
+        const child = createMemoryDirectoryHandle(childName, childPath, files);
+        directories.set(childName, child);
+        return child;
+      },
+      async getFileHandle(fileName: string, options?: { create?: boolean }) {
+        const filePath = pathPrefix ? `${pathPrefix}/${fileName}` : fileName;
+        const existingBlob = files.get(filePath);
+
+        if (!existingBlob && !options?.create) {
+          throw new Error(`File not found: ${filePath}`);
+        }
+
+        return {
+          getFile: async () => {
+            const blob = files.get(filePath) ?? new Blob([], {type: 'application/octet-stream'});
+            return new File([blob], fileName, {type: blob.type || 'application/octet-stream'});
+          },
+          createWritable: async () => ({
+            write: async (data: Blob) => {
+              files.set(filePath, data);
+            },
+            close: async () => undefined,
+          }),
+        };
+      },
+      entries: async function* () {
+        const prefix = pathPrefix ? `${pathPrefix}/` : '';
+        const emitted = new Set<string>();
+
+        for (const filePath of files.keys()) {
+          if (!filePath.startsWith(prefix)) {
+            continue;
+          }
+
+          const relative = filePath.slice(prefix.length);
+          if (!relative || relative.includes('/')) {
+            continue;
+          }
+
+          if (emitted.has(relative)) {
+            continue;
+          }
+
+          emitted.add(relative);
+          yield [relative, {}];
+        }
+      },
+      removeEntry: async (entryName: string) => {
+        const entryPath = pathPrefix ? `${pathPrefix}/${entryName}` : entryName;
+        files.delete(entryPath);
+      },
+    };
+  };
 
   const createCanvasElements = () => {
     const canvas = document.createElement('div');
@@ -15,10 +105,55 @@ describe('CanvasService', () => {
     return { canvas, wrapper };
   };
 
+  const createSeedWidgets = (): WidgetStateList => [
+    {
+      uuid: '1',
+      x: 0,
+      y: 0,
+      z: 1,
+      width: 200,
+      height: 200,
+      content: {
+        type: 'text',
+        text: 'This is a title',
+        style: {...DEFAULT_WIDGET_TEXT_STYLE},
+      },
+    },
+    {
+      uuid: '2',
+      x: 100,
+      y: 200,
+      z: 2,
+      width: 400,
+      height: 200,
+      content: {
+        type: 'image',
+        src: 'https://example.com/logo.webp',
+        alt: 'Logo',
+        fitMode: 'contain',
+      },
+    },
+    {
+      uuid: '3',
+      x: 400,
+      y: 20,
+      z: 3,
+      width: 120,
+      height: 100,
+      content: {
+        type: 'text',
+        text: 'CTA',
+        style: {...DEFAULT_WIDGET_TEXT_STYLE},
+      },
+    },
+  ];
+
   beforeEach(() => {
     localStorage.removeItem(editorStorageKey);
+    delete (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker;
     TestBed.configureTestingModule({});
     service = TestBed.inject(CanvasService);
+    service.widgetsState.replaceAll(createSeedWidgets());
   });
 
   it('returns temporary top z-index for selected widget', () => {
@@ -399,6 +534,207 @@ describe('CanvasService', () => {
     expect(service.settingsPanelLayout()).toBe('floating');
     expect(service.widgetsState.getById('1')?.x).toBe(333);
     expect(service.widgetsState.getById('1')?.y).toBe(111);
+  });
+
+  it('connects a project folder and writes a synced project snapshot', async () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetImageSrc('data:image/png;base64,AAAA');
+
+    const fileMap = new Map<string, Blob>();
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    await service.connectProjectDirectory();
+
+    expect(service.isProjectDirectoryConnected()).toBeTrue();
+    expect(service.projectDirectoryName()).toBe('video-project');
+    expect(fileMap.has('state.json')).toBeTrue();
+    expect(fileMap.has('assets/widget-2.png')).toBeTrue();
+
+    const rawProject = await (fileMap.get('state.json') as Blob).text();
+    const parsedProject = JSON.parse(rawProject) as {widgets: Array<{uuid: string; content: {type: string; src?: string}}>};
+    const imageWidget = parsedProject.widgets.find((widget) => widget.uuid === '2');
+    expect(imageWidget?.content.type).toBe('image');
+    expect(imageWidget?.content.src).toBe('assets/widget-2.png');
+  });
+
+  it('marks project as pending when local changes are not synced yet', async () => {
+    const { canvas, wrapper } = createCanvasElements();
+    service.init({ canvas, canvasWrapper: wrapper });
+
+    const fileMap = new Map<string, Blob>();
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    await service.connectProjectDirectory();
+    expect(service.projectHasPendingChanges()).toBeFalse();
+
+    service.setShowGrid(!service.showGrid());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(service.projectHasPendingChanges()).toBeTrue();
+
+    await service.syncProjectToDirectoryNow();
+    expect(service.projectHasPendingChanges()).toBeFalse();
+  });
+
+  it('removes stale asset files when synced widgets no longer reference them', async () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetImageSrc('data:image/png;base64,AAAA');
+
+    const fileMap = new Map<string, Blob>();
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    const pickerSpy = jasmine.createSpy('showDirectoryPicker').and.resolveTo(directoryHandle);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = pickerSpy;
+
+    await service.connectProjectDirectory();
+    expect(fileMap.has('assets/widget-2.png')).toBeTrue();
+
+    service.setSelectedWidgetContentType('text');
+    await service.syncProjectToDirectoryNow();
+
+    expect(fileMap.has('assets/widget-2.png')).toBeFalse();
+  });
+
+  it('keeps non-managed asset files during stale cleanup', async () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetImageSrc('data:image/png;base64,AAAA');
+
+    const fileMap = new Map<string, Blob>([
+      ['assets/custom-logo.png', new Blob(['manual'], {type: 'image/png'})],
+    ]);
+
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    await service.connectProjectDirectory();
+    expect(fileMap.has('assets/widget-2.png')).toBeTrue();
+
+    service.setSelectedWidgetContentType('text');
+    await service.syncProjectToDirectoryNow();
+
+    expect(fileMap.has('assets/widget-2.png')).toBeFalse();
+    expect(fileMap.has('assets/custom-logo.png')).toBeTrue();
+  });
+
+  it('eagerly writes image asset to project folder when importing from file while folder is connected', async () => {
+    service.selectWidget('2');
+
+    const fileMap = new Map<string, Blob>();
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    await service.connectProjectDirectory();
+    fileMap.clear(); // clear the initial sync writes
+
+    const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    const binary = atob(pngBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const file = new File([bytes], 'photo.png', {type: 'image/png'});
+    await service.setSelectedWidgetImageFromFile(file);
+
+    // Asset must be on disk immediately (eager write, not waiting for debounce)
+    expect(fileMap.has('assets/widget-2.png')).toBeTrue();
+
+    // Runtime widget src must still be a data URL (for in-browser rendering)
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('image');
+    if (widget?.content.type === 'image') {
+      expect(widget.content.src.startsWith('data:image/png;base64,')).toBeTrue();
+    }
+  });
+
+  it('stores managed asset paths instead of inline image blobs in localStorage when folder sync is connected', async () => {
+    const { canvas, wrapper } = createCanvasElements();
+    service.init({ canvas, canvasWrapper: wrapper });
+    service.selectWidget('2');
+    service.setSelectedWidgetImageSrc('data:image/png;base64,AAAA');
+
+    const fileMap = new Map<string, Blob>();
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    await service.connectProjectDirectory();
+    service.setShowGrid(!service.showGrid());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const raw = localStorage.getItem(editorStorageKey);
+    expect(raw).toBeTruthy();
+    expect(raw).not.toContain('data:image/png;base64');
+    expect(raw).toContain('assets/widget-2.png');
+  });
+
+  it('hydrates managed asset paths to data URLs on init when folder sync is already connected', async () => {
+    const { canvas, wrapper } = createCanvasElements();
+    service.init({ canvas, canvasWrapper: wrapper });
+
+    const fileMap = new Map<string, Blob>();
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    await service.connectProjectDirectory();
+    fileMap.set('assets/widget-2.png', new Blob(['png-binary'], {type: 'image/png'}));
+
+    const persistedSnapshot = {
+      canvas: {
+        width: service.width(),
+        height: service.height(),
+        zoom: service.zoom(),
+        top: service.top(),
+        left: service.left(),
+        snapSize: service.snapSize(),
+        canExitBorders: service.canExitBorders(),
+        canSnapToGrid: service.canSnapToGrid(),
+        canSnapToObjects: service.canSnapToObjects(),
+        canSnapToBorder: service.canSnapToBorder(),
+        canResizeWidget: service.canResizeWidget(),
+        canMoveWidget: service.canMoveWidget(),
+        showGrid: service.showGrid(),
+        showContainer: service.showContainer(),
+        debugMode: service.debugMode(),
+        debugPanelVisible: service.debugPanelVisible(),
+        settingsPanelLayout: service.settingsPanelLayout(),
+        layersPanelLayout: service.layersPanelLayout(),
+        selectedWidgetId: service.selectedWidgetId(),
+      },
+      widgets: service.widgetsState.list().map((widget) => {
+        if (widget.uuid !== '2' || widget.content.type !== 'image') {
+          return widget;
+        }
+
+        return {
+          ...widget,
+          content: {
+            ...widget.content,
+            src: 'assets/widget-2.png',
+          },
+        };
+      }),
+    };
+
+    localStorage.setItem(editorStorageKey, JSON.stringify(persistedSnapshot));
+    service.init({ canvas, canvasWrapper: wrapper });
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const imageWidget = service.widgetsState.getById('2');
+    expect(imageWidget?.content.type).toBe('image');
+    if (imageWidget?.content.type === 'image') {
+      expect(imageWidget.content.src.startsWith('data:image/')).toBeTrue();
+    }
   });
 });
 

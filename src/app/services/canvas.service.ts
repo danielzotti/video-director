@@ -52,6 +52,16 @@ interface FileSystemFileHandleLike {
     }>;
 }
 
+interface FileSystemDirectoryHandleLike {
+    name?: string;
+    getDirectoryHandle: (name: string, options?: { create?: boolean }) => Promise<FileSystemDirectoryHandleLike>;
+    getFileHandle: (name: string, options?: { create?: boolean }) => Promise<FileSystemFileHandleLike>;
+    entries?: () => AsyncIterable<[string, unknown]>;
+    removeEntry?: (name: string, options?: { recursive?: boolean }) => Promise<void>;
+    queryPermission?: (options?: { mode?: 'read' | 'readwrite' }) => Promise<'granted' | 'denied' | 'prompt'>;
+    requestPermission?: (options?: { mode?: 'read' | 'readwrite' }) => Promise<'granted' | 'denied' | 'prompt'>;
+}
+
 interface FileSystemAccessApi {
     showOpenFilePicker?: (options?: {
         multiple?: boolean;
@@ -69,6 +79,11 @@ interface FileSystemAccessApi {
             accept: Record<string, string[]>;
         }[];
     }) => Promise<FileSystemFileHandleLike>;
+    showDirectoryPicker?: (options?: {
+        id?: string;
+        mode?: 'read' | 'readwrite';
+        startIn?: string;
+    }) => Promise<FileSystemDirectoryHandleLike>;
 }
 
 interface CanvasSnapshot {
@@ -169,6 +184,12 @@ export class CanvasService {
     private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(null, null);
 
     private readonly STORAGE_KEY = 'video-director.editor-state.v1';
+    private readonly PROJECT_STATE_FILE = 'state.json';
+    private readonly PROJECT_ASSETS_DIR = 'assets';
+    private readonly PROJECT_MANAGED_ASSET_PREFIX = 'widget-';
+    private readonly PROJECT_HANDLE_DB_NAME = 'video-director.fs-handles.v1';
+    private readonly PROJECT_HANDLE_STORE_NAME = 'handles';
+    private readonly PROJECT_HANDLE_KEY = 'project-directory';
     private readonly HISTORY_LIMIT = 100;
     private readonly undoStack = signal<EditorStateSnapshot[]>([]);
     private readonly redoStack = signal<EditorStateSnapshot[]>([]);
@@ -181,7 +202,21 @@ export class CanvasService {
     private pendingSnapshot: EditorStateSnapshot | null = null;
     private isSnapshotFlushScheduled = false;
 
+    private projectDirectoryHandle: FileSystemDirectoryHandleLike | null = null;
+    private readonly projectSyncDebounceMs = 700;
+    private projectSyncTimeout: ReturnType<typeof setTimeout> | null = null;
+    private isProjectSyncInFlight = false;
+    private isProjectSyncQueued = false;
+
+    public projectDirectoryName = signal<string | null>(null);
+    public projectSyncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
+    public projectLastSyncedAt = signal<Date | null>(null);
+    public projectSyncError = signal<string | null>(null);
+    public projectHasPendingChanges = signal(false);
+
     constructor() {
+        void this.restoreProjectDirectoryConnection();
+
         effect(() => {
             if (!this.canManageCanvas()) {
                 return;
@@ -264,6 +299,10 @@ export class CanvasService {
         this.currentSnapshot = this.buildSnapshot();
         this.writeSnapshotToStorage(this.currentSnapshot);
         this.isHistoryReady = true;
+
+        if (savedSnapshot && this.projectDirectoryHandle) {
+            void this.hydrateCurrentSnapshotAssetSourcesFromConnectedDirectory();
+        }
     }
 
     public undo() {
@@ -296,6 +335,123 @@ export class CanvasService {
         this.applySnapshot(next);
         this.currentSnapshot = this.buildSnapshot();
         this.writeSnapshotToStorage(this.currentSnapshot);
+    }
+
+    public isProjectDirectorySyncSupported(): boolean {
+        return !!this.getFileSystemAccessApi()?.showDirectoryPicker;
+    }
+
+    public isProjectDirectoryConnected(): boolean {
+        return !!this.projectDirectoryHandle;
+    }
+
+    public async connectProjectDirectory(): Promise<void> {
+        const fsApi = this.getFileSystemAccessApi();
+        if (!fsApi?.showDirectoryPicker) {
+            throw new Error('Directory sync is not supported by this browser.');
+        }
+
+        const directoryHandle = await fsApi.showDirectoryPicker({
+            id: 'video-director-project-folder',
+            mode: 'readwrite',
+        });
+
+        this.projectDirectoryHandle = directoryHandle;
+        this.projectDirectoryName.set(directoryHandle.name ?? 'Selected folder');
+        this.projectSyncError.set(null);
+        await this.persistProjectDirectoryHandle(directoryHandle);
+        await this.syncProjectToDirectoryNow();
+    }
+
+    public disconnectProjectDirectory(): void {
+        this.projectDirectoryHandle = null;
+        this.projectDirectoryName.set(null);
+        this.projectSyncStatus.set('idle');
+        this.projectSyncError.set(null);
+        this.projectLastSyncedAt.set(null);
+        this.projectHasPendingChanges.set(false);
+        void this.clearPersistedProjectDirectoryHandle();
+
+        if (this.projectSyncTimeout) {
+            clearTimeout(this.projectSyncTimeout);
+            this.projectSyncTimeout = null;
+        }
+    }
+
+    public async loadProjectFromDirectory(): Promise<void> {
+        const directoryHandle = this.projectDirectoryHandle;
+        if (!directoryHandle) {
+            throw new Error('No project folder connected.');
+        }
+
+        this.projectSyncStatus.set('syncing');
+        this.projectSyncError.set(null);
+
+        try {
+            const projectFile = await directoryHandle.getFileHandle(this.PROJECT_STATE_FILE, {create: false});
+            const raw = await (await projectFile.getFile()).text();
+            const parsed = JSON.parse(raw) as Partial<EditorStateSnapshot>;
+
+            if (!parsed.canvas || !Array.isArray(parsed.widgets)) {
+                throw new Error('Invalid project file format.');
+            }
+
+            const hydratedSnapshot = await this.hydrateSnapshotAssetsFromDirectory(
+                {
+                    canvas: parsed.canvas as CanvasSnapshot,
+                    widgets: parsed.widgets as WidgetStateItem[],
+                },
+                directoryHandle,
+            );
+
+            this.applySnapshot(hydratedSnapshot);
+            this.currentSnapshot = this.buildSnapshot();
+            this.writeSnapshotToStorage(this.currentSnapshot);
+            this.undoStack.set([]);
+            this.redoStack.set([]);
+            this.projectSyncStatus.set('idle');
+            this.projectLastSyncedAt.set(new Date());
+            this.projectHasPendingChanges.set(false);
+        } catch (error) {
+            this.projectSyncStatus.set('error');
+            this.projectSyncError.set(error instanceof Error ? error.message : 'Unable to load project from directory.');
+            throw error;
+        }
+    }
+
+    public async syncProjectToDirectoryNow(): Promise<void> {
+        const directoryHandle = this.projectDirectoryHandle;
+        if (!directoryHandle) {
+            throw new Error('No project folder connected.');
+        }
+
+        if (this.isProjectSyncInFlight) {
+            this.isProjectSyncQueued = true;
+            return;
+        }
+
+        this.isProjectSyncInFlight = true;
+        this.projectSyncStatus.set('syncing');
+        this.projectSyncError.set(null);
+
+        try {
+            const directorySnapshot = await this.createDirectorySnapshot(directoryHandle);
+            await this.writeSnapshotToDirectory(directoryHandle, directorySnapshot);
+            this.projectSyncStatus.set('idle');
+            this.projectLastSyncedAt.set(new Date());
+            this.projectHasPendingChanges.set(false);
+        } catch (error) {
+            this.projectSyncStatus.set('error');
+            this.projectSyncError.set(error instanceof Error ? error.message : 'Unable to sync project to directory.');
+            throw error;
+        } finally {
+            this.isProjectSyncInFlight = false;
+
+            if (this.isProjectSyncQueued) {
+                this.isProjectSyncQueued = false;
+                void this.syncProjectToDirectoryNow();
+            }
+        }
     }
 
     public setSpacePressed(pressed: boolean) {
@@ -776,6 +932,8 @@ export class CanvasService {
 
         const dataUrl = await this.blobToDataUrl(file);
         this.applySelectedWidgetImageDataUrl({dataUrl, fallbackName: file.name});
+        // Eagerly write to the project folder if connected so the asset is on disk immediately.
+        await this.eagerWriteImageToProjectFolder(selected.uuid, file);
     }
 
     public async setSelectedWidgetImageFromUrl(url: string): Promise<void> {
@@ -804,6 +962,11 @@ export class CanvasService {
         const fallbackName = this.resolveFileNameFromSource(trimmedUrl, 'image-from-url');
         const dataUrl = await this.blobToDataUrl(imageBlob);
         this.applySelectedWidgetImageDataUrl({dataUrl, fallbackName});
+        // Eagerly write to the project folder if connected so the asset is on disk immediately.
+        const widgetUuid = this.selectedWidget()?.uuid;
+        if (widgetUuid) {
+            await this.eagerWriteImageToProjectFolder(widgetUuid, imageBlob);
+        }
     }
 
     public async saveSelectedWidgetImageToDisk(): Promise<void> {
@@ -855,6 +1018,30 @@ export class CanvasService {
                 alt: nextAlt,
             },
         });
+    }
+
+    /**
+     * If a project folder is connected, eagerly writes the image blob to the managed
+     * assets directory so it is on disk immediately rather than waiting for the next
+     * debounced sync cycle.  The widget state src remains as a data URL for in-browser
+     * rendering; the compact storage snapshot (localStorage) will reference the asset
+     * path instead.  Failures are silently swallowed — the debounced sync is the
+     * authoritative write path and will retry.
+     */
+    private async eagerWriteImageToProjectFolder(widgetUuid: string, blob: Blob): Promise<void> {
+        const directoryHandle = this.projectDirectoryHandle;
+        if (!directoryHandle) {
+            return;
+        }
+
+        try {
+            const assetsDirectory = await directoryHandle.getDirectoryHandle(this.PROJECT_ASSETS_DIR, {create: true});
+            const extension = this.mimeTypeToExtension(blob.type || 'image/png');
+            const assetName = `${this.PROJECT_MANAGED_ASSET_PREFIX}${widgetUuid}.${extension}`;
+            await this.writeBlobToDirectory(assetsDirectory, assetName, blob);
+        } catch {
+            // Non-critical: debounced sync will write on the next cycle.
+        }
     }
 
     public resetWidgetToSnapSize() {
@@ -1298,6 +1485,7 @@ export class CanvasService {
         if (this.isApplyingSnapshot) {
             this.currentSnapshot = nextSnapshot;
             this.writeSnapshotToStorage(nextSnapshot);
+            this.scheduleProjectDirectorySync();
             return;
         }
 
@@ -1313,6 +1501,24 @@ export class CanvasService {
 
         this.currentSnapshot = nextSnapshot;
         this.writeSnapshotToStorage(nextSnapshot);
+        this.scheduleProjectDirectorySync();
+    }
+
+    private scheduleProjectDirectorySync(): void {
+        if (!this.projectDirectoryHandle) {
+            return;
+        }
+
+        this.projectHasPendingChanges.set(true);
+
+        if (this.projectSyncTimeout) {
+            clearTimeout(this.projectSyncTimeout);
+        }
+
+        this.projectSyncTimeout = setTimeout(() => {
+            this.projectSyncTimeout = null;
+            void this.syncProjectToDirectoryNow();
+        }, this.projectSyncDebounceMs);
     }
 
     private limitHistory(items: EditorStateSnapshot[]): EditorStateSnapshot[] {
@@ -1438,7 +1644,199 @@ export class CanvasService {
             return;
         }
 
-        storage.setItem(this.STORAGE_KEY, JSON.stringify(snapshot));
+        const storageSnapshot = this.createStorageSnapshot(snapshot);
+        storage.setItem(this.STORAGE_KEY, JSON.stringify(storageSnapshot));
+    }
+
+    private createStorageSnapshot(snapshot: EditorStateSnapshot): EditorStateSnapshot {
+        if (!this.projectDirectoryHandle) {
+            return {
+                canvas: {...snapshot.canvas},
+                widgets: snapshot.widgets.map((widget) => this.cloneWidget(widget)),
+            };
+        }
+
+        return {
+            canvas: {...snapshot.canvas},
+            widgets: snapshot.widgets.map((widget) => {
+                if (widget.content.type !== 'image') {
+                    return this.cloneWidget(widget);
+                }
+
+                const source = widget.content.src.trim();
+                const isManagedAssetSource = source.startsWith(`${this.PROJECT_ASSETS_DIR}/`);
+                const isExternalUrl = source.startsWith('http://') || source.startsWith('https://');
+                const isInlineOrBlobSource = source.startsWith('data:') || source.startsWith('blob:');
+
+                if (!source || isManagedAssetSource || isExternalUrl || !isInlineOrBlobSource) {
+                    return this.cloneWidget(widget);
+                }
+
+                const extension = this.resolveImageSourceExtension(source);
+
+                return {
+                    ...this.cloneWidget(widget),
+                    content: {
+                        ...widget.content,
+                        src: `${this.PROJECT_ASSETS_DIR}/${this.PROJECT_MANAGED_ASSET_PREFIX}${widget.uuid}.${extension}`,
+                    },
+                };
+            }),
+        };
+    }
+
+    private resolveImageSourceExtension(source: string): string {
+        if (source.startsWith('data:')) {
+            const mimeMatch = source.match(/^data:([^;]+);base64,/);
+            if (mimeMatch?.[1]) {
+                return this.mimeTypeToExtension(mimeMatch[1]);
+            }
+            return 'png';
+        }
+
+        if (source.startsWith('blob:')) {
+            return 'png';
+        }
+
+        try {
+            const url = new URL(source);
+            const fileName = url.pathname.split('/').filter(Boolean).pop() ?? '';
+            const extension = fileName.split('.').pop()?.toLowerCase();
+            return extension && /^[a-z0-9]+$/.test(extension) ? extension : 'png';
+        } catch {
+            return 'png';
+        }
+    }
+
+    private async createDirectorySnapshot(directoryHandle: FileSystemDirectoryHandleLike): Promise<EditorStateSnapshot> {
+        const snapshot = this.buildSnapshot();
+        const assetsDirectory = await directoryHandle.getDirectoryHandle(this.PROJECT_ASSETS_DIR, {create: true});
+        const usedAssetNames = new Set<string>();
+
+        const widgets = await Promise.all(snapshot.widgets.map(async (widget) => {
+            if (widget.content.type !== 'image') {
+                return this.cloneWidget(widget);
+            }
+
+            const source = widget.content.src.trim();
+            if (!source) {
+                return this.cloneWidget(widget);
+            }
+
+            const blob = await this.resolveImageBlobFromSource(source);
+            if (!blob) {
+                return this.cloneWidget(widget);
+            }
+
+            const extension = this.mimeTypeToExtension(blob.type || 'image/png');
+            const assetName = `${this.PROJECT_MANAGED_ASSET_PREFIX}${widget.uuid}.${extension}`;
+            await this.writeBlobToDirectory(assetsDirectory, assetName, blob);
+            usedAssetNames.add(assetName);
+
+            return {
+                ...this.cloneWidget(widget),
+                content: {
+                    ...widget.content,
+                    src: `${this.PROJECT_ASSETS_DIR}/${assetName}`,
+                },
+            };
+        }));
+
+        await this.cleanupUnusedAssetsInDirectory(assetsDirectory, usedAssetNames);
+
+        return {
+            canvas: {...snapshot.canvas},
+            widgets,
+        };
+    }
+
+    private async cleanupUnusedAssetsInDirectory(
+        assetsDirectory: FileSystemDirectoryHandleLike,
+        usedAssetNames: Set<string>,
+    ): Promise<void> {
+        if (!assetsDirectory.entries || !assetsDirectory.removeEntry) {
+            return;
+        }
+
+        for await (const [entryName] of assetsDirectory.entries()) {
+            if (!entryName.startsWith(this.PROJECT_MANAGED_ASSET_PREFIX)) {
+                continue;
+            }
+
+            if (usedAssetNames.has(entryName)) {
+                continue;
+            }
+
+            await assetsDirectory.removeEntry(entryName);
+        }
+    }
+
+    private async hydrateSnapshotAssetsFromDirectory(
+        snapshot: EditorStateSnapshot,
+        directoryHandle: FileSystemDirectoryHandleLike,
+    ): Promise<EditorStateSnapshot> {
+        const widgets = await Promise.all(snapshot.widgets.map(async (widget) => {
+            if (widget.content.type !== 'image') {
+                return this.cloneWidget(widget);
+            }
+
+            const source = widget.content.src.trim();
+            if (!source.startsWith(`${this.PROJECT_ASSETS_DIR}/`)) {
+                return this.cloneWidget(widget);
+            }
+
+            try {
+                const assetName = source.slice((`${this.PROJECT_ASSETS_DIR}/`).length);
+                const assetsDirectory = await directoryHandle.getDirectoryHandle(this.PROJECT_ASSETS_DIR, {create: false});
+                const fileHandle = await assetsDirectory.getFileHandle(assetName, {create: false});
+                const file = await fileHandle.getFile();
+                const dataUrl = await this.blobToDataUrl(file);
+
+                return {
+                    ...this.cloneWidget(widget),
+                    content: {
+                        ...widget.content,
+                        src: dataUrl,
+                    },
+                };
+            } catch {
+                return this.cloneWidget(widget);
+            }
+        }));
+
+        return {
+            canvas: {...snapshot.canvas},
+            widgets,
+        };
+    }
+
+    private async writeSnapshotToDirectory(
+        directoryHandle: FileSystemDirectoryHandleLike,
+        snapshot: EditorStateSnapshot,
+    ): Promise<void> {
+        const fileHandle = await directoryHandle.getFileHandle(this.PROJECT_STATE_FILE, {create: true});
+        if (!fileHandle.createWritable) {
+            throw new Error('The selected folder does not support write operations.');
+        }
+
+        const writable = await fileHandle.createWritable();
+        await writable.write(new Blob([JSON.stringify(snapshot, null, 2)], {type: 'application/json'}));
+        await writable.close();
+    }
+
+    private async writeBlobToDirectory(
+        directoryHandle: FileSystemDirectoryHandleLike,
+        fileName: string,
+        blob: Blob,
+    ): Promise<void> {
+        const fileHandle = await directoryHandle.getFileHandle(fileName, {create: true});
+        if (!fileHandle.createWritable) {
+            throw new Error('Cannot write asset file to the selected directory.');
+        }
+
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
     }
 
     private getLocalStorage(): Storage | null {
@@ -1451,6 +1849,163 @@ export class CanvasService {
         } catch {
             return null;
         }
+    }
+
+    private async restoreProjectDirectoryConnection(): Promise<void> {
+        const restoredHandle = await this.readPersistedProjectDirectoryHandle();
+        if (!restoredHandle) {
+            return;
+        }
+
+        const permission = await this.resolveDirectoryPermission(restoredHandle, false);
+        if (permission !== 'granted') {
+            await this.clearPersistedProjectDirectoryHandle();
+            return;
+        }
+
+        this.projectDirectoryHandle = restoredHandle;
+        this.projectDirectoryName.set(restoredHandle.name ?? 'Selected folder');
+        this.projectSyncStatus.set('idle');
+        this.projectSyncError.set(null);
+
+        if (this.isHistoryReady) {
+            void this.hydrateCurrentSnapshotAssetSourcesFromConnectedDirectory();
+        }
+    }
+
+    private async hydrateCurrentSnapshotAssetSourcesFromConnectedDirectory(): Promise<void> {
+        const directoryHandle = this.projectDirectoryHandle;
+        if (!directoryHandle) {
+            return;
+        }
+
+        const currentSnapshot = this.buildSnapshot();
+        const hasManagedAssetReferences = currentSnapshot.widgets.some((widget) => {
+            return widget.content.type === 'image' && widget.content.src.trim().startsWith(`${this.PROJECT_ASSETS_DIR}/`);
+        });
+
+        if (!hasManagedAssetReferences) {
+            return;
+        }
+
+        const hydratedSnapshot = await this.hydrateSnapshotAssetsFromDirectory(currentSnapshot, directoryHandle);
+        if (this.areSnapshotsEqual(currentSnapshot, hydratedSnapshot)) {
+            return;
+        }
+
+        const wasHistoryReady = this.isHistoryReady;
+        this.isHistoryReady = false;
+        this.applySnapshot(hydratedSnapshot);
+        this.currentSnapshot = this.buildSnapshot();
+        this.writeSnapshotToStorage(this.currentSnapshot);
+        this.isHistoryReady = wasHistoryReady;
+    }
+
+    private async resolveDirectoryPermission(
+        directoryHandle: FileSystemDirectoryHandleLike,
+        requestIfPrompt: boolean,
+    ): Promise<'granted' | 'denied' | 'prompt'> {
+        if (!directoryHandle.queryPermission) {
+            return 'granted';
+        }
+
+        const current = await directoryHandle.queryPermission({mode: 'readwrite'});
+        if (current !== 'prompt' || !requestIfPrompt || !directoryHandle.requestPermission) {
+            return current;
+        }
+
+        return directoryHandle.requestPermission({mode: 'readwrite'});
+    }
+
+    private async persistProjectDirectoryHandle(directoryHandle: FileSystemDirectoryHandleLike): Promise<void> {
+        const db = await this.openProjectHandleDb();
+        if (!db) {
+            return;
+        }
+
+        try {
+            await new Promise<void>((resolve) => {
+                const tx = db.transaction(this.PROJECT_HANDLE_STORE_NAME, 'readwrite');
+                try {
+                    tx.objectStore(this.PROJECT_HANDLE_STORE_NAME).put(directoryHandle, this.PROJECT_HANDLE_KEY);
+                } catch {
+                    resolve();
+                    return;
+                }
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => resolve();
+                tx.onabort = () => resolve();
+            });
+        } finally {
+            db.close();
+        }
+    }
+
+    private async readPersistedProjectDirectoryHandle(): Promise<FileSystemDirectoryHandleLike | null> {
+        const db = await this.openProjectHandleDb();
+        if (!db) {
+            return null;
+        }
+
+        try {
+            return await new Promise<FileSystemDirectoryHandleLike | null>((resolve) => {
+                const tx = db.transaction(this.PROJECT_HANDLE_STORE_NAME, 'readonly');
+                const req = tx.objectStore(this.PROJECT_HANDLE_STORE_NAME).get(this.PROJECT_HANDLE_KEY);
+
+                req.onsuccess = () => resolve((req.result as FileSystemDirectoryHandleLike | undefined) ?? null);
+                req.onerror = () => resolve(null);
+                tx.onabort = () => resolve(null);
+            });
+        } finally {
+            db.close();
+        }
+    }
+
+    private async clearPersistedProjectDirectoryHandle(): Promise<void> {
+        const db = await this.openProjectHandleDb();
+        if (!db) {
+            return;
+        }
+
+        try {
+            await new Promise<void>((resolve) => {
+                const tx = db.transaction(this.PROJECT_HANDLE_STORE_NAME, 'readwrite');
+                tx.objectStore(this.PROJECT_HANDLE_STORE_NAME).delete(this.PROJECT_HANDLE_KEY);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => resolve();
+                tx.onabort = () => resolve();
+            });
+        } finally {
+            db.close();
+        }
+    }
+
+    private openProjectHandleDb(): Promise<IDBDatabase | null> {
+        return new Promise((resolve) => {
+            if (typeof indexedDB === 'undefined') {
+                resolve(null);
+                return;
+            }
+
+            let request: IDBOpenDBRequest;
+            try {
+                request = indexedDB.open(this.PROJECT_HANDLE_DB_NAME, 1);
+            } catch {
+                resolve(null);
+                return;
+            }
+
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(this.PROJECT_HANDLE_STORE_NAME)) {
+                    db.createObjectStore(this.PROJECT_HANDLE_STORE_NAME);
+                }
+            };
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => resolve(null);
+            request.onblocked = () => resolve(null);
+        });
     }
 
     public exportToFile(filename = 'project'): void {

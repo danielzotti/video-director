@@ -240,8 +240,96 @@ export class CanvasSettingsPanelComponent {
     return this.cs.canSnapToGrid() ? this.cs.snapSize() : 1;
   }
 
+  protected get isProjectDirectorySyncSupported(): boolean {
+    return this.cs.isProjectDirectorySyncSupported();
+  }
+
+  protected get isProjectDirectoryConnected(): boolean {
+    return this.cs.isProjectDirectoryConnected();
+  }
+
+  protected get projectDirectoryName(): string {
+    return this.cs.projectDirectoryName() ?? '-';
+  }
+
+  protected get projectSyncStatusLabel(): string {
+    const status = this.cs.projectSyncStatus();
+
+    if (status === 'syncing') {
+      return 'Syncing...';
+    }
+
+    if (status === 'error') {
+      return 'Sync error';
+    }
+
+    const lastSync = this.cs.projectLastSyncedAt();
+    return lastSync ? `Last sync: ${lastSync.toLocaleTimeString()}` : 'Idle';
+  }
+
+  protected get hasPendingProjectChanges(): boolean {
+    return this.cs.projectHasPendingChanges();
+  }
+
+  protected get projectSyncBadgeVariant(): 'idle' | 'pending' | 'syncing' | 'error' {
+    const status = this.cs.projectSyncStatus();
+    if (status === 'syncing' || status === 'error') {
+      return status;
+    }
+
+    return this.hasPendingProjectChanges ? 'pending' : 'idle';
+  }
+
+  protected get projectSyncError(): string | null {
+    return this.cs.projectSyncError();
+  }
+
+  protected get isProjectSyncBusy(): boolean {
+    return this.cs.projectSyncStatus() === 'syncing';
+  }
+
   protected setSnapSize(val: string | number): void {
     this.cs.setSnapSize(Number(val) || 1);
+  }
+
+  protected async connectProjectDirectory(): Promise<void> {
+    try {
+      await this.cs.connectProjectDirectory();
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') {
+        return;
+      }
+
+      console.error('[CanvasSettingsPanel] connectProjectDirectory failed:', err);
+    }
+  }
+
+  protected disconnectProjectDirectory(): void {
+    this.cs.disconnectProjectDirectory();
+  }
+
+  protected async syncProjectDirectoryNow(): Promise<void> {
+    try {
+      await this.cs.syncProjectToDirectoryNow();
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') {
+        return;
+      }
+
+      console.error('[CanvasSettingsPanel] syncProjectDirectoryNow failed:', err);
+    }
+  }
+
+  protected async loadProjectFromDirectory(): Promise<void> {
+    try {
+      await this.cs.loadProjectFromDirectory();
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') {
+        return;
+      }
+
+      console.error('[CanvasSettingsPanel] loadProjectFromDirectory failed:', err);
+    }
   }
 
   protected onCanvasWidthChange(event: Event): void {

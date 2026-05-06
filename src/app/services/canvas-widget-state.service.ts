@@ -13,78 +13,81 @@ import {
   WidgetStateList,
 } from '../models/canvas-widget-state.models';
 
+
+const widgetListMock: WidgetState = {
+    '1': {
+        uuid: '1',
+        x: 0,
+        y: 0,
+        z: 1,
+        width: 200,
+        height: 200,
+        content: {
+            type: 'text',
+            text: 'This is a title',
+            style: {...DEFAULT_WIDGET_TEXT_STYLE},
+        },
+    },
+    '2': {
+        uuid: '2',
+        x: 100,
+        y: 200,
+        z: 2,
+        width: 400,
+        height: 200,
+        content: {
+            type: 'image',
+            src: 'https://danielzotti.it/_next/static/media/danielzotti-logo-medium.856a381a.webp',
+            alt: 'Logo Daniel Zotti',
+            fitMode: 'contain',
+        },
+    },
+    '3': {
+        uuid: '3',
+        x: 400,
+        y: 20,
+        z: 3,
+        width: 120,
+        height: 100,
+        content: {
+            type: 'text',
+            text: 'CTA',
+            style: {...DEFAULT_WIDGET_TEXT_STYLE},
+        },
+    },
+    '4': {
+        uuid: '4',
+        x: 20,
+        y: 20,
+        z: 4,
+        width: 91,
+        height: 88,
+        content: {
+            type: 'text',
+            text: 'Logo',
+            style: {...DEFAULT_WIDGET_TEXT_STYLE},
+        },
+    },
+    '5': {
+        uuid: '5',
+        x: 332,
+        y: 420,
+        z: 5,
+        width: 20,
+        height: 33,
+        content: {
+            type: 'text',
+            text: 'This is a very long text who knows what happens',
+            style: {...DEFAULT_WIDGET_TEXT_STYLE},
+        },
+    }
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class CanvasWidgetStateService {
-  private state: WritableSignal<WidgetState> = signal<WidgetState>({
-    '1': {
-      uuid: '1',
-      x: 0,
-      y: 0,
-      z: 1,
-      width: 200,
-      height: 200,
-      content: {
-        type: 'text',
-        text: 'This is a title',
-        style: {...DEFAULT_WIDGET_TEXT_STYLE},
-      },
-    },
-    '2': {
-      uuid: '2',
-      x: 100,
-      y: 200,
-      z: 2,
-      width: 400,
-      height: 200,
-      content: {
-        type: 'image',
-        src: 'https://danielzotti.it/_next/static/media/danielzotti-logo-medium.856a381a.webp',
-        alt: 'Logo Daniel Zotti',
-        fitMode: 'contain',
-      },
-    },
-    '3': {
-      uuid: '3',
-      x: 400,
-      y: 20,
-      z: 3,
-      width: 120,
-      height: 100,
-      content: {
-        type: 'text',
-        text: 'CTA',
-        style: {...DEFAULT_WIDGET_TEXT_STYLE},
-      },
-    },
-    '4': {
-      uuid: '4',
-      x: 20,
-      y: 20,
-      z: 4,
-      width: 91,
-      height: 88,
-      content: {
-        type: 'text',
-        text: 'Logo',
-        style: {...DEFAULT_WIDGET_TEXT_STYLE},
-      },
-    },
-    '5': {
-      uuid: '5',
-      x: 332,
-      y: 420,
-      z: 5,
-      width: 20,
-      height: 33,
-      content: {
-        type: 'text',
-        text: 'This is a very long text who knows what happens',
-        style: {...DEFAULT_WIDGET_TEXT_STYLE},
-      },
-    }
-  });
+  private state: WritableSignal<WidgetState> = signal<WidgetState>({});
 
    public list: Signal<WidgetStateList> = computed(() =>
      Object.values(this.state()).sort((a, b) => a.z - b.z)

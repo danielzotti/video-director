@@ -65,8 +65,9 @@
 
 .canvas {
   background-color: white;
-  outline: 1px solid var(--accent-color);
+  //outline: 1px solid var(--accent-color);
   transform-origin: center center;
+  box-shadow: 3px 3px 3px 1px rgba(0, 0, 0, 0.1);
 
   &--show-grid {
     --_grid-size: max(var(--grid-size, 20px), 4px);
