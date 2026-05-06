@@ -35,7 +35,10 @@ export type UiIconName =
   | 'export-file'
   | 'import-file'
   | 'export-image'
-  | 'trash';
+  | 'trash'
+  | 'text-bold'
+  | 'text-italic'
+  | 'text-underline';
 
 @Component({
   selector: 'app-ui-icon',
@@ -227,13 +230,22 @@ export type UiIconName =
                   <polyline points="21 15 16 10 5 21"/>
                   <polyline points="14 10 17 7 21 11"/>
               }
-              @case ('trash') {
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6"/>
-                  <path d="M14 11v6"/>
-                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-              }
+               @case ('trash') {
+                   <polyline points="3 6 5 6 21 6"/>
+                   <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                   <path d="M10 11v6"/>
+                   <path d="M14 11v6"/>
+                   <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+               }
+               @case ('text-bold') {
+                   <text x="12" y="16" text-anchor="middle" font-weight="bold" font-size="14" fill="currentColor" stroke="none">B</text>
+               }
+               @case ('text-italic') {
+                   <text x="12" y="16" text-anchor="middle" font-style="italic" font-size="14" fill="currentColor" stroke="none">I</text>
+               }
+               @case ('text-underline') {
+                   <text x="12" y="15" text-anchor="middle" text-decoration="underline" font-size="14" fill="currentColor" stroke="none">U</text>
+               }
           }
       </svg>
   `,

@@ -442,22 +442,43 @@ export class CanvasSettingsPanelComponent {
     this.cs.setSelectedWidgetTextHorizontalAlignment(value);
   }
 
-  protected setTextVerticalAlignment(value: string | number): void {
-    if (value !== 'top' && value !== 'center' && value !== 'bottom') {
-      return;
+   protected setTextVerticalAlignment(value: string | number): void {
+     if (value !== 'top' && value !== 'center' && value !== 'bottom') {
+       return;
+     }
+
+     this.cs.setSelectedWidgetTextVerticalAlignment(value);
+   }
+
+   protected setTextBold(value: boolean): void {
+     this.cs.setSelectedWidgetTextBold(value);
+   }
+
+   protected setTextItalic(value: boolean): void {
+     this.cs.setSelectedWidgetTextItalic(value);
+   }
+
+    protected setTextUnderline(value: boolean): void {
+      this.cs.setSelectedWidgetTextUnderline(value);
     }
 
-    this.cs.setSelectedWidgetTextVerticalAlignment(value);
-  }
+    protected setTextAutoSize(value: boolean): void {
+      this.cs.setSelectedWidgetTextAutoSize(value);
+    }
 
-  protected setTextAutoSize(value: boolean): void {
-    this.cs.setSelectedWidgetTextAutoSize(value);
-  }
+     protected onTextLineHeightChange(event: Event): void {
+      const value = Number((event.target as HTMLInputElement).value);
+      if (!Number.isFinite(value)) {
+        return;
+      }
 
-  protected onImageSrcChange(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.cs.setSelectedWidgetImageSrc(value);
-  }
+      this.cs.setSelectedWidgetTextLineHeight(value);
+    }
+
+   protected onImageSrcChange(event: Event): void {
+     const value = (event.target as HTMLInputElement).value;
+     this.cs.setSelectedWidgetImageSrc(value);
+   }
 
   protected openImageFilePicker(input: HTMLInputElement): void {
     input.value = '';

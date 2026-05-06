@@ -56,6 +56,10 @@ export interface WidgetTextStyle {
   autoSize: boolean;
   alignHorizontal: WidgetTextAlignmentHorizontal;
   alignVertical: WidgetTextAlignmentVertical;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  lineHeight: number;
 }
 
 export const DEFAULT_WIDGET_TEXT_STYLE: WidgetTextStyle = {
@@ -65,6 +69,10 @@ export const DEFAULT_WIDGET_TEXT_STYLE: WidgetTextStyle = {
   autoSize: false,
   alignHorizontal: 'center',
   alignVertical: 'center',
+  bold: false,
+  italic: false,
+  underline: false,
+  lineHeight: 1.2,
 };
 
 export interface WidgetTextContent {

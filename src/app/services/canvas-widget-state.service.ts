@@ -237,6 +237,10 @@ export class CanvasWidgetStateService {
         autoSize: content.style?.autoSize ?? DEFAULT_WIDGET_TEXT_STYLE.autoSize,
         alignHorizontal: this.normalizeHorizontalAlignment(content.style?.alignHorizontal),
         alignVertical: this.normalizeVerticalAlignment(content.style?.alignVertical),
+        bold: content.style?.bold ?? DEFAULT_WIDGET_TEXT_STYLE.bold,
+        italic: content.style?.italic ?? DEFAULT_WIDGET_TEXT_STYLE.italic,
+        underline: content.style?.underline ?? DEFAULT_WIDGET_TEXT_STYLE.underline,
+        lineHeight: this.normalizeLineHeight(content.style?.lineHeight),
       },
     };
   }
@@ -274,15 +278,23 @@ export class CanvasWidgetStateService {
     return DEFAULT_WIDGET_TEXT_STYLE.alignHorizontal;
   }
 
-  private normalizeVerticalAlignment(value?: string): WidgetTextAlignmentVertical {
-    if (value === 'top' || value === 'center' || value === 'bottom') {
-      return value;
-    }
+   private normalizeVerticalAlignment(value?: string): WidgetTextAlignmentVertical {
+     if (value === 'top' || value === 'center' || value === 'bottom') {
+       return value;
+     }
 
-    return DEFAULT_WIDGET_TEXT_STYLE.alignVertical;
-  }
+     return DEFAULT_WIDGET_TEXT_STYLE.alignVertical;
+   }
 
-  private normalizeImageFitMode(value?: string): WidgetImageFitMode {
+   private normalizeLineHeight(value?: number): number {
+     if (!Number.isFinite(value)) {
+       return DEFAULT_WIDGET_TEXT_STYLE.lineHeight;
+     }
+
+     return Math.max(0.5, value as number);
+   }
+
+   private normalizeImageFitMode(value?: string): WidgetImageFitMode {
     return value === 'contain' ? 'contain' : 'cover';
   }
 }

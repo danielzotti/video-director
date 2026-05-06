@@ -861,25 +861,97 @@ export class CanvasService {
         });
     }
 
-    public setSelectedWidgetTextVerticalAlignment(alignVertical: WidgetTextAlignmentVertical) {
-        const widget = this.selectedWidget();
-        if (!widget || widget.content.type !== 'text') {
-            return;
-        }
+     public setSelectedWidgetTextVerticalAlignment(alignVertical: WidgetTextAlignmentVertical) {
+         const widget = this.selectedWidget();
+         if (!widget || widget.content.type !== 'text') {
+             return;
+         }
 
-        this.widgetsState.update({
-            ...widget,
-            content: {
-                ...widget.content,
-                style: {
-                    ...widget.content.style,
-                    alignVertical,
-                },
-            },
-        });
-    }
+         this.widgetsState.update({
+             ...widget,
+             content: {
+                 ...widget.content,
+                 style: {
+                     ...widget.content.style,
+                     alignVertical,
+                 },
+             },
+         });
+     }
 
-    public setSelectedWidgetName(name: string) {
+     public setSelectedWidgetTextBold(bold: boolean) {
+         const widget = this.selectedWidget();
+         if (!widget || widget.content.type !== 'text') {
+             return;
+         }
+
+         this.widgetsState.update({
+             ...widget,
+             content: {
+                 ...widget.content,
+                 style: {
+                     ...widget.content.style,
+                     bold,
+                 },
+             },
+         });
+     }
+
+     public setSelectedWidgetTextItalic(italic: boolean) {
+         const widget = this.selectedWidget();
+         if (!widget || widget.content.type !== 'text') {
+             return;
+         }
+
+         this.widgetsState.update({
+             ...widget,
+             content: {
+                 ...widget.content,
+                 style: {
+                     ...widget.content.style,
+                     italic,
+                 },
+             },
+         });
+     }
+
+     public setSelectedWidgetTextUnderline(underline: boolean) {
+         const widget = this.selectedWidget();
+         if (!widget || widget.content.type !== 'text') {
+             return;
+         }
+
+         this.widgetsState.update({
+             ...widget,
+             content: {
+                 ...widget.content,
+                 style: {
+                     ...widget.content.style,
+                     underline,
+                 },
+             },
+         });
+     }
+
+     public setSelectedWidgetTextLineHeight(lineHeight: number) {
+         const widget = this.selectedWidget();
+         if (!widget || widget.content.type !== 'text' || !Number.isFinite(lineHeight)) {
+             return;
+         }
+
+         this.widgetsState.update({
+             ...widget,
+             content: {
+                 ...widget.content,
+                 style: {
+                     ...widget.content.style,
+                     lineHeight: Math.max(0.5, lineHeight),
+                 },
+             },
+         });
+     }
+
+     public setSelectedWidgetName(name: string) {
         const widget = this.selectedWidget();
         if (!widget) {
             return;

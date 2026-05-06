@@ -9,4 +9,8 @@
     [style.text-align]="content().style.alignHorizontal"
     [style.white-space]="whiteSpaceStyle"
     [style.overflow-wrap]="overflowWrapStyle"
+    [style.font-weight]="content().style.bold ? 'bold' : 'normal'"
+    [style.font-style]="content().style.italic ? 'italic' : 'normal'"
+    [style.text-decoration]="content().style.underline ? 'underline' : 'none'"
+    [style.line-height]="content().style.lineHeight"
 >{{ content().text }}</div>

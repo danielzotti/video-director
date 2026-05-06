@@ -368,37 +368,85 @@
                     </div>
 
                     <div class="settings-panel__row settings-panel__row--column">
-                        <span class="settings-panel__field-label">Vertical alignment</span>
-                        <div class="settings-panel__alignment-group">
-                            <app-ui-button
-                                    variant="ghost"
-                                    size="sm"
-                                    [active]="textContent.style.alignVertical === 'top'"
-                                    title="Allinea in alto"
-                                    (click)="setTextVerticalAlignment('top')"
-                            >
-                                <app-ui-icon name="align-top"/>
-                            </app-ui-button>
-                            <app-ui-button
-                                    variant="ghost"
-                                    size="sm"
-                                    [active]="textContent.style.alignVertical === 'center'"
-                                    title="Allinea al centro"
-                                    (click)="setTextVerticalAlignment('center')"
-                            >
-                                <app-ui-icon name="align-center"/>
-                            </app-ui-button>
-                            <app-ui-button
-                                    variant="ghost"
-                                    size="sm"
-                                    [active]="textContent.style.alignVertical === 'bottom'"
-                                    title="Allinea in basso"
-                                    (click)="setTextVerticalAlignment('bottom')"
-                            >
-                                <app-ui-icon name="align-bottom"/>
-                            </app-ui-button>
-                        </div>
-                    </div>
+                         <span class="settings-panel__field-label">Vertical alignment</span>
+                         <div class="settings-panel__alignment-group">
+                             <app-ui-button
+                                     variant="ghost"
+                                     size="sm"
+                                     [active]="textContent.style.alignVertical === 'top'"
+                                     title="Allinea in alto"
+                                     (click)="setTextVerticalAlignment('top')"
+                             >
+                                 <app-ui-icon name="align-top"/>
+                             </app-ui-button>
+                             <app-ui-button
+                                     variant="ghost"
+                                     size="sm"
+                                     [active]="textContent.style.alignVertical === 'center'"
+                                     title="Allinea al centro"
+                                     (click)="setTextVerticalAlignment('center')"
+                             >
+                                 <app-ui-icon name="align-center"/>
+                             </app-ui-button>
+                             <app-ui-button
+                                     variant="ghost"
+                                     size="sm"
+                                     [active]="textContent.style.alignVertical === 'bottom'"
+                                     title="Allinea in basso"
+                                     (click)="setTextVerticalAlignment('bottom')"
+                             >
+                                 <app-ui-icon name="align-bottom"/>
+                             </app-ui-button>
+                         </div>
+                     </div>
+
+                     <app-ui-separator orientation="horizontal"/>
+
+                     <div class="settings-panel__row settings-panel__row--column">
+                         <span class="settings-panel__field-label">Text formatting</span>
+                         <div class="settings-panel__formatting-group">
+                             <app-ui-button
+                                     variant="ghost"
+                                     size="sm"
+                                     [active]="textContent.style.bold"
+                                     title="Grassetto"
+                                     (click)="setTextBold(!textContent.style.bold)"
+                             >
+                                 <app-ui-icon name="text-bold"/>
+                             </app-ui-button>
+                             <app-ui-button
+                                     variant="ghost"
+                                     size="sm"
+                                     [active]="textContent.style.italic"
+                                     title="Corsivo"
+                                     (click)="setTextItalic(!textContent.style.italic)"
+                             >
+                                 <app-ui-icon name="text-italic"/>
+                             </app-ui-button>
+                             <app-ui-button
+                                     variant="ghost"
+                                     size="sm"
+                                     [active]="textContent.style.underline"
+                                     title="Sottolineato"
+                                     (click)="setTextUnderline(!textContent.style.underline)"
+                             >
+                                 <app-ui-icon name="text-underline"/>
+                             </app-ui-button>
+                         </div>
+                     </div>
+
+                     <div class="settings-panel__row settings-panel__row--column">
+                         <label class="settings-panel__field-label" for="widget-text-line-height">Line height</label>
+                         <input
+                                 id="widget-text-line-height"
+                                 class="settings-panel__input"
+                                 type="number"
+                                 min="0.5"
+                                 step="0.1"
+                                 [value]="textContent.style.lineHeight"
+                                 (input)="onTextLineHeightChange($event)"
+                         />
+                     </div>
                 }
 
                 @if (selectedImageContent; as imageContent) {
