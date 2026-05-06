@@ -9,9 +9,10 @@
         [muted]="content().muted"
         [controls]="content().controls"
         crossorigin="anonymous"
-        preload="metadata"
+        preload="auto"
         playsinline
-        (loadedmetadata)="onVideoReady($event)"
+        (loadedmetadata)="onVideoMetadataReady($event)"
+        (loadeddata)="onVideoReady($event)"
         (play)="onVideoPlaybackChanged(true)"
         (pause)="onVideoPlaybackChanged(false)"
         (ended)="onVideoPlaybackChanged(false)"

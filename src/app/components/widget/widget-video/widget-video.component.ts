@@ -14,6 +14,8 @@ import {CanvasService} from '../../../services/canvas.service';
   },
 })
 export class WidgetVideoComponent {
+  private static readonly FIRST_FRAME_SEEK_SECONDS = 0.001;
+
   private readonly canvasService = inject(CanvasService);
   private readonly destroyRef = inject(DestroyRef);
   private videoElement: HTMLVideoElement | null = null;
@@ -62,6 +64,16 @@ export class WidgetVideoComponent {
     this.canvasService.registerWidgetVideoElement(this.widgetId(), element);
   }
 
+  protected onVideoMetadataReady(event: Event): void {
+    const element = event.currentTarget as HTMLVideoElement | null;
+    if (!element) {
+      return;
+    }
+
+    this.onVideoReady(event);
+    this.ensureFirstFramePreview(element);
+  }
+
   protected onVideoPlaybackChanged(isPlaying: boolean): void {
     this.canvasService.setWidgetVideoPlaybackState(this.widgetId(), isPlaying);
   }
@@ -80,6 +92,21 @@ export class WidgetVideoComponent {
   protected onVideoVolumeChange(event: Event): void {
     const element = event.currentTarget as HTMLVideoElement;
     this.canvasService.setWidgetVideoVolumeState(this.widgetId(), element.muted ? 0 : element.volume);
+  }
+
+  private ensureFirstFramePreview(element: HTMLVideoElement): void {
+    if (this.content().autoplay || element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      return;
+    }
+
+    const duration = Number.isFinite(element.duration) ? element.duration : 0;
+    const previewTime = Math.min(WidgetVideoComponent.FIRST_FRAME_SEEK_SECONDS, duration);
+    if (previewTime <= 0 || element.currentTime > 0) {
+      return;
+    }
+
+    // Safari can keep a black frame at t=0 until a tiny seek is applied.
+    element.currentTime = previewTime;
   }
 }
 
