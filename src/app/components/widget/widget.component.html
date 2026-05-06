@@ -17,6 +17,8 @@
             <app-widget-video
                     [widgetId]="item().uuid"
                     [content]="videoContent"
+                    [borderRadius]="item().borderRadius ?? 0"
+                    [borderWidth]="item().borderWidth ?? 0"
             />
         }
         @default {
