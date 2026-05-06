@@ -415,11 +415,11 @@
                     </div>
 
                     <input
-                            #imageFileInput
-                            class="settings-panel__hidden-input"
-                            type="file"
-                            accept="image/*"
-                            (change)="onImageFileSelected($event)"
+                        #imageFileInput
+                        class="settings-panel__hidden-input"
+                        type="file"
+                        accept="image/*"
+                        (change)="onImageFileSelected($event)"
                     />
 
                     <button
@@ -501,7 +501,9 @@
                     </div>
 
                     <div class="settings-panel__row">
-                        <app-ui-button size="sm" [disabled]="isImageUrlSaving()" (click)="closeImageUrlModal()">Annulla</app-ui-button>
+                        <app-ui-button size="sm" [disabled]="isImageUrlSaving()" (click)="closeImageUrlModal()">
+                            Annulla
+                        </app-ui-button>
                         <app-ui-button size="sm" [disabled]="!canSubmitImageUrl" (click)="confirmImageUrlModal()">
                             {{ isImageUrlSaving() ? 'Converting in blob format...' : 'Import' }}
                         </app-ui-button>
@@ -632,70 +634,6 @@
                 <section class="settings-panel__section">
                     <div class="settings-panel__section-label">Developer</div>
 
-                    @if (projectImportNotice; as notice) {
-                        <div
-                                class="settings-panel__import-banner"
-                                [class.settings-panel__import-banner--info]="notice.kind === 'info'"
-                                [class.settings-panel__import-banner--warning]="notice.kind === 'warning'"
-                                [class.settings-panel__import-banner--success]="notice.kind === 'success'"
-                                [class.settings-panel__import-banner--error]="notice.kind === 'error'"
-                        >
-                            <span>{{ notice.message }}</span>
-                            <app-ui-button size="sm" variant="ghost" (click)="dismissProjectImportNotice()" (keydown.enter)="dismissProjectImportNotice()">Dismiss</app-ui-button>
-                        </div>
-                    }
-
-                    <div class="settings-panel__row">
-                        <app-ui-toggle
-                                label="Ask folder on zip import"
-                                [checked]="importPromptForDirectory"
-                                (checkedChange)="setImportPromptForDirectory($event)"
-                        />
-                    </div>
-
-                    <div class="settings-panel__row settings-panel__row--column">
-                        <div class="settings-panel__sync-header">
-                            <span class="settings-panel__field-label">Project folder sync</span>
-                            <span
-                                    class="settings-panel__sync-badge"
-                                    [class.settings-panel__sync-badge--idle]="projectSyncBadgeVariant === 'idle'"
-                                    [class.settings-panel__sync-badge--pending]="projectSyncBadgeVariant === 'pending'"
-                                    [class.settings-panel__sync-badge--syncing]="projectSyncBadgeVariant === 'syncing'"
-                                    [class.settings-panel__sync-badge--error]="projectSyncBadgeVariant === 'error'"
-                            >
-                                {{ projectSyncStatusLabel }}
-                            </span>
-                        </div>
-
-                        @if (isProjectDirectorySyncSupported) {
-                            <div class="settings-panel__sync-actions">
-                                @if (!isProjectDirectoryConnected) {
-                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy" (click)="connectProjectDirectory()" (keydown.enter)="connectProjectDirectory()">Connect folder</app-ui-button>
-                                } @else {
-                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy" (click)="syncProjectDirectoryNow()" (keydown.enter)="syncProjectDirectoryNow()">Sync now</app-ui-button>
-                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy" (click)="loadProjectFromDirectory()" (keydown.enter)="loadProjectFromDirectory()">Load from folder</app-ui-button>
-                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy" (click)="disconnectProjectDirectory()" (keydown.enter)="disconnectProjectDirectory()">Disconnect</app-ui-button>
-                                }
-                            </div>
-
-                            <span class="settings-panel__help">Folder: {{ projectDirectoryName }}</span>
-                            @if (hasPendingProjectChanges) {
-                                <span class="settings-panel__help">Pending local changes not synced yet.</span>
-                            }
-                            @if (hasPendingImportBackup) {
-                                <div class="settings-panel__sync-actions">
-                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy" (click)="savePendingImportBackup()" (keydown.enter)="savePendingImportBackup()">Save backup zip</app-ui-button>
-                                </div>
-                                <span class="settings-panel__help">Backup: {{ pendingImportBackupName }}</span>
-                            }
-                            @if (projectSyncError; as error) {
-                                <span class="settings-panel__help settings-panel__help--error">{{ error }}</span>
-                            }
-                        } @else {
-                            <span class="settings-panel__help">This browser does not support local folder sync.</span>
-                        }
-                    </div>
-
                     <div class="settings-panel__row">
                         <app-ui-toggle
                                 label="Debug mode"
@@ -729,6 +667,93 @@
                         </div>
                     }
                 </section>
+
+                <app-ui-separator orientation="horizontal"/>
+                <!-- PROJECT section -->
+                <section class="settings-panel__section">
+                    <div class="settings-panel__section-label">Project</div>
+                    @if (projectImportNotice; as notice) {
+                        <div
+                                class="settings-panel__import-banner"
+                                [class.settings-panel__import-banner--info]="notice.kind === 'info'"
+                                [class.settings-panel__import-banner--warning]="notice.kind === 'warning'"
+                                [class.settings-panel__import-banner--success]="notice.kind === 'success'"
+                                [class.settings-panel__import-banner--error]="notice.kind === 'error'"
+                        >
+                            <span>{{ notice.message }}</span>
+                            <app-ui-button size="sm" variant="ghost" (click)="dismissProjectImportNotice()"
+                                           (keydown.enter)="dismissProjectImportNotice()">Dismiss
+                            </app-ui-button>
+                        </div>
+                    }
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Ask folder on zip import"
+                                [checked]="importPromptForDirectory"
+                                (checkedChange)="setImportPromptForDirectory($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <div class="settings-panel__sync-header">
+                            <span class="settings-panel__field-label">Project folder sync</span>
+                            <span
+                                    class="settings-panel__sync-badge"
+                                    [class.settings-panel__sync-badge--idle]="projectSyncBadgeVariant === 'idle'"
+                                    [class.settings-panel__sync-badge--pending]="projectSyncBadgeVariant === 'pending'"
+                                    [class.settings-panel__sync-badge--syncing]="projectSyncBadgeVariant === 'syncing'"
+                                    [class.settings-panel__sync-badge--error]="projectSyncBadgeVariant === 'error'"
+                            >
+                                {{ projectSyncStatusLabel }}
+                            </span>
+                        </div>
+
+                        @if (isProjectDirectorySyncSupported) {
+                            <div class="settings-panel__sync-actions">
+                                @if (!isProjectDirectoryConnected) {
+                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy"
+                                                   (click)="connectProjectDirectory()"
+                                                   (keydown.enter)="connectProjectDirectory()">Connect folder
+                                    </app-ui-button>
+                                } @else {
+                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy"
+                                                   (click)="syncProjectDirectoryNow()"
+                                                   (keydown.enter)="syncProjectDirectoryNow()">Sync now
+                                    </app-ui-button>
+                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy"
+                                                   (click)="loadProjectFromDirectory()"
+                                                   (keydown.enter)="loadProjectFromDirectory()">Load from folder
+                                    </app-ui-button>
+                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy"
+                                                   (click)="disconnectProjectDirectory()"
+                                                   (keydown.enter)="disconnectProjectDirectory()">Disconnect
+                                    </app-ui-button>
+                                }
+                            </div>
+
+                            <span class="settings-panel__help">Folder: {{ projectDirectoryName }}</span>
+                            @if (hasPendingProjectChanges) {
+                                <span class="settings-panel__help">Pending local changes not synced yet.</span>
+                            }
+                            @if (hasPendingImportBackup) {
+                                <div class="settings-panel__sync-actions">
+                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy"
+                                                   (click)="savePendingImportBackup()"
+                                                   (keydown.enter)="savePendingImportBackup()">Save backup zip
+                                    </app-ui-button>
+                                </div>
+                                <span class="settings-panel__help">Backup: {{ pendingImportBackupName }}</span>
+                            }
+                            @if (projectSyncError; as error) {
+                                <span class="settings-panel__help settings-panel__help--error">{{ error }}</span>
+                            }
+                        } @else {
+                            <span class="settings-panel__help">This browser does not support local folder sync.</span>
+                        }
+                    </div>
+                </section>
+
             }
         }
     </div>

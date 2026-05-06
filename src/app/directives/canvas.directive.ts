@@ -66,6 +66,28 @@ export class CanvasDirective implements OnInit {
 
     @HostListener('window:keydown', ['$event'])
     onKeyDown(event: KeyboardEvent) {
+        if (this.isTypingFieldTarget(event.target)) {
+            return;
+        }
+
+        if (this.isUndoRedoShortcut(event)) {
+            event.preventDefault();
+
+            if (event.shiftKey) {
+                this.canvasService.redo();
+                return;
+            }
+
+            this.canvasService.undo();
+            return;
+        }
+
+        if (event.code === 'Delete' || event.code === 'Backspace') {
+            event.preventDefault();
+            this.canvasService.deleteSelectedWidget();
+            return;
+        }
+
         if (event.code === 'Escape' && this.canvasService.selectedWidgetId()) {
             event.preventDefault();
             this.canvasService.selectWidget(null);
@@ -240,6 +262,38 @@ export class CanvasDirective implements OnInit {
         const targetNode = target as Node | null;
 
         return !!wrapper && !!targetNode && wrapper.contains(targetNode);
+    }
+
+    private isTypingFieldTarget(target: EventTarget | null): boolean {
+        const targetEl = target as HTMLElement | null;
+        if (!targetEl) {
+            return false;
+        }
+
+        return targetEl instanceof HTMLInputElement
+            || targetEl instanceof HTMLTextAreaElement
+            || targetEl.isContentEditable
+            || !!targetEl.closest('[contenteditable]:not([contenteditable="false"])');
+    }
+
+    private isUndoRedoShortcut(event: KeyboardEvent): boolean {
+        return this.isPrimaryShortcutModifierPressed(event)
+            && !event.altKey
+            && event.code === 'KeyZ';
+    }
+
+    private isPrimaryShortcutModifierPressed(event: KeyboardEvent): boolean {
+        return this.isApplePlatform() ? event.metaKey : event.ctrlKey;
+    }
+
+    private isApplePlatform(): boolean {
+        if (typeof navigator === 'undefined') {
+            return false;
+        }
+
+        const platform = navigator.platform ?? '';
+        const userAgent = navigator.userAgent ?? '';
+        return /Mac|iPhone|iPad|iPod/i.test(platform) || /Mac|iPhone|iPad|iPod/i.test(userAgent);
     }
 
 
