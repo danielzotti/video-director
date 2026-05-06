@@ -19,6 +19,7 @@
                     <div
                             class="layer-item"
                             [class.layer-item--selected]="cs.selectedWidgetId() === item.uuid"
+                            [class.layer-item--locked]="isLayerLocked(item.uuid)"
                             [class.layer-item--drag-over]="dragOverLayerId === item.uuid"
                             [class.layer-item--hidden]="!isLayerVisible(item.uuid)"
                             draggable="true"
@@ -42,7 +43,6 @@
                                 <button
                                         class="layer-item__btn layer-item__btn--icon"
                                         type="button"
-                                        [class.layer-item__btn--active]="isLayerVisible(item.uuid)"
                                         [attr.title]="isLayerVisible(item.uuid) ? 'Hide widget' : 'Show widget'"
                                         (click)="toggleLayerVisible(item.uuid, $event)"
                                 >
@@ -51,7 +51,6 @@
                                 <button
                                         class="layer-item__btn layer-item__btn--icon"
                                         type="button"
-                                        [class.layer-item__btn--active]="isLayerLocked(item.uuid)"
                                         [attr.title]="isLayerLocked(item.uuid) ? 'Unlock widget' : 'Lock widget'"
                                         (click)="toggleLayerLocked(item.uuid, $event)"
                                 >

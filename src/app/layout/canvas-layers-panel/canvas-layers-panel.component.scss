@@ -213,6 +213,10 @@
     opacity: 0.55;
   }
 
+  &--locked {
+    background-color: var(--ds-surface-4);
+  }
+
   &--drop-above::before,
   &--drop-below::after {
     content: '';
@@ -361,13 +365,13 @@
       justify-content: center;
     }
 
-    &--active {
-      color: var(--ds-accent);
-      border-color: var(--ds-accent);
-      background-color: var(--ds-accent-subtle);
-    }
+     &--active {
+       color: var(--ds-accent);
+       border-color: var(--ds-accent);
+       background-color: var(--ds-accent-subtle);
+     }
 
-    &--danger {
+     &--danger {
       color: var(--ds-danger);
       border-color: color-mix(in srgb, var(--ds-danger), transparent 60%);
 
