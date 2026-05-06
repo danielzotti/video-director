@@ -7,7 +7,11 @@
             />
         }
         @case ('image') {
-            <app-widget-image [content]="imageContent"/>
+            <app-widget-image
+                    [content]="imageContent"
+                    [borderRadius]="item().borderRadius ?? 0"
+                    [borderWidth]="item().borderWidth ?? 0"
+            />
         }
         @default {
             <ng-content></ng-content>
