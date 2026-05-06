@@ -25,11 +25,11 @@
   }
 
   &.app-canvas-widget--show-container {
-    outline: 2px solid #b8bec8;
+    outline: 2px solid var(--ds-widget-container);
 
     .app-canvas-widget-resizer {
       &-bottom-left, &-bottom-right, &-top-right, &-top-left {
-        background-color: #b8bec8;
+        background-color: var(--ds-widget-container);
         width: 6px !important;
         height: 6px !important;
       }
@@ -37,7 +37,7 @@
   }
 
   &.app-canvas-widget--selected {
-    outline: 2px solid var(--ds-accent);
+    outline: 5px solid var(--ds-accent);
 
     .app-canvas-widget-resizer {
       &-bottom-left, &-bottom-right, &-top-right, &-top-left {
@@ -49,7 +49,7 @@
   }
 
   &.app-canvas-widget-dragging {
-    //outline: 3px solid var(--accent-color);
+    outline: 5px solid var(--accent-color);
   }
 
   .app-canvas-widget-resizer {
