@@ -5,6 +5,7 @@
 - Main product surface is the canvas editor page at `/recording-sessions/new` (`src/app/app.routes.ts`, `src/app/pages/recording-session-new/*`).
 - Current state management is Angular Signals in singleton services (not NgRx store yet): `CanvasService`, `CanvasWidgetStateService`, `StreamStateService`.
 - Geometry/math is intentionally decoupled into pure functions in `src/app/utils/canvas-geometry.utils.ts`; services orchestrate, utils compute.
+- Use always English for label, code comments and variable names; this is a global team and codebase.
 
 ## Service Boundaries and Data Flow
 - `CanvasService` is the orchestration layer for viewport, drag, resize, snapping, and selection state (`src/app/services/canvas.service.ts`).

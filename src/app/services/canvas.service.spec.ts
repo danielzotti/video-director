@@ -187,6 +187,108 @@ describe('CanvasService', () => {
     }
   });
 
+  it('accepts data image URLs as valid image source', () => {
+    const isValid = service.isValidImageUrl('data:image/png;base64,AAAA');
+    expect(isValid).toBeTrue();
+  });
+
+  it('accepts blob URLs as valid image source', () => {
+    const isValid = service.isValidImageUrl('blob:https://example.com/1234-5678');
+    expect(isValid).toBeTrue();
+  });
+
+  it('stores imported image from file as data URL', async () => {
+    service.selectWidget('2');
+
+    const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    const binary = atob(pngBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    const file = new File([bytes], 'avatar.png', {type: 'image/png'});
+    await service.setSelectedWidgetImageFromFile(file);
+
+    const updated = service.widgetsState.getById('2');
+    expect(updated?.content.type).toBe('image');
+    if (updated?.content.type === 'image') {
+      expect(updated.content.src.startsWith('data:image/png;base64,')).toBeTrue();
+    }
+  });
+
+  it('uses widget name as download filename for selected blob image', async () => {
+    service.selectWidget('2');
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('image');
+    if (!widget || widget.content.type !== 'image') {
+      return;
+    }
+
+    service.widgetsState.update({
+      ...widget,
+      name: 'Hero Banner',
+      content: {
+        ...widget.content,
+        alt: 'Alt text',
+        src: 'data:image/png;base64,AAAA',
+      },
+    });
+
+    const writeSpy = jasmine.createSpy('write').and.resolveTo();
+    const closeSpy = jasmine.createSpy('close').and.resolveTo();
+    const pickerSpy = jasmine.createSpy('showSaveFilePicker').and.resolveTo({
+      getFile: async () => new File([], 'ignored.png'),
+      createWritable: async () => ({write: writeSpy, close: closeSpy}),
+    });
+
+    (globalThis as unknown as {showSaveFilePicker?: unknown}).showSaveFilePicker = pickerSpy;
+
+    await service.saveSelectedWidgetImageToDisk();
+
+    expect(pickerSpy).toHaveBeenCalled();
+    const options = pickerSpy.calls.mostRecent().args[0] as {suggestedName?: string};
+    expect(options.suggestedName).toBe('Hero-Banner.png');
+
+    delete (globalThis as unknown as {showSaveFilePicker?: unknown}).showSaveFilePicker;
+  });
+
+  it('falls back to widget-{uuid} when widget name and alt are empty', async () => {
+    service.selectWidget('2');
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('image');
+    if (!widget || widget.content.type !== 'image') {
+      return;
+    }
+
+    service.widgetsState.update({
+      ...widget,
+      name: '   ',
+      content: {
+        ...widget.content,
+        alt: '   ',
+        src: 'data:image/jpeg;base64,AAAA',
+      },
+    });
+
+    const writeSpy = jasmine.createSpy('write').and.resolveTo();
+    const closeSpy = jasmine.createSpy('close').and.resolveTo();
+    const pickerSpy = jasmine.createSpy('showSaveFilePicker').and.resolveTo({
+      getFile: async () => new File([], 'ignored.jpg'),
+      createWritable: async () => ({write: writeSpy, close: closeSpy}),
+    });
+
+    (globalThis as unknown as {showSaveFilePicker?: unknown}).showSaveFilePicker = pickerSpy;
+
+    await service.saveSelectedWidgetImageToDisk();
+
+    expect(pickerSpy).toHaveBeenCalled();
+    const options = pickerSpy.calls.mostRecent().args[0] as {suggestedName?: string};
+    expect(options.suggestedName).toBe('widget-2.jpg');
+
+    delete (globalThis as unknown as {showSaveFilePicker?: unknown}).showSaveFilePicker;
+  });
+
   it('updates selected text style settings', () => {
     service.selectWidget('1');
     service.setSelectedWidgetTextFontFamily('fira-code');

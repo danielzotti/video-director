@@ -44,6 +44,33 @@ export type SettingsPanelLayout = 'floating' | 'fixed-right' | 'closed';
 export type LayersPanelLayout = 'floating' | 'fixed-left' | 'closed';
 type PointerLikeEvent = MouseEvent | PointerEvent;
 
+interface FileSystemFileHandleLike {
+    getFile: () => Promise<File>;
+    createWritable?: () => Promise<{
+        write: (data: Blob) => Promise<void>;
+        close: () => Promise<void>;
+    }>;
+}
+
+interface FileSystemAccessApi {
+    showOpenFilePicker?: (options?: {
+        multiple?: boolean;
+        excludeAcceptAllOption?: boolean;
+        types?: {
+            description?: string;
+            accept: Record<string, string[]>;
+        }[];
+    }) => Promise<FileSystemFileHandleLike[]>;
+    showSaveFilePicker?: (options?: {
+        suggestedName?: string;
+        excludeAcceptAllOption?: boolean;
+        types?: {
+            description?: string;
+            accept: Record<string, string[]>;
+        }[];
+    }) => Promise<FileSystemFileHandleLike>;
+}
+
 interface CanvasSnapshot {
     width: number;
     height: number;
@@ -720,16 +747,114 @@ export class CanvasService {
     }
 
     public isValidImageUrl(src: string): boolean {
-        if (!src.trim()) {
+        const value = src.trim();
+        if (!value) {
             return false;
         }
 
+        if (value.startsWith('data:image/') || value.startsWith('blob:')) {
+            return true;
+        }
+
         try {
-            const url = new URL(src);
+            const url = new URL(value);
             return url.protocol === 'http:' || url.protocol === 'https:';
         } catch {
             return false;
         }
+    }
+
+    public async setSelectedWidgetImageFromFile(file: File): Promise<void> {
+        const selected = this.selectedWidget();
+        if (!selected || selected.content.type !== 'image') {
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            return;
+        }
+
+        const dataUrl = await this.blobToDataUrl(file);
+        this.applySelectedWidgetImageDataUrl({dataUrl, fallbackName: file.name});
+    }
+
+    public async setSelectedWidgetImageFromUrl(url: string): Promise<void> {
+        const trimmedUrl = url.trim();
+        if (!trimmedUrl) {
+            throw new Error('Image URL is empty');
+        }
+
+        let imageBlob: Blob;
+
+        try {
+            const response = await fetch(trimmedUrl, {mode: 'cors', credentials: 'omit'});
+            if (!response.ok) {
+                throw new Error(`Image fetch failed: ${response.status}`);
+            }
+
+            imageBlob = await response.blob();
+        } catch (error) {
+            throw new Error('Unable to fetch image from URL', {cause: error});
+        }
+
+        if (!imageBlob.type.startsWith('image/')) {
+            throw new Error('The provided URL is not an image resource');
+        }
+
+        const fallbackName = this.resolveFileNameFromSource(trimmedUrl, 'image-from-url');
+        const dataUrl = await this.blobToDataUrl(imageBlob);
+        this.applySelectedWidgetImageDataUrl({dataUrl, fallbackName});
+    }
+
+    public async saveSelectedWidgetImageToDisk(): Promise<void> {
+        const selected = this.selectedWidget();
+        if (!selected || selected.content.type !== 'image') {
+            return;
+        }
+
+        const source = selected.content.src.trim();
+        if (!source) {
+            return;
+        }
+
+        const imageBlob = await this.resolveImageBlobFromSource(source);
+        if (!imageBlob) {
+            console.error('[CanvasService] saveSelectedWidgetImageToDisk: failed to read source image');
+            return;
+        }
+
+        const preferredName = selected.name?.trim()
+            || selected.content.alt?.trim()
+            || `widget-${selected.uuid}`;
+
+        const fileName = this.normalizeImageFileName(preferredName, imageBlob.type);
+        await this.writeBlobToDisk(imageBlob, fileName);
+    }
+
+    private applySelectedWidgetImageDataUrl({dataUrl, fallbackName}: { dataUrl: string; fallbackName: string }): void {
+        const selected = this.selectedWidget();
+        if (!selected || selected.content.type !== 'image') {
+            return;
+        }
+
+        const latest = this.widgetsState.getById(selected.uuid);
+
+        if (!latest || latest.content.type !== 'image') {
+            return;
+        }
+
+        const nextAlt = latest.content.alt?.trim()
+            ? latest.content.alt
+            : fallbackName.replace(/\.[^/.]+$/, '');
+
+        this.widgetsState.update({
+            ...latest,
+            content: {
+                ...latest.content,
+                src: dataUrl,
+                alt: nextAlt,
+            },
+        });
     }
 
     public resetWidgetToSnapSize() {
@@ -1478,9 +1603,9 @@ export class CanvasService {
      */
     private async inlineExternalImages(
         root: HTMLElement,
-    ): Promise<Array<{ img: HTMLImageElement; originalSrc: string }>> {
+    ): Promise<{ img: HTMLImageElement; originalSrc: string }[]> {
         const imgs = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
-        const restored: Array<{ img: HTMLImageElement; originalSrc: string }> = [];
+        const restored: { img: HTMLImageElement; originalSrc: string }[] = [];
 
         await Promise.allSettled(
             imgs.map(async (img) => {
@@ -1558,6 +1683,161 @@ export class CanvasService {
             // Cache-bust to bypass any cached non-CORS response
             img.src = src + (src.includes('?') ? '&' : '?') + '__cb=' + Date.now();
         });
+    }
+
+    private async resolveImageBlobFromSource(source: string): Promise<Blob | null> {
+        if (source.startsWith('data:')) {
+            return this.dataUrlToBlob(source);
+        }
+
+        if (source.startsWith('blob:')) {
+            try {
+                const response = await fetch(source);
+                if (!response.ok) {
+                    return null;
+                }
+                return await response.blob();
+            } catch {
+                return null;
+            }
+        }
+
+        try {
+            const response = await fetch(source, {mode: 'cors', credentials: 'omit'});
+            if (!response.ok) {
+                return null;
+            }
+            return await response.blob();
+        } catch {
+            return null;
+        }
+    }
+
+    private dataUrlToBlob(dataUrl: string): Blob | null {
+        const parts = dataUrl.split(',');
+        if (parts.length < 2) {
+            return null;
+        }
+
+        const header = parts[0];
+        const body = parts[1];
+        const mimeMatch = header.match(/^data:(.+?);base64$/);
+        if (!mimeMatch) {
+            return null;
+        }
+
+        const mimeType = mimeMatch[1] || 'application/octet-stream';
+        const binary = atob(body);
+        const bytes = new Uint8Array(binary.length);
+
+        for (let i = 0; i < binary.length; i += 1) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+
+        return new Blob([bytes], {type: mimeType});
+    }
+
+    private blobToDataUrl(blob: Blob): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const result = reader.result;
+                if (typeof result !== 'string') {
+                    reject(new Error('Unable to convert blob to data URL'));
+                    return;
+                }
+
+                resolve(result);
+            };
+            reader.onerror = () => reject(reader.error ?? new Error('Unable to convert blob to data URL'));
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    private resolveFileNameFromSource(source: string, fallback: string): string {
+        if (source.startsWith('data:') || source.startsWith('blob:')) {
+            return fallback;
+        }
+
+        try {
+            const url = new URL(source);
+            const pathname = url.pathname.split('/').filter(Boolean).pop();
+            return pathname && pathname.trim() ? pathname : fallback;
+        } catch {
+            return fallback;
+        }
+    }
+
+    private normalizeImageFileName(baseName: string, mimeType: string): string {
+        const cleaned = (baseName || 'widget-image').trim().replace(/\s+/g, '-');
+        const hasExtension = /\.[a-z0-9]+$/i.test(cleaned);
+
+        if (hasExtension) {
+            return cleaned;
+        }
+
+        const extension = this.mimeTypeToExtension(mimeType);
+        return `${cleaned}.${extension}`;
+    }
+
+    private mimeTypeToExtension(mimeType: string): string {
+        const map: Record<string, string> = {
+            'image/png': 'png',
+            'image/jpeg': 'jpg',
+            'image/webp': 'webp',
+            'image/gif': 'gif',
+            'image/svg+xml': 'svg',
+            'image/bmp': 'bmp',
+        };
+
+        return map[mimeType] ?? 'png';
+    }
+
+    private downloadBlob(blob: Blob, fileName: string): void {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = fileName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }
+
+    private async writeBlobToDisk(blob: Blob, fileName: string): Promise<void> {
+        const fsApi = this.getFileSystemAccessApi();
+
+        if (fsApi?.showSaveFilePicker) {
+            const extension = '.' + (fileName.split('.').pop() ?? 'png');
+            const handle = await fsApi.showSaveFilePicker({
+                suggestedName: fileName,
+                excludeAcceptAllOption: false,
+                types: [{
+                    description: 'Image file',
+                    accept: {
+                        [blob.type || 'image/png']: [extension],
+                    },
+                }],
+            });
+
+            if (!handle.createWritable) {
+                return;
+            }
+
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            return;
+        }
+
+        this.downloadBlob(blob, fileName);
+    }
+
+
+    private getFileSystemAccessApi(): FileSystemAccessApi | null {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        return window as unknown as FileSystemAccessApi;
     }
 
 

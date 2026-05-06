@@ -403,6 +403,39 @@
                 }
 
                 @if (selectedImageContent; as imageContent) {
+                    <div class="settings-panel__row">
+                        <app-ui-button size="sm" (click)="openImageUrlModal()">Da URL</app-ui-button>
+                        <app-ui-button
+                                variant="icon"
+                                [disabled]="!canSaveSelectedImageToDisk"
+                                title="Download immagine"
+                                (click)="saveImageToDisk()"
+                        >
+                            <app-ui-icon name="export-file"/>
+                        </app-ui-button>
+                    </div>
+
+                    <input
+                            #imageFileInput
+                            class="settings-panel__hidden-input"
+                            type="file"
+                            accept="image/*"
+                            (change)="onImageFileSelected($event)"
+                    />
+
+                    <button
+                            class="settings-panel__image-dropzone"
+                            [class.settings-panel__image-dropzone--active]="isImageDropzoneActive()"
+                            type="button"
+                            (click)="openImageFilePicker(imageFileInput)"
+                            (dragover)="onImageDropzoneDragOver($event)"
+                            (dragleave)="onImageDropzoneDragLeave($event)"
+                            (drop)="onImageDropzoneDrop($event)"
+                    >
+                        <span class="settings-panel__image-dropzone-title">Trascina qui un'immagine</span>
+                        <span class="settings-panel__image-dropzone-subtitle">oppure clicca per selezionare dal disco</span>
+                    </button>
+
                     <div class="settings-panel__row settings-panel__row--column">
                         <label class="settings-panel__field-label" for="widget-image-src">Image URL</label>
                         <input
@@ -414,7 +447,7 @@
                                 (input)="onImageSrcChange($event)"
                         />
                         @if (!cs.isValidImageUrl(imageContent.src)) {
-                            <span class="settings-panel__help settings-panel__help--error">Usa un URL assoluto http/https.</span>
+                            <span class="settings-panel__help settings-panel__help--error">Usa un URL assoluto http/https o carica un file locale.</span>
                         }
                     </div>
 
@@ -439,6 +472,43 @@
                     </div>
                 }
             </section>
+
+            @if (isImageUrlModalOpen()) {
+                <button
+                        class="settings-panel__modal-backdrop"
+                        type="button"
+                        aria-label="Chiudi inserimento URL"
+                        (click)="closeImageUrlModal()"
+                ></button>
+
+                <div class="settings-panel__modal" role="dialog" aria-label="Importa immagine da URL">
+                    <div class="settings-panel__modal-title">Importa immagine da URL</div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="image-url-modal-input">URL immagine</label>
+                        <input
+                                id="image-url-modal-input"
+                                class="settings-panel__input"
+                                type="url"
+                                placeholder="https://..."
+                                [value]="imageUrlDraft()"
+                                [disabled]="isImageUrlSaving()"
+                                (input)="onImageUrlDraftChange($event)"
+                                (keydown.enter)="confirmImageUrlModal()"
+                        />
+                        @if (imageUrlError(); as error) {
+                            <span class="settings-panel__help settings-panel__help--error">{{ error }}</span>
+                        }
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-button size="sm" [disabled]="isImageUrlSaving()" (click)="closeImageUrlModal()">Annulla</app-ui-button>
+                        <app-ui-button size="sm" [disabled]="!canSubmitImageUrl" (click)="confirmImageUrlModal()">
+                            {{ isImageUrlSaving() ? 'Converting in blob format...' : 'Import' }}
+                        </app-ui-button>
+                    </div>
+                </div>
+            }
         } @else {
             @if (!contentOnly()) {
                 <!-- CANVAS section -->

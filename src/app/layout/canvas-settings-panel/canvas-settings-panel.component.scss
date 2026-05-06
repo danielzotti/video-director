@@ -291,6 +291,86 @@
     }
   }
 
+  &__hidden-input {
+    display: none;
+  }
+
+  &__image-dropzone {
+    width: 100%;
+    min-height: 84px;
+    border: 1px dashed var(--ds-border-default);
+    border-radius: var(--ds-radius-sm);
+    background: var(--ds-surface-0);
+    color: var(--ds-text-secondary);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: var(--ds-space-2);
+    text-align: center;
+    transition: border-color var(--ds-duration-default) var(--ds-easing),
+      background var(--ds-duration-default) var(--ds-easing),
+      color var(--ds-duration-default) var(--ds-easing);
+
+    &:hover {
+      border-color: var(--ds-accent);
+      color: var(--ds-text-primary);
+    }
+
+    &--active {
+      border-color: var(--ds-accent);
+      background: rgba(107, 127, 255, 0.12);
+      color: var(--ds-text-primary);
+    }
+  }
+
+  &__image-dropzone-title {
+    font-size: var(--ds-font-sm);
+    font-weight: 600;
+    color: inherit;
+  }
+
+  &__image-dropzone-subtitle {
+    font-size: var(--ds-font-xs);
+    color: inherit;
+    opacity: 0.9;
+  }
+
+  &__modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    border: none;
+    background: rgba(4, 8, 20, 0.45);
+    padding: 0;
+    cursor: default;
+  }
+
+  &__modal {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(460px, calc(100vw - var(--ds-space-4) * 2));
+    z-index: 141;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-3);
+    background: var(--ds-panel-bg);
+    border: 1px solid var(--ds-panel-border);
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--ds-panel-shadow);
+    padding: var(--ds-space-4);
+  }
+
+  &__modal-title {
+    font-size: var(--ds-font-md);
+    font-weight: 600;
+    color: var(--ds-text-primary);
+  }
+
   &__empty {
     font-size: var(--ds-font-sm);
     color: var(--ds-text-secondary);

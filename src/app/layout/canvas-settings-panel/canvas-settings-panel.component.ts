@@ -58,6 +58,11 @@ export class CanvasSettingsPanelComponent {
   protected readonly geometryDraft = signal<Record<WidgetGeometryField, string>>({
     x: '', y: '', width: '', height: '',
   });
+  protected readonly isImageDropzoneActive = signal(false);
+  protected readonly isImageUrlModalOpen = signal(false);
+  protected readonly imageUrlDraft = signal('');
+  protected readonly imageUrlError = signal<string | null>(null);
+  protected readonly isImageUrlSaving = signal(false);
 
   private readonly minPanelHeight = 120;
   private resizeStartY = 0;
@@ -176,6 +181,14 @@ export class CanvasSettingsPanelComponent {
   protected get selectedImageContent(): WidgetImageContent | null {
     const content = this.selectedWidget?.content;
     return content?.type === 'image' ? content : null;
+  }
+
+  protected get canSaveSelectedImageToDisk(): boolean {
+    return !!this.selectedImageContent?.src.trim();
+  }
+
+  protected get canSubmitImageUrl(): boolean {
+    return !!this.imageUrlDraft().trim() && !this.isImageUrlSaving();
   }
 
   protected get hasTransparentBackground(): boolean {
@@ -307,6 +320,107 @@ export class CanvasSettingsPanelComponent {
   protected onImageSrcChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.cs.setSelectedWidgetImageSrc(value);
+  }
+
+  protected openImageFilePicker(input: HTMLInputElement): void {
+    input.value = '';
+    input.click();
+  }
+
+  protected async onImageFileSelected(event: Event): Promise<void> {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) {
+      return;
+    }
+
+    await this.importImageFile(file);
+  }
+
+  protected onImageDropzoneDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+    this.isImageDropzoneActive.set(true);
+  }
+
+  protected onImageDropzoneDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.isImageDropzoneActive.set(false);
+  }
+
+  protected async onImageDropzoneDrop(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    this.isImageDropzoneActive.set(false);
+
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    await this.importImageFile(file);
+  }
+
+  protected openImageUrlModal(): void {
+    this.imageUrlDraft.set('');
+    this.imageUrlError.set(null);
+    this.isImageUrlModalOpen.set(true);
+  }
+
+  protected closeImageUrlModal(): void {
+    if (this.isImageUrlSaving()) {
+      return;
+    }
+
+    this.isImageUrlModalOpen.set(false);
+    this.imageUrlError.set(null);
+  }
+
+  protected onImageUrlDraftChange(event: Event): void {
+    this.imageUrlDraft.set((event.target as HTMLInputElement).value);
+    this.imageUrlError.set(null);
+  }
+
+  protected async confirmImageUrlModal(): Promise<void> {
+    const url = this.imageUrlDraft().trim();
+    if (!url) {
+      this.imageUrlError.set('Inserisci un URL immagine valido.');
+      return;
+    }
+
+    this.isImageUrlSaving.set(true);
+
+    try {
+      await this.cs.setSelectedWidgetImageFromUrl(url);
+      this.closeImageUrlModal();
+    } catch {
+      this.imageUrlError.set('Impossibile scaricare l\'immagine da questo URL (controlla CORS/URL).');
+    } finally {
+      this.isImageUrlSaving.set(false);
+    }
+  }
+
+  protected async saveImageToDisk(): Promise<void> {
+    try {
+      await this.cs.saveSelectedWidgetImageToDisk();
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') {
+        return;
+      }
+      console.error('[CanvasSettingsPanel] saveImageToDisk failed:', err);
+    }
+  }
+
+  private async importImageFile(file: File): Promise<void> {
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+
+    try {
+      await this.cs.setSelectedWidgetImageFromFile(file);
+    } catch (err) {
+      console.error('[CanvasSettingsPanel] importImageFile failed:', err);
+    }
   }
 
   protected onImageAltChange(event: Event): void {
