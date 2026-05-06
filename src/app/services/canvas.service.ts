@@ -108,6 +108,7 @@ interface CanvasSnapshot {
     settingsPanelLayout: SettingsPanelLayout;
     layersPanelLayout: LayersPanelLayout;
     selectedWidgetId: string | null;
+    projectName: string;
 }
 
 interface EditorStateSnapshot {
@@ -234,6 +235,7 @@ export class CanvasService {
     private isProjectSyncInFlight = false;
     private isProjectSyncQueued = false;
 
+    public projectName = signal<string>('Untitled Project');
     public projectDirectoryName = signal<string | null>(null);
     public projectSyncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
     public projectLastSyncedAt = signal<Date | null>(null);
@@ -631,6 +633,10 @@ export class CanvasService {
 
     public selectWidget(widgetId: string | null) {
         this.selectedWidgetId.set(widgetId);
+    }
+
+    public setProjectName(name: string): void {
+        this.projectName.set(name.trim() || 'Untitled Project');
     }
 
     public deleteSelectedWidget(): void {
@@ -1668,6 +1674,7 @@ export class CanvasService {
                 settingsPanelLayout: this.settingsPanelLayout(),
                 layersPanelLayout: this.layersPanelLayout(),
                 selectedWidgetId: this.selectedWidgetId(),
+                projectName: this.projectName(),
             },
             widgets: this.widgetsState.list().map((widget) => this.cloneWidget(widget)),
         };
@@ -1697,6 +1704,7 @@ export class CanvasService {
         this.debugPanelVisible.set(canvas.debugPanelVisible);
         this.settingsPanelLayout.set(canvas.settingsPanelLayout);
         this.layersPanelLayout.set(canvas.layersPanelLayout);
+        this.projectName.set(canvas.projectName ?? 'Untitled Project');
 
         this.widgetsState.replaceAll(snapshot.widgets.map((widget) => this.cloneWidget(widget)));
 
@@ -2137,12 +2145,13 @@ export class CanvasService {
         });
     }
 
-    public async exportToFile(filename = 'project'): Promise<void> {
+    public async exportToFile(filename?: string): Promise<void> {
+        const finalFilename = filename ?? this.projectName();
         const archiveSnapshot = await this.createArchiveSnapshot();
         const archiveEntries = await this.buildProjectArchiveEntries(archiveSnapshot);
         const archive = zipSync(archiveEntries, {level: 6});
         const blob = new Blob([this.toArrayBuffer(archive)], {type: 'application/zip'});
-        this.downloadBlob(blob, `${filename}.${this.PROJECT_ARCHIVE_EXTENSION}`);
+        this.downloadBlob(blob, `${finalFilename}.${this.PROJECT_ARCHIVE_EXTENSION}`);
     }
 
     public async importFromFile(): Promise<void> {
@@ -2515,13 +2524,14 @@ export class CanvasService {
     private static readonly TRANSPARENT_PNG =
         'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
-    public async exportCanvasAsImage(filename = 'canvas'): Promise<void> {
+    public async exportCanvasAsImage(filename?: string): Promise<void> {
         const source = this.canvasEl;
         if (!source) {
             console.error('[CanvasService] exportCanvasAsImage: canvasEl is null');
             return;
         }
 
+        const finalFilename = filename ?? this.projectName();
         const exportWidth = this.width();
         const exportHeight = this.height();
 
@@ -2576,7 +2586,7 @@ export class CanvasService {
 
             const anchor = document.createElement('a');
             anchor.href = dataUrl;
-            anchor.download = `${filename}.png`;
+            anchor.download = `${finalFilename}.png`;
             document.body.appendChild(anchor);
             anchor.click();
             document.body.removeChild(anchor);

@@ -24,7 +24,8 @@ export class ActionsToolbarComponent {
   }
 
   protected async exportToFile(): Promise<void> {
-    await this.cs.exportToFile('project');
+      const projectName = this.cs.projectName() || 'canvas';
+    await this.cs.exportToFile(projectName);
   }
 
   protected async importFromFile(): Promise<void> {
@@ -33,7 +34,8 @@ export class ActionsToolbarComponent {
 
   protected async exportCanvasAsImage(): Promise<void> {
     try {
-      await this.cs.exportCanvasAsImage('canvas');
+      const projectName = this.cs.projectName() || 'canvas';
+      await this.cs.exportCanvasAsImage(projectName);
     } catch (err) {
       console.error('[ActionsToolbar] Export image failed:', err);
     }

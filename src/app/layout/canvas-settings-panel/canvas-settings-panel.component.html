@@ -672,6 +672,18 @@
                 <!-- PROJECT section -->
                 <section class="settings-panel__section">
                     <div class="settings-panel__section-label">Project</div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="project-name">Project name</label>
+                        <input
+                                id="project-name"
+                                class="settings-panel__input"
+                                type="text"
+                                [value]="projectName"
+                                (input)="onProjectNameInput($event)"
+                        />
+                    </div>
+
                     @if (projectImportNotice; as notice) {
                         <div
                                 class="settings-panel__import-banner"

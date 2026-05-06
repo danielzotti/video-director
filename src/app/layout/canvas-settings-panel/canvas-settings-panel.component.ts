@@ -301,7 +301,20 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected get pendingImportBackupName(): string {
-    return this.cs.pendingImportBackupName();
+     return this.cs.pendingImportBackupName();
+   }
+
+  protected get projectName(): string {
+    return this.cs.projectName();
+  }
+
+  protected setProjectName(value: string): void {
+    this.cs.setProjectName(value);
+  }
+
+  protected onProjectNameInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.setProjectName(value);
   }
 
   protected setSnapSize(val: string | number): void {
