@@ -411,6 +411,7 @@
     display: none;
   }
 
+  &__media-dropzone,
   &__image-dropzone {
     width: 100%;
     min-height: 84px;
@@ -442,12 +443,14 @@
     }
   }
 
+  &__media-dropzone-title,
   &__image-dropzone-title {
     font-size: var(--ds-font-sm);
     font-weight: 600;
     color: inherit;
   }
 
+  &__media-dropzone-subtitle,
   &__image-dropzone-subtitle {
     font-size: var(--ds-font-xs);
     color: inherit;

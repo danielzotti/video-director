@@ -2,6 +2,7 @@ import {computed, effect, inject, Injectable, Renderer2, RendererFactory2, signa
 import {
     DEFAULT_WIDGET_TEXT_STYLE,
     DEFAULT_WIDGET_TEXT,
+    DEFAULT_WIDGET_VIDEO_CONTENT,
     WidgetImageFitMode,
     WidgetTextAlignmentHorizontal,
     WidgetTextAlignmentVertical,
@@ -9,6 +10,8 @@ import {
     WidgetContentType,
     WidgetStateItem,
     WidgetBorderStyle,
+    WidgetImageContent,
+    WidgetVideoContent,
 } from '../models/canvas-widget-state.models';
 import {AxisGuides, Point2D, Rect2D, ResizeHandle, Size2D} from '../models/geometry.models';
 import {CanvasWidgetStateService} from './canvas-widget-state.service';
@@ -222,6 +225,8 @@ export class CanvasService {
     private readonly redoStack = signal<EditorStateSnapshot[]>([]);
     public readonly canUndo = computed(() => this.undoStack().length > 0);
     public readonly canRedo = computed(() => this.redoStack().length > 0);
+    private readonly widgetVideoElements = new Map<string, HTMLVideoElement>();
+    private readonly widgetVideoPlayback = signal<Record<string, boolean>>({});
 
     private currentSnapshot: EditorStateSnapshot | null = null;
     private isApplyingSnapshot = false;
@@ -654,6 +659,8 @@ export class CanvasService {
             return;
         }
 
+        this.unregisterWidgetVideoElement(widgetId);
+
         this.widgetsState.remove({uuid: widgetId});
 
         if (this.selectedWidgetId() === widgetId) {
@@ -683,6 +690,10 @@ export class CanvasService {
         this.createWidget('image');
     }
 
+    public createVideoWidget(): void {
+        this.createWidget('video');
+    }
+
     public setSelectedWidgetContentType(type: WidgetContentType) {
         const widget = this.selectedWidget();
         if (!widget || widget.content.type === type) {
@@ -691,9 +702,7 @@ export class CanvasService {
 
         this.widgetsState.update({
             ...widget,
-            content: type === 'text'
-                ? {type: 'text', text: DEFAULT_WIDGET_TEXT, style: {...DEFAULT_WIDGET_TEXT_STYLE}}
-                : {type: 'image', src: '', alt: '', fitMode: 'cover'},
+            content: this.createDefaultWidgetContent(type),
         });
     }
 
@@ -753,6 +762,111 @@ export class CanvasService {
             content: {
                 ...widget.content,
                 fitMode,
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoSrc(src: string) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                src,
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoPoster(poster: string) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                poster,
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoFitMode(fitMode: WidgetImageFitMode) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                fitMode,
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoAutoplay(autoplay: boolean) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                autoplay,
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoLoop(loop: boolean) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                loop,
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoMuted(muted: boolean) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                muted,
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoControls(controls: boolean) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                controls,
             },
         });
     }
@@ -1115,6 +1229,86 @@ export class CanvasService {
         }
     }
 
+    public isValidVideoUrl(src: string): boolean {
+        const value = src.trim();
+        if (!value) {
+            return false;
+        }
+
+        if (value.startsWith('data:video/') || value.startsWith('blob:')) {
+            return true;
+        }
+
+        try {
+            const url = new URL(value);
+            return url.protocol === 'http:' || url.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    }
+
+    public registerWidgetVideoElement(widgetId: string, element: HTMLVideoElement): void {
+        this.widgetVideoElements.set(widgetId, element);
+        this.setWidgetVideoPlaybackState(widgetId, !element.paused && !element.ended);
+    }
+
+    public unregisterWidgetVideoElement(widgetId: string, element?: HTMLVideoElement): void {
+        const registeredElement = this.widgetVideoElements.get(widgetId);
+        if (!registeredElement) {
+            return;
+        }
+
+        if (element && registeredElement !== element) {
+            return;
+        }
+
+        this.widgetVideoElements.delete(widgetId);
+        this.setWidgetVideoPlaybackState(widgetId, false);
+    }
+
+    public isWidgetVideoPlaying(widgetId: string): boolean {
+        return this.widgetVideoPlayback()[widgetId] ?? false;
+    }
+
+    public canControlWidgetVideo(widgetId: string): boolean {
+        return this.widgetVideoElements.has(widgetId);
+    }
+
+    public setWidgetVideoPlaybackState(widgetId: string, isPlaying: boolean): void {
+        this.widgetVideoPlayback.update((state) => {
+            if ((state[widgetId] ?? false) === isPlaying) {
+                return state;
+            }
+
+            return {
+                ...state,
+                [widgetId]: isPlaying,
+            };
+        });
+    }
+
+    public toggleWidgetVideoPlayback(widgetId: string): void {
+        const widget = this.widgetsState.getById(widgetId);
+        if (!widget || widget.content.type !== 'video') {
+            return;
+        }
+
+        const element = this.widgetVideoElements.get(widgetId);
+        if (!element) {
+            return;
+        }
+
+        if (element.paused || element.ended) {
+            void element.play()
+                .then(() => this.setWidgetVideoPlaybackState(widgetId, true))
+                .catch(() => this.setWidgetVideoPlaybackState(widgetId, false));
+            return;
+        }
+
+        element.pause();
+        this.setWidgetVideoPlaybackState(widgetId, false);
+    }
+
     public async setSelectedWidgetImageFromFile(file: File): Promise<void> {
         const selected = this.selectedWidget();
         if (!selected || selected.content.type !== 'image') {
@@ -1129,6 +1323,21 @@ export class CanvasService {
         this.applySelectedWidgetImageDataUrl({dataUrl, fallbackName: file.name});
         // Eagerly write to the project folder if connected so the asset is on disk immediately.
         await this.eagerWriteImageToProjectFolder(selected.uuid, file);
+    }
+
+    public async setSelectedWidgetVideoFromFile(file: File): Promise<void> {
+        const selected = this.selectedWidget();
+        if (!selected || selected.content.type !== 'video') {
+            return;
+        }
+
+        if (!file.type.startsWith('video/')) {
+            return;
+        }
+
+        const dataUrl = await this.blobToDataUrl(file);
+        this.applySelectedWidgetVideoDataUrl(dataUrl);
+        await this.eagerWriteVideoToProjectFolder(selected.uuid, file);
     }
 
     public async setSelectedWidgetImageFromUrl(url: string): Promise<void> {
@@ -1215,6 +1424,27 @@ export class CanvasService {
         });
     }
 
+    private applySelectedWidgetVideoDataUrl(dataUrl: string): void {
+        const selected = this.selectedWidget();
+        if (!selected || selected.content.type !== 'video') {
+            return;
+        }
+
+        const latest = this.widgetsState.getById(selected.uuid);
+
+        if (!latest || latest.content.type !== 'video') {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...latest,
+            content: {
+                ...latest.content,
+                src: dataUrl,
+            },
+        });
+    }
+
     /**
      * If a project folder is connected, eagerly writes the image blob to the managed
      * assets directory so it is on disk immediately rather than waiting for the next
@@ -1232,6 +1462,22 @@ export class CanvasService {
         try {
             const assetsDirectory = await directoryHandle.getDirectoryHandle(this.PROJECT_ASSETS_DIR, {create: true});
             const extension = this.mimeTypeToExtension(blob.type || 'image/png');
+            const assetName = `${this.PROJECT_MANAGED_ASSET_PREFIX}${widgetUuid}.${extension}`;
+            await this.writeBlobToDirectory(assetsDirectory, assetName, blob);
+        } catch {
+            // Non-critical: debounced sync will write on the next cycle.
+        }
+    }
+
+    private async eagerWriteVideoToProjectFolder(widgetUuid: string, blob: Blob): Promise<void> {
+        const directoryHandle = this.projectDirectoryHandle;
+        if (!directoryHandle) {
+            return;
+        }
+
+        try {
+            const assetsDirectory = await directoryHandle.getDirectoryHandle(this.PROJECT_ASSETS_DIR, {create: true});
+            const extension = this.mimeTypeToExtension(blob.type || 'video/mp4');
             const assetName = `${this.PROJECT_MANAGED_ASSET_PREFIX}${widgetUuid}.${extension}`;
             await this.writeBlobToDirectory(assetsDirectory, assetName, blob);
         } catch {
@@ -1856,7 +2102,7 @@ export class CanvasService {
         return {
             canvas: {...snapshot.canvas},
             widgets: snapshot.widgets.map((widget) => {
-                if (widget.content.type !== 'image') {
+                if (!this.isMediaContent(widget.content)) {
                     return this.cloneWidget(widget);
                 }
 
@@ -1869,7 +2115,8 @@ export class CanvasService {
                     return this.cloneWidget(widget);
                 }
 
-                const extension = this.resolveImageSourceExtension(source);
+                const fallbackExtension = widget.content.type === 'video' ? 'mp4' : 'png';
+                const extension = this.resolveManagedAssetSourceExtension(source, fallbackExtension);
 
                 return {
                     ...this.cloneWidget(widget),
@@ -1882,26 +2129,26 @@ export class CanvasService {
         };
     }
 
-    private resolveImageSourceExtension(source: string): string {
+    private resolveManagedAssetSourceExtension(source: string, fallbackExtension: string): string {
         if (source.startsWith('data:')) {
             const mimeMatch = source.match(/^data:([^;]+);base64,/);
             if (mimeMatch?.[1]) {
                 return this.mimeTypeToExtension(mimeMatch[1]);
             }
-            return 'png';
+            return fallbackExtension;
         }
 
         if (source.startsWith('blob:')) {
-            return 'png';
+            return fallbackExtension;
         }
 
         try {
             const url = new URL(source);
             const fileName = url.pathname.split('/').filter(Boolean).pop() ?? '';
             const extension = fileName.split('.').pop()?.toLowerCase();
-            return extension && /^[a-z0-9]+$/.test(extension) ? extension : 'png';
+            return extension && /^[a-z0-9]+$/.test(extension) ? extension : fallbackExtension;
         } catch {
-            return 'png';
+            return fallbackExtension;
         }
     }
 
@@ -1911,7 +2158,7 @@ export class CanvasService {
         const usedAssetNames = new Set<string>();
 
         const widgets = await Promise.all(snapshot.widgets.map(async (widget) => {
-            if (widget.content.type !== 'image') {
+            if (!this.isMediaContent(widget.content)) {
                 return this.cloneWidget(widget);
             }
 
@@ -1925,7 +2172,8 @@ export class CanvasService {
                 return this.cloneWidget(widget);
             }
 
-            const extension = this.mimeTypeToExtension(blob.type || 'image/png');
+            const fallbackMimeType = widget.content.type === 'video' ? 'video/mp4' : 'image/png';
+            const extension = this.mimeTypeToExtension(blob.type || fallbackMimeType);
             const assetName = `${this.PROJECT_MANAGED_ASSET_PREFIX}${widget.uuid}.${extension}`;
             await this.writeBlobToDirectory(assetsDirectory, assetName, blob);
             usedAssetNames.add(assetName);
@@ -1985,7 +2233,7 @@ export class CanvasService {
         directoryHandle: FileSystemDirectoryHandleLike,
     ): Promise<EditorStateSnapshot> {
         const widgets = await Promise.all(snapshot.widgets.map(async (widget) => {
-            if (widget.content.type !== 'image') {
+            if (!this.isMediaContent(widget.content)) {
                 return this.cloneWidget(widget);
             }
 
@@ -2090,7 +2338,8 @@ export class CanvasService {
 
         const currentSnapshot = this.buildSnapshot();
         const hasManagedAssetReferences = currentSnapshot.widgets.some((widget) => {
-            return widget.content.type === 'image' && widget.content.src.trim().startsWith(`${this.PROJECT_ASSETS_DIR}/`);
+            return this.isMediaContent(widget.content)
+                && widget.content.src.trim().startsWith(`${this.PROJECT_ASSETS_DIR}/`);
         });
 
         if (!hasManagedAssetReferences) {
@@ -2329,7 +2578,7 @@ export class CanvasService {
         const assets = new Map<string, Blob>();
 
         const widgets = await Promise.all(snapshot.widgets.map(async (widget) => {
-            if (widget.content.type !== 'image') {
+            if (!this.isMediaContent(widget.content)) {
                 return this.cloneWidget(widget);
             }
 
@@ -2343,7 +2592,8 @@ export class CanvasService {
                 return this.cloneWidget(widget);
             }
 
-            const extension = this.mimeTypeToExtension(blob.type || 'image/png');
+            const fallbackMimeType = widget.content.type === 'video' ? 'video/mp4' : 'image/png';
+            const extension = this.mimeTypeToExtension(blob.type || fallbackMimeType);
             const assetName = `${this.PROJECT_MANAGED_ASSET_PREFIX}${widget.uuid}.${extension}`;
             assets.set(assetName, blob);
 
@@ -2438,7 +2688,7 @@ export class CanvasService {
         archiveEntries: Record<string, Uint8Array>,
     ): Promise<EditorStateSnapshot> {
         const widgets = await Promise.all(snapshot.widgets.map(async (widget) => {
-            if (widget.content.type !== 'image') {
+            if (!this.isMediaContent(widget.content)) {
                 return this.cloneWidget(widget);
             }
 
@@ -2875,6 +3125,10 @@ export class CanvasService {
             'image/gif': 'gif',
             'image/svg+xml': 'svg',
             'image/bmp': 'bmp',
+            'video/mp4': 'mp4',
+            'video/webm': 'webm',
+            'video/ogg': 'ogv',
+            'video/quicktime': 'mov',
         };
 
         return map[mimeType] ?? 'png';
@@ -2890,6 +3144,10 @@ export class CanvasService {
             gif: 'image/gif',
             svg: 'image/svg+xml',
             bmp: 'image/bmp',
+            mp4: 'video/mp4',
+            webm: 'video/webm',
+            ogv: 'video/ogg',
+            mov: 'video/quicktime',
         };
 
         return map[extension] ?? 'application/octet-stream';
@@ -3050,9 +3308,7 @@ export class CanvasService {
             z: this.getNextWidgetZIndex(),
             width: Math.round(rect.width),
             height: Math.round(rect.height),
-            content: type === 'text'
-                ? {type: 'text', text: DEFAULT_WIDGET_TEXT, style: {...DEFAULT_WIDGET_TEXT_STYLE}}
-                : {type: 'image', src: '', alt: '', fitMode: 'cover'},
+            content: this.createDefaultWidgetContent(type),
         };
 
         this.widgetsState.add(widget);
@@ -3061,9 +3317,27 @@ export class CanvasService {
     }
 
     private getDefaultWidgetSize(type: WidgetContentType): Size2D {
-        return type === 'text'
-            ? {width: 320, height: 120}
-            : {width: 320, height: 180};
+        if (type === 'text') {
+            return {width: 320, height: 120};
+        }
+
+        if (type === 'image') {
+            return {width: 320, height: 180};
+        }
+
+        return {width: 480, height: 270};
+    }
+
+    private createDefaultWidgetContent(type: WidgetContentType): WidgetStateItem['content'] {
+        if (type === 'text') {
+            return {type: 'text', text: DEFAULT_WIDGET_TEXT, style: {...DEFAULT_WIDGET_TEXT_STYLE}};
+        }
+
+        if (type === 'image') {
+            return {type: 'image', src: '', alt: '', fitMode: 'cover'};
+        }
+
+        return {...DEFAULT_WIDGET_VIDEO_CONTENT};
     }
 
     private getViewportCenterCanvasPoint(): Point2D {
@@ -3096,6 +3370,10 @@ export class CanvasService {
     private getNextWidgetZIndex(): number {
         const maxZ = this.widgetsState.list().reduce((currentMax, widget) => Math.max(currentMax, widget.z), 0);
         return maxZ + 1;
+    }
+
+    private isMediaContent(content: WidgetStateItem['content']): content is WidgetImageContent | WidgetVideoContent {
+        return content.type === 'image' || content.type === 'video';
     }
 
 

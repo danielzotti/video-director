@@ -1,0 +1,22 @@
+@if (isUrlValid) {
+    <video
+        class="widget-video-content"
+        [src]="content().src"
+        [poster]="content().poster || null"
+        [style.object-fit]="content().fitMode"
+        [autoplay]="content().autoplay"
+        [loop]="content().loop"
+        [muted]="content().muted"
+        [controls]="content().controls"
+        crossorigin="anonymous"
+        preload="metadata"
+        playsinline
+        (loadedmetadata)="onVideoReady($event)"
+        (play)="onVideoPlaybackChanged(true)"
+        (pause)="onVideoPlaybackChanged(false)"
+        (ended)="onVideoPlaybackChanged(false)"
+    ></video>
+} @else {
+    <div class="widget-video-placeholder">Provide a valid video URL (http/https).</div>
+}
+

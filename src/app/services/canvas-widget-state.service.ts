@@ -3,6 +3,7 @@ import {v4 as uuid} from 'uuid';
 import {
   DEFAULT_WIDGET_CONTENT,
   DEFAULT_WIDGET_TEXT_STYLE,
+  DEFAULT_WIDGET_VIDEO_CONTENT,
   WidgetContent,
   WidgetImageFitMode,
   WidgetTextAlignmentHorizontal,
@@ -224,6 +225,19 @@ export class CanvasWidgetStateService {
         src: content.src,
         alt: content.alt ?? '',
         fitMode: this.normalizeImageFitMode(content.fitMode),
+      };
+    }
+
+    if (content.type === 'video') {
+      return {
+        type: 'video',
+        src: content.src,
+        poster: content.poster ?? '',
+        fitMode: this.normalizeImageFitMode(content.fitMode),
+        autoplay: content.autoplay ?? DEFAULT_WIDGET_VIDEO_CONTENT.autoplay,
+        loop: content.loop ?? DEFAULT_WIDGET_VIDEO_CONTENT.loop,
+        muted: content.muted ?? DEFAULT_WIDGET_VIDEO_CONTENT.muted,
+        controls: content.controls ?? DEFAULT_WIDGET_VIDEO_CONTENT.controls,
       };
     }
 

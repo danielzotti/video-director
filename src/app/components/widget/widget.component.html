@@ -13,6 +13,12 @@
                     [borderWidth]="item().borderWidth ?? 0"
             />
         }
+        @case ('video') {
+            <app-widget-video
+                    [widgetId]="item().uuid"
+                    [content]="videoContent"
+            />
+        }
         @default {
             <ng-content></ng-content>
         }

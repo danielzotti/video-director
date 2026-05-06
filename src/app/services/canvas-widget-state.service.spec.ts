@@ -73,6 +73,34 @@ describe('CanvasWidgetStateService', () => {
     });
   });
 
+  it('normalizes video content with default playback options', () => {
+    const videoWidget = {
+      uuid: 'video-widget',
+      x: 20,
+      y: 40,
+      z: 13,
+      width: 320,
+      height: 180,
+      content: {
+        type: 'video',
+        src: 'https://example.com/video.mp4',
+      },
+    } as WidgetStateItem;
+
+    service.add(videoWidget);
+
+    expect(service.getById('video-widget').content).toEqual({
+      type: 'video',
+      src: 'https://example.com/video.mp4',
+      poster: '',
+      fitMode: 'cover',
+      autoplay: false,
+      loop: false,
+      muted: true,
+      controls: true,
+    });
+  });
+
   it('normalizes missing locked flag to false', () => {
     const legacyWidget = {
       uuid: 'legacy-lock',

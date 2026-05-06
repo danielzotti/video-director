@@ -484,21 +484,6 @@
                     </button>
 
                     <div class="settings-panel__row settings-panel__row--column">
-                        <label class="settings-panel__field-label" for="widget-image-src">Image URL</label>
-                        <input
-                                id="widget-image-src"
-                                class="settings-panel__input"
-                                type="url"
-                                placeholder="https://..."
-                                [value]="imageContent.src"
-                                (input)="onImageSrcChange($event)"
-                        />
-                        @if (!cs.isValidImageUrl(imageContent.src)) {
-                            <span class="settings-panel__help settings-panel__help--error">Usa un URL assoluto http/https o carica un file locale.</span>
-                        }
-                    </div>
-
-                    <div class="settings-panel__row settings-panel__row--column">
                         <label class="settings-panel__field-label" for="widget-image-alt">Alt text</label>
                         <input
                                 id="widget-image-alt"
@@ -515,6 +500,95 @@
                                 [options]="imageFitModeOptions"
                                 [value]="imageContent.fitMode"
                                 (valueChange)="setImageFitMode($event)"
+                        />
+                    </div>
+                }
+
+                @if (selectedVideoContent; as videoContent) {
+                    <input
+                        #videoFileInput
+                        class="settings-panel__hidden-input"
+                        type="file"
+                        accept="video/*"
+                        (change)="onVideoFileSelected($event)"
+                    />
+
+                    <button
+                            class="settings-panel__media-dropzone"
+                            [class.settings-panel__media-dropzone--active]="isVideoDropzoneActive()"
+                            type="button"
+                            (click)="openVideoFilePicker(videoFileInput)"
+                            (dragover)="onVideoDropzoneDragOver($event)"
+                            (dragleave)="onVideoDropzoneDragLeave($event)"
+                            (drop)="onVideoDropzoneDrop($event)"
+                    >
+                        <span class="settings-panel__media-dropzone-title">Drop a video here</span>
+                        <span class="settings-panel__media-dropzone-subtitle">or click to pick one from disk</span>
+                    </button>
+
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-video-poster">Poster URL</label>
+                        <input
+                                id="widget-video-poster"
+                                class="settings-panel__input"
+                                type="url"
+                                placeholder="https://..."
+                                [value]="videoContent.poster || ''"
+                                (input)="onVideoPosterChange($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <app-ui-select
+                                label="Video fit"
+                                [options]="imageFitModeOptions"
+                                [value]="videoContent.fitMode"
+                                (valueChange)="setVideoFitMode($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <span class="settings-panel__field-label">Playback</span>
+                        <app-ui-button
+                                variant="icon"
+                                [disabled]="!canToggleSelectedVideoPlayback"
+                                [title]="isSelectedVideoPlaying ? 'Pause video' : 'Play video'"
+                                (click)="toggleSelectedVideoPlayback()"
+                        >
+                            <app-ui-icon [name]="isSelectedVideoPlaying ? 'pause' : 'play'"/>
+                        </app-ui-button>
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Autoplay"
+                                [checked]="videoContent.autoplay"
+                                (checkedChange)="setVideoAutoplay($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Loop"
+                                [checked]="videoContent.loop"
+                                (checkedChange)="setVideoLoop($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Muted"
+                                [checked]="videoContent.muted"
+                                (checkedChange)="setVideoMuted($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Show controls"
+                                [checked]="videoContent.controls"
+                                (checkedChange)="setVideoControls($event)"
                         />
                     </div>
                 }

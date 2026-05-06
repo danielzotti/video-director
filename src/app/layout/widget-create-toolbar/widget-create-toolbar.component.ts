@@ -17,6 +17,10 @@ import {UiIconComponent} from '../../ui/icon/ui-icon.component';
       <app-ui-button variant="icon" title="Create image widget" (click)="createImageWidget()">
         <app-ui-icon name="image"></app-ui-icon>
       </app-ui-button>
+
+      <app-ui-button variant="icon" title="Create video widget" (click)="createVideoWidget()">
+        <app-ui-icon name="video"></app-ui-icon>
+      </app-ui-button>
     </div>
   `,
   styles: [
@@ -46,6 +50,10 @@ export class WidgetCreateToolbarComponent {
 
   protected createImageWidget(): void {
     this.cs.createImageWidget();
+  }
+
+  protected createVideoWidget(): void {
+    this.cs.createVideoWidget();
   }
 }
 

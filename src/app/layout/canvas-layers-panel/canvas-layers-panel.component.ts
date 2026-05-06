@@ -103,7 +103,15 @@ export class CanvasLayersPanelComponent {
     protected getLayerContentIcon(uuid: string): UiIconName {
         const widget = this.widgetsState.getById(uuid);
         if (!widget) return 'info';
-        return widget.content.type === 'text' ? 'text' : 'image';
+        if (widget.content.type === 'text') {
+            return 'text';
+        }
+
+        if (widget.content.type === 'image') {
+            return 'image';
+        }
+
+        return 'video';
     }
 
     protected getLayerContentType(uuid: string): string {
@@ -123,6 +131,10 @@ export class CanvasLayersPanelComponent {
         }
 
         if (widget.content.type === 'image') {
+            return (widget.content.src || '').trim();
+        }
+
+        if (widget.content.type === 'video') {
             return (widget.content.src || '').trim();
         }
 
@@ -157,6 +169,7 @@ export class CanvasLayersPanelComponent {
     protected isLayerVisible(uuid: string): boolean {
         return this.widgetsState.getById(uuid)?.visible ?? true;
     }
+
 
     protected toggleLayerLocked(uuid: string, event: MouseEvent): void {
         event.stopPropagation();

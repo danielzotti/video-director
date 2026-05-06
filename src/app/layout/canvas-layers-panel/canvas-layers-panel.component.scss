@@ -351,6 +351,11 @@
       border-color: var(--ds-accent);
     }
 
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     &--small {
       padding: 2px 6px;
       font-size: 10px;

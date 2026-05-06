@@ -6,6 +6,7 @@ import {
   WidgetTextFontFamily,
   WidgetImageContent,
   WidgetTextContent,
+  WidgetVideoContent,
   WIDGET_CONTENT_TYPES,
   WIDGET_TEXT_FONT_FAMILIES,
   WidgetContentType,
@@ -31,6 +32,7 @@ export class CanvasSettingsPanelComponent {
   private static readonly CONTENT_LABELS: Record<WidgetContentType, string> = {
     text: 'Text',
     image: 'Image',
+    video: 'Video',
   };
 
   private static readonly IMAGE_FIT_MODE_LABELS: Record<WidgetImageFitMode, string> = {
@@ -59,6 +61,7 @@ export class CanvasSettingsPanelComponent {
     x: '', y: '', width: '', height: '',
   });
   protected readonly isImageDropzoneActive = signal(false);
+  protected readonly isVideoDropzoneActive = signal(false);
   protected readonly isImageUrlModalOpen = signal(false);
   protected readonly imageUrlDraft = signal('');
   protected readonly imageUrlError = signal<string | null>(null);
@@ -181,6 +184,25 @@ export class CanvasSettingsPanelComponent {
   protected get selectedImageContent(): WidgetImageContent | null {
     const content = this.selectedWidget?.content;
     return content?.type === 'image' ? content : null;
+  }
+
+  protected get selectedVideoContent(): WidgetVideoContent | null {
+    const content = this.selectedWidget?.content;
+    return content?.type === 'video' ? content : null;
+  }
+
+  protected get canToggleSelectedVideoPlayback(): boolean {
+    const widget = this.selectedWidget;
+    return !!widget && widget.content.type === 'video' && this.cs.canControlWidgetVideo(widget.uuid);
+  }
+
+  protected get isSelectedVideoPlaying(): boolean {
+    const widget = this.selectedWidget;
+    if (!widget || widget.content.type !== 'video') {
+      return false;
+    }
+
+    return this.cs.isWidgetVideoPlaying(widget.uuid);
   }
 
   protected get canSaveSelectedImageToDisk(): boolean {
@@ -400,7 +422,7 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected setContentType(value: string | number): void {
-    if (value !== 'text' && value !== 'image') {
+    if (value !== 'text' && value !== 'image' && value !== 'video') {
       return;
     }
 
@@ -474,11 +496,6 @@ export class CanvasSettingsPanelComponent {
 
       this.cs.setSelectedWidgetTextLineHeight(value);
     }
-
-   protected onImageSrcChange(event: Event): void {
-     const value = (event.target as HTMLInputElement).value;
-     this.cs.setSelectedWidgetImageSrc(value);
-   }
 
   protected openImageFilePicker(input: HTMLInputElement): void {
     input.value = '';
@@ -581,6 +598,18 @@ export class CanvasSettingsPanelComponent {
     }
   }
 
+  private async importVideoFile(file: File): Promise<void> {
+    if (!file.type.startsWith('video/')) {
+      return;
+    }
+
+    try {
+      await this.cs.setSelectedWidgetVideoFromFile(file);
+    } catch (err) {
+      console.error('[CanvasSettingsPanel] importVideoFile failed:', err);
+    }
+  }
+
   protected onImageAltChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.cs.setSelectedWidgetImageAlt(value);
@@ -592,6 +621,84 @@ export class CanvasSettingsPanelComponent {
     }
 
     this.cs.setSelectedWidgetImageFitMode(value);
+  }
+
+
+  protected onVideoPosterChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.cs.setSelectedWidgetVideoPoster(value);
+  }
+
+  protected setVideoFitMode(value: string | number): void {
+    if (value !== 'cover' && value !== 'contain') {
+      return;
+    }
+
+    this.cs.setSelectedWidgetVideoFitMode(value);
+  }
+
+  protected setVideoAutoplay(value: boolean): void {
+    this.cs.setSelectedWidgetVideoAutoplay(value);
+  }
+
+  protected setVideoLoop(value: boolean): void {
+    this.cs.setSelectedWidgetVideoLoop(value);
+  }
+
+  protected setVideoMuted(value: boolean): void {
+    this.cs.setSelectedWidgetVideoMuted(value);
+  }
+
+  protected setVideoControls(value: boolean): void {
+    this.cs.setSelectedWidgetVideoControls(value);
+  }
+
+  protected toggleSelectedVideoPlayback(): void {
+    const widget = this.selectedWidget;
+    if (!widget || widget.content.type !== 'video') {
+      return;
+    }
+
+    this.cs.toggleWidgetVideoPlayback(widget.uuid);
+  }
+
+  protected openVideoFilePicker(input: HTMLInputElement): void {
+    input.value = '';
+    input.click();
+  }
+
+  protected async onVideoFileSelected(event: Event): Promise<void> {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) {
+      return;
+    }
+
+    await this.importVideoFile(file);
+  }
+
+  protected onVideoDropzoneDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+    this.isVideoDropzoneActive.set(true);
+  }
+
+  protected onVideoDropzoneDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.isVideoDropzoneActive.set(false);
+  }
+
+  protected async onVideoDropzoneDrop(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    this.isVideoDropzoneActive.set(false);
+
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    await this.importVideoFile(file);
   }
 
   protected onWidgetNameChange(event: Event): void {

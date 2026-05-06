@@ -34,7 +34,7 @@ export const DEFAULT_WIDGET_BORDER: Pick<WidgetStateItemStyle, 'borderRadius' | 
   padding: 0,
 };
 
-export const WIDGET_CONTENT_TYPES = ['text', 'image'] as const;
+export const WIDGET_CONTENT_TYPES = ['text', 'image', 'video'] as const;
 export type WidgetContentType = typeof WIDGET_CONTENT_TYPES[number];
 
 export const WIDGET_IMAGE_FIT_MODES = ['cover', 'contain'] as const;
@@ -88,13 +88,35 @@ export interface WidgetImageContent {
   fitMode: WidgetImageFitMode;
 }
 
-export type WidgetContent = WidgetTextContent | WidgetImageContent;
+export interface WidgetVideoContent {
+  type: 'video';
+  src: string;
+  poster?: string;
+  fitMode: WidgetImageFitMode;
+  autoplay: boolean;
+  loop: boolean;
+  muted: boolean;
+  controls: boolean;
+}
+
+export type WidgetContent = WidgetTextContent | WidgetImageContent | WidgetVideoContent;
 
 export const DEFAULT_WIDGET_TEXT = 'Nuovo widget';
 export const DEFAULT_WIDGET_CONTENT: WidgetContent = {
   type: 'text',
   text: DEFAULT_WIDGET_TEXT,
   style: DEFAULT_WIDGET_TEXT_STYLE,
+};
+
+export const DEFAULT_WIDGET_VIDEO_CONTENT: WidgetVideoContent = {
+  type: 'video',
+  src: '',
+  poster: '',
+  fitMode: 'cover',
+  autoplay: false,
+  loop: false,
+  muted: true,
+  controls: true,
 };
 
 export interface WidgetStateItem extends Rect2D, Partial<WidgetStateItemStyle> {

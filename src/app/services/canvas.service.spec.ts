@@ -221,6 +221,21 @@ describe('CanvasService', () => {
     expect(created!.y).toBe(90);
   });
 
+  it('creates and selects a new video widget on top of layers', () => {
+    const before = service.widgetsState.list();
+    const beforeMaxZ = before.reduce((max, item) => Math.max(max, item.z), 0);
+
+    service.createVideoWidget();
+
+    const after = service.widgetsState.list();
+    expect(after.length).toBe(before.length + 1);
+
+    const created = after[after.length - 1];
+    expect(created.content.type).toBe('video');
+    expect(created.z).toBe(beforeMaxZ + 1);
+    expect(service.selectedWidgetId()).toBe(created.uuid);
+  });
+
   it('auto-rounds geometry values when snap to grid is enabled', () => {
     service.selectWidget('1');
     service.setWidgetResize(true);
@@ -439,6 +454,49 @@ describe('CanvasService', () => {
     }
   });
 
+  it('switches selected widget content to video with default values', () => {
+    service.selectWidget('2');
+
+    service.setSelectedWidgetContentType('video');
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('video');
+    if (widget?.content.type === 'video') {
+      expect(widget.content.src).toBe('');
+      expect(widget.content.poster).toBe('');
+      expect(widget.content.fitMode).toBe('cover');
+      expect(widget.content.autoplay).toBeFalse();
+      expect(widget.content.loop).toBeFalse();
+      expect(widget.content.muted).toBeTrue();
+      expect(widget.content.controls).toBeTrue();
+    }
+  });
+
+  it('updates selected video settings', () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetContentType('video');
+
+    service.setSelectedWidgetVideoSrc('https://cdn.example.com/video.mp4');
+    service.setSelectedWidgetVideoPoster('https://cdn.example.com/poster.jpg');
+    service.setSelectedWidgetVideoFitMode('contain');
+    service.setSelectedWidgetVideoAutoplay(true);
+    service.setSelectedWidgetVideoLoop(true);
+    service.setSelectedWidgetVideoMuted(false);
+    service.setSelectedWidgetVideoControls(false);
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('video');
+    if (widget?.content.type === 'video') {
+      expect(widget.content.src).toBe('https://cdn.example.com/video.mp4');
+      expect(widget.content.poster).toBe('https://cdn.example.com/poster.jpg');
+      expect(widget.content.fitMode).toBe('contain');
+      expect(widget.content.autoplay).toBeTrue();
+      expect(widget.content.loop).toBeTrue();
+      expect(widget.content.muted).toBeFalse();
+      expect(widget.content.controls).toBeFalse();
+    }
+  });
+
   it('accepts data image URLs as valid image source', () => {
     const isValid = service.isValidImageUrl('data:image/png;base64,AAAA');
     expect(isValid).toBeTrue();
@@ -447,6 +505,57 @@ describe('CanvasService', () => {
   it('accepts blob URLs as valid image source', () => {
     const isValid = service.isValidImageUrl('blob:https://example.com/1234-5678');
     expect(isValid).toBeTrue();
+  });
+
+  it('accepts http/https and blob URLs as valid video source', () => {
+    expect(service.isValidVideoUrl('https://example.com/video.mp4')).toBeTrue();
+    expect(service.isValidVideoUrl('http://example.com/video.mp4')).toBeTrue();
+    expect(service.isValidVideoUrl('blob:https://example.com/1234-5678')).toBeTrue();
+  });
+
+  it('toggles video playback through registered video element', async () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetContentType('video');
+
+    const videoElement = document.createElement('video');
+    Object.defineProperty(videoElement, 'paused', {value: true, writable: true, configurable: true});
+    Object.defineProperty(videoElement, 'ended', {value: false, writable: true, configurable: true});
+
+    const playSpy = spyOn(videoElement, 'play').and.callFake(async () => {
+      Object.defineProperty(videoElement, 'paused', {value: false, writable: true, configurable: true});
+    });
+    const pauseSpy = spyOn(videoElement, 'pause').and.callFake(() => {
+      Object.defineProperty(videoElement, 'paused', {value: true, writable: true, configurable: true});
+    });
+
+    service.registerWidgetVideoElement('2', videoElement);
+    expect(service.canControlWidgetVideo('2')).toBeTrue();
+    expect(service.isWidgetVideoPlaying('2')).toBeFalse();
+
+    service.toggleWidgetVideoPlayback('2');
+    await Promise.resolve();
+
+    expect(playSpy).toHaveBeenCalled();
+    expect(service.isWidgetVideoPlaying('2')).toBeTrue();
+
+    service.toggleWidgetVideoPlayback('2');
+
+    expect(pauseSpy).toHaveBeenCalled();
+    expect(service.isWidgetVideoPlaying('2')).toBeFalse();
+  });
+
+  it('cleans registered video controller state when widget is deleted', () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetContentType('video');
+
+    const videoElement = document.createElement('video');
+    service.registerWidgetVideoElement('2', videoElement);
+    service.setWidgetVideoPlaybackState('2', true);
+
+    service.deleteWidget('2');
+
+    expect(service.canControlWidgetVideo('2')).toBeFalse();
+    expect(service.isWidgetVideoPlaying('2')).toBeFalse();
   });
 
   it('stores imported image from file as data URL', async () => {
@@ -864,6 +973,31 @@ describe('CanvasService', () => {
     expect(widget?.content.type).toBe('image');
     if (widget?.content.type === 'image') {
       expect(widget.content.src.startsWith('data:image/png;base64,')).toBeTrue();
+    }
+  });
+
+  it('eagerly writes video asset to project folder when importing from file while folder is connected', async () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetContentType('video');
+
+    const fileMap = new Map<string, Blob>();
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    await service.connectProjectDirectory();
+    fileMap.clear(); // clear the initial sync writes
+
+    const file = new File([new Uint8Array([0, 0, 0, 1])], 'clip.mp4', {type: 'video/mp4'});
+    await service.setSelectedWidgetVideoFromFile(file);
+
+    expect(fileMap.has('assets/widget-2.mp4')).toBeTrue();
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('video');
+    if (widget?.content.type === 'video') {
+      expect(widget.content.src.startsWith('data:video/mp4;base64,')).toBeTrue();
     }
   });
 

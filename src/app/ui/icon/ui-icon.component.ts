@@ -19,6 +19,7 @@ export type UiIconName =
   | 'text-align-right'
   | 'text'
   | 'image'
+  | 'video'
   | 'align-top'
   | 'align-center'
   | 'align-bottom'
@@ -36,6 +37,8 @@ export type UiIconName =
   | 'import-file'
   | 'export-image'
   | 'trash'
+  | 'play'
+  | 'pause'
   | 'text-bold'
   | 'text-italic'
   | 'text-underline';
@@ -157,6 +160,10 @@ export type UiIconName =
                   <circle cx="9" cy="9" r="1.5"/>
                   <path d="M4 17l5-5 3 3 4-4 4 6"/>
               }
+              @case ('video') {
+                  <rect x="3" y="4" width="18" height="16" rx="2"/>
+                  <polygon points="10 9 16 12 10 15" fill="currentColor" stroke="none"/>
+              }
               @case ('align-top') {
                   <line x1="3" y1="3" x2="21" y2="3"/>
                   <line x1="6" y1="8" x2="18" y2="8"/>
@@ -236,6 +243,13 @@ export type UiIconName =
                    <path d="M10 11v6"/>
                    <path d="M14 11v6"/>
                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+               }
+               @case ('play') {
+                   <polygon points="8 6 18 12 8 18" fill="currentColor" stroke="none"/>
+               }
+               @case ('pause') {
+                   <rect x="7" y="6" width="3" height="12" fill="currentColor" stroke="none" rx="0.5"/>
+                   <rect x="14" y="6" width="3" height="12" fill="currentColor" stroke="none" rx="0.5"/>
                }
                @case ('text-bold') {
                    <text x="12" y="16" text-anchor="middle" font-weight="bold" font-size="14" fill="currentColor" stroke="none">B</text>
