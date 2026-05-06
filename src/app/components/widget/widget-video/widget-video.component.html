@@ -15,6 +15,9 @@
         (play)="onVideoPlaybackChanged(true)"
         (pause)="onVideoPlaybackChanged(false)"
         (ended)="onVideoPlaybackChanged(false)"
+        (timeupdate)="onVideoTimeUpdate($event)"
+        (durationchange)="onVideoDurationChange($event)"
+        (volumechange)="onVideoVolumeChange($event)"
     ></video>
 } @else {
     <div class="widget-video-placeholder">Provide a valid video URL (http/https).</div>

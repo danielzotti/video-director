@@ -57,5 +57,21 @@ export class WidgetVideoComponent {
   protected onVideoPlaybackChanged(isPlaying: boolean): void {
     this.canvasService.setWidgetVideoPlaybackState(this.widgetId(), isPlaying);
   }
+
+  protected onVideoTimeUpdate(event: Event): void {
+    const element = event.currentTarget as HTMLVideoElement;
+    this.canvasService.setWidgetVideoTimeState(this.widgetId(), element.currentTime);
+  }
+
+  protected onVideoDurationChange(event: Event): void {
+    const element = event.currentTarget as HTMLVideoElement;
+    const duration = isFinite(element.duration) ? element.duration : 0;
+    this.canvasService.setWidgetVideoDurationState(this.widgetId(), duration);
+  }
+
+  protected onVideoVolumeChange(event: Event): void {
+    const element = event.currentTarget as HTMLVideoElement;
+    this.canvasService.setWidgetVideoVolumeState(this.widgetId(), element.muted ? 0 : element.volume);
+  }
 }
 

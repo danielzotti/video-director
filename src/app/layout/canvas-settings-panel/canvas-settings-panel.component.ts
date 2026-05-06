@@ -205,6 +205,40 @@ export class CanvasSettingsPanelComponent {
     return this.cs.isWidgetVideoPlaying(widget.uuid);
   }
 
+  protected get selectedVideoCurrentTime(): number {
+    const widget = this.selectedWidget;
+    if (!widget || widget.content.type !== 'video') {
+      return 0;
+    }
+
+    return this.cs.getWidgetVideoCurrentTime(widget.uuid);
+  }
+
+  protected get selectedVideoDuration(): number {
+    const widget = this.selectedWidget;
+    if (!widget || widget.content.type !== 'video') {
+      return 0;
+    }
+
+    return this.cs.getWidgetVideoDuration(widget.uuid);
+  }
+
+  protected get selectedVideoVolume(): number {
+    const widget = this.selectedWidget;
+    if (!widget || widget.content.type !== 'video') {
+      return 1;
+    }
+
+    return this.cs.getWidgetVideoVolume(widget.uuid);
+  }
+
+  protected formatTime(seconds: number): string {
+    const total = Math.max(0, Math.floor(seconds));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
   protected get canSaveSelectedImageToDisk(): boolean {
     return !!this.selectedImageContent?.src.trim();
   }
@@ -660,6 +694,30 @@ export class CanvasSettingsPanelComponent {
     }
 
     this.cs.toggleWidgetVideoPlayback(widget.uuid);
+  }
+
+  protected onVideoSeekInput(event: Event): void {
+    const widget = this.selectedWidget;
+    if (!widget || widget.content.type !== 'video') {
+      return;
+    }
+
+    const time = Number((event.target as HTMLInputElement).value);
+    if (isFinite(time)) {
+      this.cs.seekWidgetVideo(widget.uuid, time);
+    }
+  }
+
+  protected onVideoVolumeInput(event: Event): void {
+    const widget = this.selectedWidget;
+    if (!widget || widget.content.type !== 'video') {
+      return;
+    }
+
+    const volume = Number((event.target as HTMLInputElement).value);
+    if (isFinite(volume)) {
+      this.cs.setWidgetVideoVolume(widget.uuid, volume);
+    }
   }
 
   protected openVideoFilePicker(input: HTMLInputElement): void {

@@ -548,16 +548,53 @@
                         />
                     </div>
 
-                    <div class="settings-panel__row">
-                        <span class="settings-panel__field-label">Playback</span>
-                        <app-ui-button
-                                variant="icon"
-                                [disabled]="!canToggleSelectedVideoPlayback"
-                                [title]="isSelectedVideoPlaying ? 'Pause video' : 'Play video'"
-                                (click)="toggleSelectedVideoPlayback()"
-                        >
-                            <app-ui-icon [name]="isSelectedVideoPlaying ? 'pause' : 'play'"/>
-                        </app-ui-button>
+                    <div class="settings-panel__video-player">
+                        <!-- Play/pause + time display -->
+                        <div class="settings-panel__video-player-controls">
+                            <app-ui-button
+                                    variant="icon"
+                                    [disabled]="!canToggleSelectedVideoPlayback"
+                                    [title]="isSelectedVideoPlaying ? 'Pause video' : 'Play video'"
+                                    (click)="toggleSelectedVideoPlayback()"
+                            >
+                                <app-ui-icon [name]="isSelectedVideoPlaying ? 'pause' : 'play'"/>
+                            </app-ui-button>
+                            <span class="settings-panel__video-time">
+                                {{ formatTime(selectedVideoCurrentTime) }}
+                                <span class="settings-panel__video-time-sep">/</span>
+                                {{ formatTime(selectedVideoDuration) }}
+                            </span>
+                        </div>
+
+                        <!-- Seek bar -->
+                        <div class="settings-panel__video-player-row">
+                            <input
+                                    class="settings-panel__range"
+                                    type="range"
+                                    min="0"
+                                    [max]="selectedVideoDuration || 1"
+                                    step="0.1"
+                                    [value]="selectedVideoCurrentTime"
+                                    [disabled]="!canToggleSelectedVideoPlayback"
+                                    (input)="onVideoSeekInput($event)"
+                            />
+                        </div>
+
+                        <!-- Volume -->
+                        <div class="settings-panel__video-player-row settings-panel__video-player-row--volume">
+                            <app-ui-icon name="volume" style="flex-shrink:0; --ui-icon-size:14px; opacity:0.6"/>
+                            <input
+                                    class="settings-panel__range settings-panel__range--volume"
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.01"
+                                    [value]="selectedVideoVolume"
+                                    [disabled]="!canToggleSelectedVideoPlayback"
+                                    (input)="onVideoVolumeInput($event)"
+                            />
+                            <span class="settings-panel__video-volume-label">{{ (selectedVideoVolume * 100) | number:'1.0-0' }}%</span>
+                        </div>
                     </div>
 
                     <div class="settings-panel__row">

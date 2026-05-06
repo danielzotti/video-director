@@ -227,6 +227,9 @@ export class CanvasService {
     public readonly canRedo = computed(() => this.redoStack().length > 0);
     private readonly widgetVideoElements = new Map<string, HTMLVideoElement>();
     private readonly widgetVideoPlayback = signal<Record<string, boolean>>({});
+    private readonly widgetVideoTime = signal<Record<string, number>>({});
+    private readonly widgetVideoDuration = signal<Record<string, number>>({});
+    private readonly widgetVideoVolume = signal<Record<string, number>>({});
 
     private currentSnapshot: EditorStateSnapshot | null = null;
     private isApplyingSnapshot = false;
@@ -1250,6 +1253,9 @@ export class CanvasService {
     public registerWidgetVideoElement(widgetId: string, element: HTMLVideoElement): void {
         this.widgetVideoElements.set(widgetId, element);
         this.setWidgetVideoPlaybackState(widgetId, !element.paused && !element.ended);
+        this.setWidgetVideoTimeState(widgetId, element.currentTime || 0);
+        this.setWidgetVideoDurationState(widgetId, isFinite(element.duration) ? element.duration : 0);
+        this.setWidgetVideoVolumeState(widgetId, element.volume);
     }
 
     public unregisterWidgetVideoElement(widgetId: string, element?: HTMLVideoElement): void {
@@ -1264,6 +1270,9 @@ export class CanvasService {
 
         this.widgetVideoElements.delete(widgetId);
         this.setWidgetVideoPlaybackState(widgetId, false);
+        this.widgetVideoTime.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
+        this.widgetVideoDuration.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
+        this.widgetVideoVolume.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
     }
 
     public isWidgetVideoPlaying(widgetId: string): boolean {
@@ -1272,6 +1281,71 @@ export class CanvasService {
 
     public canControlWidgetVideo(widgetId: string): boolean {
         return this.widgetVideoElements.has(widgetId);
+    }
+
+    public getWidgetVideoCurrentTime(widgetId: string): number {
+        return this.widgetVideoTime()[widgetId] ?? 0;
+    }
+
+    public getWidgetVideoDuration(widgetId: string): number {
+        return this.widgetVideoDuration()[widgetId] ?? 0;
+    }
+
+    public getWidgetVideoVolume(widgetId: string): number {
+        return this.widgetVideoVolume()[widgetId] ?? 1;
+    }
+
+    public setWidgetVideoTimeState(widgetId: string, time: number): void {
+        this.widgetVideoTime.update((state) => {
+            if (state[widgetId] === time) {
+                return state;
+            }
+
+            return {...state, [widgetId]: time};
+        });
+    }
+
+    public setWidgetVideoDurationState(widgetId: string, duration: number): void {
+        this.widgetVideoDuration.update((state) => {
+            if (state[widgetId] === duration) {
+                return state;
+            }
+
+            return {...state, [widgetId]: duration};
+        });
+    }
+
+    public setWidgetVideoVolumeState(widgetId: string, volume: number): void {
+        this.widgetVideoVolume.update((state) => {
+            if (state[widgetId] === volume) {
+                return state;
+            }
+
+            return {...state, [widgetId]: volume};
+        });
+    }
+
+    public seekWidgetVideo(widgetId: string, time: number): void {
+        const element = this.widgetVideoElements.get(widgetId);
+        if (!element) {
+            return;
+        }
+
+        const clamped = Math.max(0, Math.min(time, isFinite(element.duration) ? element.duration : 0));
+        element.currentTime = clamped;
+        this.setWidgetVideoTimeState(widgetId, clamped);
+    }
+
+    public setWidgetVideoVolume(widgetId: string, volume: number): void {
+        const element = this.widgetVideoElements.get(widgetId);
+        if (!element) {
+            return;
+        }
+
+        const clamped = Math.max(0, Math.min(1, volume));
+        element.volume = clamped;
+        element.muted = clamped === 0;
+        this.setWidgetVideoVolumeState(widgetId, clamped);
     }
 
     public setWidgetVideoPlaybackState(widgetId: string, isPlaying: boolean): void {
@@ -2893,6 +2967,7 @@ export class CanvasService {
         document.body.appendChild(sandbox);
 
         const restoredImages = await this.inlineExternalImages(exportNode);
+        const capturedVideos = await this.captureVideoFrames(exportNode);
 
         try {
             const {toPng} = await import('html-to-image');
@@ -3389,5 +3464,91 @@ export class CanvasService {
             canvasOffset: {x: canvasRect.left, y: canvasRect.top},
             zoom: this.zoom(),
         });
+    }
+
+
+    /**
+     * Capture the current frame of each <video> element in the export clone
+     * and replace it with an <img> element showing that frame.
+     * This ensures videos display their current content in the exported image.
+     */
+    private async captureVideoFrames(
+        root: HTMLElement,
+    ): Promise<{ videoClone: HTMLVideoElement; frameDataUrl: string }[]> {
+        const videos = Array.from(root.querySelectorAll<HTMLVideoElement>('video'));
+        const captured: { videoClone: HTMLVideoElement; frameDataUrl: string }[] = [];
+
+        for (const videoClone of videos) {
+            const src = videoClone.getAttribute('src') ?? '';
+            if (!src) {
+                // Check for <source> child elements as fallback
+                const sourceEl = videoClone.querySelector<HTMLSourceElement>('source[src]');
+                if (!sourceEl) {
+                    continue;
+                }
+            }
+
+            // Find the corresponding video in the live DOM
+            const liveVideo = src
+                ? document.querySelector<HTMLVideoElement>(`video[src="${src}"]`)
+                : document.querySelector<HTMLVideoElement>('video');
+
+            if (!liveVideo || liveVideo.readyState < 2) {
+                // Video not loaded or metadata not ready
+                continue;
+            }
+
+            // Capture the current frame
+            const frameDataUrl = this.captureVideoFrame(liveVideo);
+            if (!frameDataUrl) {
+                continue;
+            }
+
+            // Create an image to replace the video
+            const img = document.createElement('img');
+            img.src = frameDataUrl;
+            // Preserve styling from the video element
+            const videoStyle = window.getComputedStyle(videoClone);
+            img.style.width = videoStyle.width;
+            img.style.height = videoStyle.height;
+            img.style.objectFit = videoClone.style.objectFit || 'cover';
+            img.style.display = videoStyle.display;
+
+            // Track the captured frame
+            captured.push({
+                videoClone,
+                frameDataUrl
+            });
+
+            // Replace the video with the image in the clone
+            videoClone.parentNode?.replaceChild(img, videoClone);
+        }
+
+        return captured;
+    }
+
+    /**
+     * Capture the current frame of a <video> element as a data URL.
+     */
+    private captureVideoFrame(video: HTMLVideoElement): string | null {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || video.clientWidth;
+            canvas.height = video.videoHeight || video.clientHeight;
+
+            if (!canvas.width || !canvas.height) {
+                return null;
+            }
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                return null;
+            }
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/png');
+        } catch {
+            return null;
+        }
     }
 }

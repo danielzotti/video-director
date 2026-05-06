@@ -39,6 +39,7 @@ export type UiIconName =
   | 'trash'
   | 'play'
   | 'pause'
+  | 'volume'
   | 'text-bold'
   | 'text-italic'
   | 'text-underline';
@@ -250,6 +251,11 @@ export type UiIconName =
                @case ('pause') {
                    <rect x="7" y="6" width="3" height="12" fill="currentColor" stroke="none" rx="0.5"/>
                    <rect x="14" y="6" width="3" height="12" fill="currentColor" stroke="none" rx="0.5"/>
+               }
+               @case ('volume') {
+                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19" fill="currentColor" stroke="none"/>
+                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                   <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
                }
                @case ('text-bold') {
                    <text x="12" y="16" text-anchor="middle" font-weight="bold" font-size="14" fill="currentColor" stroke="none">B</text>
