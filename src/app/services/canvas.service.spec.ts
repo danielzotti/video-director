@@ -185,6 +185,42 @@ describe('CanvasService', () => {
     expect(service.getWidgetRenderZIndex(widget!)).toBe(widget!.z);
   });
 
+  it('creates and selects a new text widget on top of layers', () => {
+    const before = service.widgetsState.list();
+    const beforeMaxZ = before.reduce((max, item) => Math.max(max, item.z), 0);
+
+    service.createTextWidget();
+
+    const after = service.widgetsState.list();
+    expect(after.length).toBe(before.length + 1);
+
+    const created = after[after.length - 1];
+    expect(created.content.type).toBe('text');
+    expect(created.z).toBe(beforeMaxZ + 1);
+    expect(service.selectedWidgetId()).toBe(created.uuid);
+  });
+
+  it('creates image widget centered in viewport using zoom-aware mapping', () => {
+    const {canvas, wrapper} = createCanvasElements();
+    service.init({
+      canvas,
+      canvasWrapper: wrapper,
+      width: 800,
+      height: 600,
+      zoom: 2,
+      allowSnapToGrid: false,
+      allowExitBorders: true,
+    });
+
+    service.createImageWidget();
+
+    const created = service.widgetsState.list().at(-1);
+    expect(created).toBeTruthy();
+    expect(created!.content.type).toBe('image');
+    expect(created!.x).toBe(160);
+    expect(created!.y).toBe(90);
+  });
+
   it('auto-rounds geometry values when snap to grid is enabled', () => {
     service.selectWidget('1');
     service.setWidgetResize(true);

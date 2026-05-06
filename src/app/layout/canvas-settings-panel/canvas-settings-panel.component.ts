@@ -288,8 +288,44 @@ export class CanvasSettingsPanelComponent {
     return this.cs.projectSyncStatus() === 'syncing';
   }
 
+  protected get importPromptForDirectory(): boolean {
+    return this.cs.importPromptForDirectory();
+  }
+
+  protected get projectImportNotice(): { kind: 'info' | 'warning' | 'success' | 'error'; message: string } | null {
+    return this.cs.projectImportNotice();
+  }
+
+  protected get hasPendingImportBackup(): boolean {
+    return this.cs.hasPendingImportBackup();
+  }
+
+  protected get pendingImportBackupName(): string {
+    return this.cs.pendingImportBackupName();
+  }
+
   protected setSnapSize(val: string | number): void {
     this.cs.setSnapSize(Number(val) || 1);
+  }
+
+  protected setImportPromptForDirectory(value: boolean): void {
+    this.cs.setImportPromptForDirectory(value);
+  }
+
+  protected dismissProjectImportNotice(): void {
+    this.cs.dismissProjectImportNotice();
+  }
+
+  protected async savePendingImportBackup(): Promise<void> {
+    try {
+      await this.cs.savePendingImportBackup();
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') {
+        return;
+      }
+
+      console.error('[CanvasSettingsPanel] savePendingImportBackup failed:', err);
+    }
   }
 
   protected async connectProjectDirectory(): Promise<void> {

@@ -633,6 +633,27 @@
                 <section class="settings-panel__section">
                     <div class="settings-panel__section-label">Developer</div>
 
+                    @if (projectImportNotice; as notice) {
+                        <div
+                                class="settings-panel__import-banner"
+                                [class.settings-panel__import-banner--info]="notice.kind === 'info'"
+                                [class.settings-panel__import-banner--warning]="notice.kind === 'warning'"
+                                [class.settings-panel__import-banner--success]="notice.kind === 'success'"
+                                [class.settings-panel__import-banner--error]="notice.kind === 'error'"
+                        >
+                            <span>{{ notice.message }}</span>
+                            <app-ui-button size="sm" variant="ghost" (click)="dismissProjectImportNotice()" (keydown.enter)="dismissProjectImportNotice()">Dismiss</app-ui-button>
+                        </div>
+                    }
+
+                    <div class="settings-panel__row">
+                        <app-ui-toggle
+                                label="Ask folder on zip import"
+                                [checked]="importPromptForDirectory"
+                                (checkedChange)="setImportPromptForDirectory($event)"
+                        />
+                    </div>
+
                     <div class="settings-panel__row settings-panel__row--column">
                         <div class="settings-panel__sync-header">
                             <span class="settings-panel__field-label">Project folder sync</span>
@@ -661,6 +682,12 @@
                             <span class="settings-panel__help">Folder: {{ projectDirectoryName }}</span>
                             @if (hasPendingProjectChanges) {
                                 <span class="settings-panel__help">Pending local changes not synced yet.</span>
+                            }
+                            @if (hasPendingImportBackup) {
+                                <div class="settings-panel__sync-actions">
+                                    <app-ui-button size="sm" [disabled]="isProjectSyncBusy" (click)="savePendingImportBackup()" (keydown.enter)="savePendingImportBackup()">Save backup zip</app-ui-button>
+                                </div>
+                                <span class="settings-panel__help">Backup: {{ pendingImportBackupName }}</span>
                             }
                             @if (projectSyncError; as error) {
                                 <span class="settings-panel__help settings-panel__help--error">{{ error }}</span>

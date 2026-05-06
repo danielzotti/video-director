@@ -83,16 +83,14 @@
 
                             </div>
                             <div class="layer-item__controls">
-                                @if (i < displayedLayers().length - 1) {
-                                    <button class="layer-item__btn" type="button"
-                                            (click)="moveLayerDown(item.uuid, $event)">↓
-                                    </button>
-                                }
-                                @if (i > 0) {
-                                    <button class="layer-item__btn" type="button"
-                                            (click)="moveLayerUp(item.uuid, $event)">↑
-                                    </button>
-                                }
+                                <button class="layer-item__btn" type="button"
+                                        [disabled]="i <= 0"
+                                        (click)="moveLayerUp(item.uuid, $event)">↑
+                                </button>
+                                <button class="layer-item__btn" type="button"
+                                        [disabled]="i === displayedLayers().length -1"
+                                        (click)="moveLayerDown(item.uuid, $event)">↓
+                                </button>
                             </div>
                         </div>
                     </div>

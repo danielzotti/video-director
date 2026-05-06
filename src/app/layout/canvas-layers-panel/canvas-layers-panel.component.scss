@@ -296,13 +296,13 @@
   }
 
   &__id-label {
-    font-size: 11px;
+    font-size: var(--ds-font-xs);
     font-weight: 700;
     color: var(--ds-text-secondary);
   }
 
   &__id {
-    font-size: var(--ds-font-xs);
+    font-size: var(--ds-font-2xs);
     color: var(--ds-text-tertiary);
     font-family: monospace;
     opacity: 0.7;
@@ -327,6 +327,7 @@
 
   &__controls {
     display: flex;
+    flex-direction: column;
     gap: 4px;
   }
 

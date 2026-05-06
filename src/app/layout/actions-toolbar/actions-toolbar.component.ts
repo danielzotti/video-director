@@ -23,12 +23,12 @@ export class ActionsToolbarComponent {
     this.cs.redo();
   }
 
-  protected exportToFile(): void {
-    this.cs.exportToFile('project');
+  protected async exportToFile(): Promise<void> {
+    await this.cs.exportToFile('project');
   }
 
-  protected importFromFile(): void {
-    this.cs.importFromFile();
+  protected async importFromFile(): Promise<void> {
+    await this.cs.importFromFile();
   }
 
   protected async exportCanvasAsImage(): Promise<void> {

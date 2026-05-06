@@ -10,7 +10,7 @@ import {
     WidgetStateItem,
     WidgetBorderStyle,
 } from '../models/canvas-widget-state.models';
-import {AxisGuides, Point2D, Rect2D, ResizeHandle} from '../models/geometry.models';
+import {AxisGuides, Point2D, Rect2D, ResizeHandle, Size2D} from '../models/geometry.models';
 import {CanvasWidgetStateService} from './canvas-widget-state.service';
 import {CanvasWidgetDragService} from './canvas-widget-drag.service';
 import {CanvasWidgetResizeService} from './canvas-widget-resize.service';
@@ -21,6 +21,8 @@ import {
     screenToCanvasPoint,
     snapPointToGrid,
 } from '../utils/canvas-geometry.utils';
+import {strFromU8, strToU8, unzipSync, zipSync} from 'fflate';
+import {v4 as uuid} from 'uuid';
 
 export interface CanvasServiceInitModel {
     canvas: HTMLElement;
@@ -113,6 +115,18 @@ interface EditorStateSnapshot {
     widgets: WidgetStateItem[];
 }
 
+type ImportArchivePersistResult =
+    | { status: 'saved'; directoryHandle: FileSystemDirectoryHandleLike }
+    | { status: 'skipped' }
+    | { status: 'cancelled' }
+    | { status: 'unsupported' }
+    | { status: 'error'; message: string };
+
+type ProjectImportNotice = {
+    kind: 'info' | 'warning' | 'success' | 'error';
+    message: string;
+};
+
 @Injectable({
     providedIn: 'root'
 })
@@ -185,8 +199,10 @@ export class CanvasService {
 
     private readonly STORAGE_KEY = 'video-director.editor-state.v1';
     private readonly PROJECT_STATE_FILE = 'state.json';
+    private readonly PROJECT_SYNC_DIR = 'sync';
     private readonly PROJECT_ASSETS_DIR = 'assets';
     private readonly PROJECT_MANAGED_ASSET_PREFIX = 'widget-';
+    private readonly PROJECT_ARCHIVE_EXTENSION = 'zip';
     private readonly PROJECT_HANDLE_DB_NAME = 'video-director.fs-handles.v1';
     private readonly PROJECT_HANDLE_STORE_NAME = 'handles';
     private readonly PROJECT_HANDLE_KEY = 'project-directory';
@@ -213,6 +229,12 @@ export class CanvasService {
     public projectLastSyncedAt = signal<Date | null>(null);
     public projectSyncError = signal<string | null>(null);
     public projectHasPendingChanges = signal(false);
+    public importPromptForDirectory = signal(true);
+    public projectImportNotice = signal<ProjectImportNotice | null>(null);
+    private pendingImportBackupBlob = signal<Blob | null>(null);
+    private pendingImportBackupFileName = signal('project-import-sync-backup.zip');
+    public readonly hasPendingImportBackup = computed(() => !!this.pendingImportBackupBlob());
+    public readonly pendingImportBackupName = computed(() => this.pendingImportBackupFileName());
 
     constructor() {
         void this.restoreProjectDirectoryConnection();
@@ -604,6 +626,14 @@ export class CanvasService {
             .reduce((maxZ, item) => Math.max(maxZ, item.z), 0);
 
         return Math.max(maxLayerZ, widget.z) + 1;
+    }
+
+    public createTextWidget(): void {
+        this.createWidget('text');
+    }
+
+    public createImageWidget(): void {
+        this.createWidget('image');
     }
 
     public setSelectedWidgetContentType(type: WidgetContentType) {
@@ -2008,57 +2038,378 @@ export class CanvasService {
         });
     }
 
-    public exportToFile(filename = 'project'): void {
-        const snapshot = this.buildSnapshot();
-        const json = JSON.stringify(snapshot, null, 2);
-        const blob = new Blob([json], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = `${filename}.dz`;
-        anchor.click();
-        URL.revokeObjectURL(url);
+    public async exportToFile(filename = 'project'): Promise<void> {
+        const archiveSnapshot = await this.createArchiveSnapshot();
+        const archiveEntries = await this.buildProjectArchiveEntries(archiveSnapshot);
+        const archive = zipSync(archiveEntries, {level: 6});
+        const blob = new Blob([this.toArrayBuffer(archive)], {type: 'application/zip'});
+        this.downloadBlob(blob, `${filename}.${this.PROJECT_ARCHIVE_EXTENSION}`);
     }
 
-    public importFromFile(): void {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.dz';
-        input.onchange = (event: Event) => {
-            const file = (event.target as HTMLInputElement).files?.[0];
-            if (!file) {
-                return;
+    public async importFromFile(): Promise<void> {
+        const file = await this.pickProjectArchiveFile();
+        if (!file) {
+            return;
+        }
+
+        this.projectImportNotice.set(null);
+        this.projectSyncError.set(null);
+
+        try {
+            const archiveBuffer = await file.arrayBuffer();
+            const archiveEntries = unzipSync(new Uint8Array(archiveBuffer));
+            const snapshot = this.readSnapshotFromProjectArchive(archiveEntries);
+            const hydratedSnapshot = await this.hydrateSnapshotAssetsFromArchive(snapshot, archiveEntries);
+
+            const persistResult = await this.persistArchiveToSelectedDirectory(archiveEntries);
+            if (persistResult.status === 'saved') {
+                this.projectDirectoryHandle = persistResult.directoryHandle;
+                this.projectDirectoryName.set(persistResult.directoryHandle.name ?? this.PROJECT_SYNC_DIR);
+                this.projectSyncStatus.set('idle');
+                this.projectSyncError.set(null);
+                this.projectLastSyncedAt.set(new Date());
+                this.projectHasPendingChanges.set(false);
+                await this.persistProjectDirectoryHandle(persistResult.directoryHandle);
+                this.clearPendingImportBackup();
+                this.projectImportNotice.set({
+                    kind: 'success',
+                    message: 'Project imported and synced to the selected sync folder.',
+                });
+            } else if (persistResult.status === 'skipped') {
+                this.projectSyncStatus.set('idle');
+                this.projectSyncError.set(null);
+                this.storePendingImportBackup(archiveEntries, 'project-import-sync-backup.zip');
+                this.projectImportNotice.set({
+                    kind: 'info',
+                    message: 'Project imported in memory. Folder write was skipped by preference. Save the backup zip or connect a folder later.',
+                });
+            } else if (persistResult.status === 'cancelled') {
+                this.projectSyncStatus.set('idle');
+                this.projectSyncError.set(null);
+                this.storePendingImportBackup(archiveEntries, 'project-import-sync-backup.zip');
+                this.projectImportNotice.set({
+                    kind: 'warning',
+                    message: 'Folder selection was cancelled. Project imported in memory only. Save the backup zip to keep sync files.',
+                });
+            } else if (persistResult.status === 'unsupported') {
+                this.projectSyncStatus.set('idle');
+                this.projectSyncError.set(null);
+                this.storePendingImportBackup(archiveEntries, 'project-import-sync-backup.zip');
+                this.projectImportNotice.set({
+                    kind: 'warning',
+                    message: 'This browser cannot write project files to a local folder. Save the backup zip manually.',
+                });
+            } else {
+                this.projectSyncStatus.set('error');
+                this.projectSyncError.set(persistResult.message);
+                this.projectImportNotice.set({
+                    kind: 'error',
+                    message: 'Project imported in memory, but writing sync files failed.',
+                });
             }
 
-            const reader = new FileReader();
-            reader.onload = (e: ProgressEvent<FileReader>) => {
-                try {
-                    const raw = e.target?.result as string;
-                    const parsed = JSON.parse(raw) as Partial<EditorStateSnapshot>;
+            this.applySnapshot(hydratedSnapshot);
+            this.currentSnapshot = this.buildSnapshot();
+            this.writeSnapshotToStorage(this.currentSnapshot);
+            this.undoStack.set([]);
+            this.redoStack.set([]);
+        } catch (err) {
+            this.projectImportNotice.set({
+                kind: 'error',
+                message: 'Project import failed. The zip file may be invalid.',
+            });
+            console.error('[CanvasService] Failed to import project .zip', err);
+        }
+    }
 
-                    if (!parsed.canvas || !Array.isArray(parsed.widgets)) {
-                        console.error('[CanvasService] Invalid .dz file: missing canvas or widgets');
-                        return;
-                    }
+    public setImportPromptForDirectory(value: boolean): void {
+        this.importPromptForDirectory.set(value);
+    }
 
-                    const snapshot: EditorStateSnapshot = {
-                        canvas: parsed.canvas as CanvasSnapshot,
-                        widgets: parsed.widgets as WidgetStateItem[],
-                    };
+    public dismissProjectImportNotice(): void {
+        this.projectImportNotice.set(null);
+    }
 
-                    this.applySnapshot(snapshot);
-                    this.currentSnapshot = this.buildSnapshot();
-                    this.writeSnapshotToStorage(this.currentSnapshot);
-                    this.undoStack.set([]);
-                    this.redoStack.set([]);
-                } catch (err) {
-                    console.error('[CanvasService] Failed to parse .dz file', err);
-                }
+    public async savePendingImportBackup(): Promise<void> {
+        const blob = this.pendingImportBackupBlob();
+        if (!blob) {
+            return;
+        }
+
+        await this.writeBlobToDisk(blob, this.pendingImportBackupFileName());
+        this.clearPendingImportBackup();
+        this.projectImportNotice.set({
+            kind: 'success',
+            message: 'Backup zip saved to disk.',
+        });
+    }
+
+    private async createArchiveSnapshot(): Promise<{ snapshot: EditorStateSnapshot; assets: Map<string, Blob> }> {
+        const snapshot = this.buildSnapshot();
+        const assets = new Map<string, Blob>();
+
+        const widgets = await Promise.all(snapshot.widgets.map(async (widget) => {
+            if (widget.content.type !== 'image') {
+                return this.cloneWidget(widget);
+            }
+
+            const source = widget.content.src.trim();
+            if (!source) {
+                return this.cloneWidget(widget);
+            }
+
+            const blob = await this.resolveImageBlobFromSource(source);
+            if (!blob) {
+                return this.cloneWidget(widget);
+            }
+
+            const extension = this.mimeTypeToExtension(blob.type || 'image/png');
+            const assetName = `${this.PROJECT_MANAGED_ASSET_PREFIX}${widget.uuid}.${extension}`;
+            assets.set(assetName, blob);
+
+            return {
+                ...this.cloneWidget(widget),
+                content: {
+                    ...widget.content,
+                    src: `${this.PROJECT_ASSETS_DIR}/${assetName}`,
+                },
             };
-            reader.onerror = () => console.error('[CanvasService] Failed to read file');
-            reader.readAsText(file);
+        }));
+
+        return {
+            snapshot: {
+                canvas: {...snapshot.canvas},
+                widgets,
+            },
+            assets,
         };
-        input.click();
+    }
+
+    private async buildProjectArchiveEntries(
+        archiveSnapshot: { snapshot: EditorStateSnapshot; assets: Map<string, Blob> },
+    ): Promise<Record<string, Uint8Array>> {
+        const entries: Record<string, Uint8Array> = {};
+        const statePath = `${this.PROJECT_SYNC_DIR}/${this.PROJECT_STATE_FILE}`;
+        entries[statePath] = strToU8(JSON.stringify(archiveSnapshot.snapshot, null, 2));
+
+        for (const [assetName, blob] of archiveSnapshot.assets.entries()) {
+            const assetPath = `${this.PROJECT_SYNC_DIR}/${this.PROJECT_ASSETS_DIR}/${assetName}`;
+            const buffer = await blob.arrayBuffer();
+            entries[assetPath] = new Uint8Array(buffer);
+        }
+
+        return entries;
+    }
+
+    private async pickProjectArchiveFile(): Promise<File | null> {
+        const fsApi = this.getFileSystemAccessApi();
+
+        if (fsApi?.showOpenFilePicker) {
+            try {
+                const [handle] = await fsApi.showOpenFilePicker({
+                    multiple: false,
+                    excludeAcceptAllOption: false,
+                    types: [{
+                        description: 'Video Director Project Archive',
+                        accept: {'application/zip': ['.zip']},
+                    }],
+                });
+
+                if (!handle) {
+                    return null;
+                }
+
+                return await handle.getFile();
+            } catch {
+                return null;
+            }
+        }
+
+        return await new Promise<File | null>((resolve) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.zip,application/zip';
+            input.onchange = () => resolve(input.files?.[0] ?? null);
+            input.click();
+        });
+    }
+
+    private readSnapshotFromProjectArchive(archiveEntries: Record<string, Uint8Array>): EditorStateSnapshot {
+        const stateEntry = archiveEntries[`${this.PROJECT_SYNC_DIR}/${this.PROJECT_STATE_FILE}`]
+            ?? archiveEntries[this.PROJECT_STATE_FILE];
+
+        if (!stateEntry) {
+            throw new Error('Invalid project archive: missing sync/state.json.');
+        }
+
+        const parsed = JSON.parse(strFromU8(stateEntry)) as Partial<EditorStateSnapshot>;
+        if (!parsed.canvas || !Array.isArray(parsed.widgets)) {
+            throw new Error('Invalid project archive: state payload is malformed.');
+        }
+
+        return {
+            canvas: parsed.canvas as CanvasSnapshot,
+            widgets: parsed.widgets as WidgetStateItem[],
+        };
+    }
+
+    private async hydrateSnapshotAssetsFromArchive(
+        snapshot: EditorStateSnapshot,
+        archiveEntries: Record<string, Uint8Array>,
+    ): Promise<EditorStateSnapshot> {
+        const widgets = await Promise.all(snapshot.widgets.map(async (widget) => {
+            if (widget.content.type !== 'image') {
+                return this.cloneWidget(widget);
+            }
+
+            const source = widget.content.src.trim();
+            const normalizedSource = source.startsWith(`${this.PROJECT_SYNC_DIR}/`)
+                ? source.slice(this.PROJECT_SYNC_DIR.length + 1)
+                : source;
+
+            if (!normalizedSource.startsWith(`${this.PROJECT_ASSETS_DIR}/`)) {
+                return this.cloneWidget(widget);
+            }
+
+            const archivePath = `${this.PROJECT_SYNC_DIR}/${normalizedSource}`;
+            const bytes = archiveEntries[archivePath] ?? archiveEntries[normalizedSource];
+            if (!bytes) {
+                return this.cloneWidget(widget);
+            }
+
+            const blob = new Blob([this.toArrayBuffer(bytes)], {type: this.mimeTypeFromFileName(normalizedSource)});
+            const dataUrl = await this.blobToDataUrl(blob);
+
+            return {
+                ...this.cloneWidget(widget),
+                content: {
+                    ...widget.content,
+                    src: dataUrl,
+                },
+            };
+        }));
+
+        return {
+            canvas: {...snapshot.canvas},
+            widgets,
+        };
+    }
+
+    private async persistArchiveToSelectedDirectory(
+        archiveEntries: Record<string, Uint8Array>,
+    ): Promise<ImportArchivePersistResult> {
+        if (!this.importPromptForDirectory()) {
+            return {status: 'skipped'};
+        }
+
+        const fsApi = this.getFileSystemAccessApi();
+        if (!fsApi?.showDirectoryPicker) {
+            return {status: 'unsupported'};
+        }
+
+        try {
+            const selectedRootDirectory = await fsApi.showDirectoryPicker({
+                id: 'video-director-import-folder',
+                mode: 'readwrite',
+            });
+            const syncDirectory = await selectedRootDirectory.getDirectoryHandle(this.PROJECT_SYNC_DIR, {create: true});
+            const importedManagedAssets = this.collectManagedAssetNamesFromArchive(archiveEntries);
+
+            for (const [entryPath, bytes] of Object.entries(archiveEntries)) {
+                const normalizedPath = entryPath.replace(/\\/g, '/').replace(/^\.\//, '');
+                if (!normalizedPath.startsWith(`${this.PROJECT_SYNC_DIR}/`)) {
+                    continue;
+                }
+
+                const pathWithinSync = normalizedPath.slice(this.PROJECT_SYNC_DIR.length + 1);
+                await this.writeArchiveBytesToDirectory(syncDirectory, pathWithinSync, bytes);
+            }
+
+            const assetsDirectory = await syncDirectory.getDirectoryHandle(this.PROJECT_ASSETS_DIR, {create: true});
+            await this.cleanupUnusedAssetsInDirectory(assetsDirectory, importedManagedAssets);
+
+            return {status: 'saved', directoryHandle: syncDirectory};
+        } catch (error) {
+            if ((error as DOMException)?.name === 'AbortError') {
+                return {status: 'cancelled'};
+            }
+
+            return {
+                status: 'error',
+                message: 'Unable to save imported project files to the selected folder.',
+            };
+        }
+    }
+
+    private collectManagedAssetNamesFromArchive(archiveEntries: Record<string, Uint8Array>): Set<string> {
+        const usedAssets = new Set<string>();
+
+        for (const archivePath of Object.keys(archiveEntries)) {
+            const normalizedPath = archivePath.replace(/\\/g, '/').replace(/^\.\//, '');
+            const syncAssetPrefix = `${this.PROJECT_SYNC_DIR}/${this.PROJECT_ASSETS_DIR}/`;
+            if (!normalizedPath.startsWith(syncAssetPrefix)) {
+                continue;
+            }
+
+            const assetName = normalizedPath.slice(syncAssetPrefix.length);
+            if (!assetName.startsWith(this.PROJECT_MANAGED_ASSET_PREFIX)) {
+                continue;
+            }
+
+            usedAssets.add(assetName);
+        }
+
+        return usedAssets;
+    }
+
+    private saveArchiveWithFallback(archiveEntries: Record<string, Uint8Array>): Blob {
+        const archive = zipSync(archiveEntries, {level: 6});
+        return new Blob([this.toArrayBuffer(archive)], {type: 'application/zip'});
+    }
+
+    private storePendingImportBackup(
+        archiveEntries: Record<string, Uint8Array>,
+        suggestedName: string,
+    ): void {
+        const backupBlob = this.saveArchiveWithFallback(archiveEntries);
+        this.pendingImportBackupBlob.set(backupBlob);
+        this.pendingImportBackupFileName.set(suggestedName);
+    }
+
+    private clearPendingImportBackup(): void {
+        this.pendingImportBackupBlob.set(null);
+    }
+
+    private async writeArchiveBytesToDirectory(
+        rootDirectory: FileSystemDirectoryHandleLike,
+        path: string,
+        bytes: Uint8Array,
+    ): Promise<void> {
+        const cleanPath = path.replace(/^\//, '');
+        const segments = cleanPath.split('/').filter(Boolean);
+        const fileName = segments.pop();
+
+        if (!fileName) {
+            return;
+        }
+
+        let currentDirectory = rootDirectory;
+        for (const segment of segments) {
+            currentDirectory = await currentDirectory.getDirectoryHandle(segment, {create: true});
+        }
+
+        const fileHandle = await currentDirectory.getFileHandle(fileName, {create: true});
+        if (!fileHandle.createWritable) {
+            throw new Error('The selected folder does not support write operations.');
+        }
+
+        const writable = await fileHandle.createWritable();
+        await writable.write(new Blob([this.toArrayBuffer(bytes)]));
+        await writable.close();
+    }
+
+    private toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+        return new Uint8Array(bytes).buffer;
     }
 
     // 1×1 transparent PNG used as placeholder when an image cannot be fetched
@@ -2348,6 +2699,21 @@ export class CanvasService {
         return map[mimeType] ?? 'png';
     }
 
+    private mimeTypeFromFileName(fileName: string): string {
+        const extension = fileName.split('.').pop()?.toLowerCase() ?? '';
+        const map: Record<string, string> = {
+            png: 'image/png',
+            jpg: 'image/jpeg',
+            jpeg: 'image/jpeg',
+            webp: 'image/webp',
+            gif: 'image/gif',
+            svg: 'image/svg+xml',
+            bmp: 'image/bmp',
+        };
+
+        return map[extension] ?? 'application/octet-stream';
+    }
+
     private downloadBlob(blob: Blob, fileName: string): void {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
@@ -2393,6 +2759,91 @@ export class CanvasService {
         }
 
         return window as unknown as FileSystemAccessApi;
+    }
+
+    private createWidget(type: WidgetContentType): void {
+        const widgetSize = this.getDefaultWidgetSize(type);
+        const viewportCenter = this.getViewportCenterCanvasPoint();
+        let rect: Rect2D = {
+            x: viewportCenter.x - widgetSize.width / 2,
+            y: viewportCenter.y - widgetSize.height / 2,
+            width: widgetSize.width,
+            height: widgetSize.height,
+        };
+
+        if (this.canSnapToGrid()) {
+            const snapped = snapPointToGrid({
+                point: {x: rect.x, y: rect.y},
+                snap: this.snapSize(),
+            });
+
+            rect = {
+                ...rect,
+                x: snapped.x,
+                y: snapped.y,
+            };
+        }
+
+        if (!this.canExitBorders()) {
+            rect = clampRectInsideCanvas({
+                rect,
+                canvas: {width: this.width(), height: this.height()},
+            });
+        }
+
+        const widget: WidgetStateItem = {
+            uuid: uuid(),
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            z: this.getNextWidgetZIndex(),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            content: type === 'text'
+                ? {type: 'text', text: DEFAULT_WIDGET_TEXT, style: {...DEFAULT_WIDGET_TEXT_STYLE}}
+                : {type: 'image', src: '', alt: '', fitMode: 'cover'},
+        };
+
+        this.widgetsState.add(widget);
+        this.selectWidget(widget.uuid);
+        this.objectSnapGuides.set({});
+    }
+
+    private getDefaultWidgetSize(type: WidgetContentType): Size2D {
+        return type === 'text'
+            ? {width: 320, height: 120}
+            : {width: 320, height: 180};
+    }
+
+    private getViewportCenterCanvasPoint(): Point2D {
+        if (!this.canvasEl) {
+            return {
+                x: this.width() / 2,
+                y: this.height() / 2,
+            };
+        }
+
+        const canvasRect = this.canvasEl.getBoundingClientRect();
+        const wrapperRect = this.canvasWrapperEl?.getBoundingClientRect();
+        const screenCenter = wrapperRect
+            ? {
+                x: wrapperRect.left + wrapperRect.width / 2,
+                y: wrapperRect.top + wrapperRect.height / 2,
+            }
+            : {
+                x: canvasRect.left + canvasRect.width / 2,
+                y: canvasRect.top + canvasRect.height / 2,
+            };
+
+        return screenToCanvasPoint({
+            screen: screenCenter,
+            canvasOffset: {x: canvasRect.left, y: canvasRect.top},
+            zoom: this.zoom(),
+        });
+    }
+
+    private getNextWidgetZIndex(): number {
+        const maxZ = this.widgetsState.list().reduce((currentMax, widget) => Math.max(currentMax, widget.z), 0);
+        return maxZ + 1;
     }
 
 
