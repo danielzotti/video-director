@@ -17,14 +17,16 @@ import {
 import { CanvasService } from '../../services/canvas.service';
 import { SelectOption, UiSelectComponent, UiSeparatorComponent, UiToggleComponent, UiButtonComponent, UiIconComponent } from '../../ui';
 import { CoverPositionControlsComponent } from './cover-position-controls/cover-position-controls.component';
+import { CropPositionControlsComponent } from './crop-position-controls/crop-position-controls.component';
 
 type WidgetGeometryField = 'x' | 'y' | 'width' | 'height';
+type MediaAnchor = 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 
 @Component({
   selector: 'app-canvas-settings-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent, UiButtonComponent, UiIconComponent, CoverPositionControlsComponent],
+  imports: [CommonModule, DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent, UiButtonComponent, UiIconComponent, CoverPositionControlsComponent, CropPositionControlsComponent],
   templateUrl: './canvas-settings-panel.component.html',
   styleUrl: './canvas-settings-panel.component.scss',
 })
@@ -39,6 +41,7 @@ export class CanvasSettingsPanelComponent {
   private static readonly IMAGE_FIT_MODE_LABELS: Record<WidgetImageFitMode, string> = {
     cover: 'Cover',
     contain: 'Contain',
+    crop: 'Crop',
   };
 
    private static readonly FONT_FAMILY_LABELS: Record<WidgetTextFontFamily, string> = {
@@ -69,6 +72,8 @@ export class CanvasSettingsPanelComponent {
   protected readonly isImageUrlSaving = signal(false);
   protected readonly imageCoverOffsetDraft = signal<{ x: string; y: string }>({ x: '-50', y: '-50' });
   protected readonly videoCoverOffsetDraft = signal<{ x: string; y: string }>({ x: '-50', y: '-50' });
+  protected readonly imageCropDraft = signal<{ x: string; y: string; zoom: string }>({ x: '-50', y: '-50', zoom: '1' });
+  protected readonly videoCropDraft = signal<{ x: string; y: string; zoom: string }>({ x: '-50', y: '-50', zoom: '1' });
 
   private readonly minPanelHeight = 120;
   private resizeStartY = 0;
@@ -134,6 +139,32 @@ export class CanvasSettingsPanelComponent {
       if (currentH > maxPx) {
         this.panelHeight.set(Math.max(this.minPanelHeight, maxPx));
       }
+    });
+
+    effect(() => {
+      const imageContent = this.selectedImageContent;
+      if (!imageContent || imageContent.fitMode !== 'crop') {
+        return;
+      }
+
+      this.imageCropDraft.set({
+        x: String(imageContent.offsetX ?? -50),
+        y: String(imageContent.offsetY ?? -50),
+        zoom: String(imageContent.cropZoom ?? 1),
+      });
+    });
+
+    effect(() => {
+      const videoContent = this.selectedVideoContent;
+      if (!videoContent || videoContent.fitMode !== 'crop') {
+        return;
+      }
+
+      this.videoCropDraft.set({
+        x: String(videoContent.offsetX ?? -50),
+        y: String(videoContent.offsetY ?? -50),
+        zoom: String(videoContent.cropZoom ?? 1),
+      });
     });
   }
 
@@ -677,7 +708,7 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected setImageFitMode(value: string | number): void {
-    if (value !== 'cover' && value !== 'contain') {
+    if (value !== 'cover' && value !== 'contain' && value !== 'crop') {
       return;
     }
 
@@ -685,21 +716,14 @@ export class CanvasSettingsPanelComponent {
   }
 
   // Cover mode offset management for images
-  protected setImageCoverAnchor(anchor: 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'): void {
-    const offsetMap: Record<typeof anchor, { x: number; y: number }> = {
-      'top-left': { x: 0, y: 0 },
-      'top-center': { x: -50, y: 0 },
-      'top-right': { x: -100, y: 0 },
-      'center-left': { x: 0, y: -50 },
-      'center': { x: -50, y: -50 },
-      'center-right': { x: -100, y: -50 },
-      'bottom-left': { x: 0, y: -100 },
-      'bottom-center': { x: -50, y: -100 },
-      'bottom-right': { x: -100, y: -100 },
-    };
-    const { x, y } = offsetMap[anchor];
+  protected setImageCoverAnchor(anchor: MediaAnchor): void {
+    const { x, y } = this.getOffsetsFromAnchor(anchor);
     this.cs.setSelectedWidgetImageOffsetX(x);
     this.cs.setSelectedWidgetImageOffsetY(y);
+  }
+
+  protected setImageCropAnchor(anchor: MediaAnchor): void {
+    this.setImageCoverAnchor(anchor);
   }
 
   protected onImageOffsetXChange(value: number | Event): void {
@@ -720,13 +744,22 @@ export class CanvasSettingsPanelComponent {
     }
   }
 
+  protected onImageCropZoomChange(value: number | Event): void {
+    const numericValue = value instanceof Event
+      ? Number((value.target as HTMLInputElement).value)
+      : value;
+    if (Number.isFinite(numericValue)) {
+      this.cs.setSelectedWidgetImageCropZoom(numericValue);
+    }
+  }
+
   protected onVideoPosterChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.cs.setSelectedWidgetVideoPoster(value);
   }
 
   protected setVideoFitMode(value: string | number): void {
-    if (value !== 'cover' && value !== 'contain') {
+    if (value !== 'cover' && value !== 'contain' && value !== 'crop') {
       return;
     }
 
@@ -734,21 +767,14 @@ export class CanvasSettingsPanelComponent {
   }
 
   // Cover mode offset management for videos
-  protected setVideoCoverAnchor(anchor: 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'): void {
-    const offsetMap: Record<typeof anchor, { x: number; y: number }> = {
-      'top-left': { x: 0, y: 0 },
-      'top-center': { x: -50, y: 0 },
-      'top-right': { x: -100, y: 0 },
-      'center-left': { x: 0, y: -50 },
-      'center': { x: -50, y: -50 },
-      'center-right': { x: -100, y: -50 },
-      'bottom-left': { x: 0, y: -100 },
-      'bottom-center': { x: -50, y: -100 },
-      'bottom-right': { x: -100, y: -100 },
-    };
-    const { x, y } = offsetMap[anchor];
+  protected setVideoCoverAnchor(anchor: MediaAnchor): void {
+    const { x, y } = this.getOffsetsFromAnchor(anchor);
     this.cs.setSelectedWidgetVideoOffsetX(x);
     this.cs.setSelectedWidgetVideoOffsetY(y);
+  }
+
+  protected setVideoCropAnchor(anchor: MediaAnchor): void {
+    this.setVideoCoverAnchor(anchor);
   }
 
    protected onVideoOffsetXChange(value: number | Event): void {
@@ -770,6 +796,17 @@ export class CanvasSettingsPanelComponent {
        }
      } else {
        this.cs.setSelectedWidgetVideoOffsetY(value);
+     }
+   }
+
+   protected onVideoCropZoomChange(value: number | Event): void {
+     if (value instanceof Event) {
+       const numValue = Number((value.target as HTMLInputElement).value);
+       if (Number.isFinite(numValue)) {
+         this.cs.setSelectedWidgetVideoCropZoom(numValue);
+       }
+     } else if (Number.isFinite(value)) {
+       this.cs.setSelectedWidgetVideoCropZoom(value);
      }
    }
 
@@ -972,5 +1009,21 @@ export class CanvasSettingsPanelComponent {
 
     input.value = String(widget[field]);
     this.updateGeometryDraftValue(field, input.value);
+  }
+
+  private getOffsetsFromAnchor(anchor: MediaAnchor): { x: number; y: number } {
+    const offsetMap: Record<MediaAnchor, { x: number; y: number }> = {
+      'top-left': { x: 0, y: 0 },
+      'top-center': { x: -50, y: 0 },
+      'top-right': { x: -100, y: 0 },
+      'center-left': { x: 0, y: -50 },
+      center: { x: -50, y: -50 },
+      'center-right': { x: -100, y: -50 },
+      'bottom-left': { x: 0, y: -100 },
+      'bottom-center': { x: -50, y: -100 },
+      'bottom-right': { x: -100, y: -100 },
+    };
+
+    return offsetMap[anchor];
   }
 }

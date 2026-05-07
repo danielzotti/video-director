@@ -37,7 +37,7 @@ export const DEFAULT_WIDGET_BORDER: Pick<WidgetStateItemStyle, 'borderRadius' | 
 export const WIDGET_CONTENT_TYPES = ['text', 'image', 'video'] as const;
 export type WidgetContentType = typeof WIDGET_CONTENT_TYPES[number];
 
-export const WIDGET_IMAGE_FIT_MODES = ['cover', 'contain'] as const;
+export const WIDGET_IMAGE_FIT_MODES = ['cover', 'contain', 'crop'] as const;
 export type WidgetImageFitMode = typeof WIDGET_IMAGE_FIT_MODES[number];
 
 export const WIDGET_TEXT_FONT_FAMILIES = ['roboto', 'montserrat', 'exo', 'lora', 'fira-code'] as const;
@@ -88,6 +88,7 @@ export interface WidgetImageContent {
   fitMode: WidgetImageFitMode;
   offsetX?: number;
   offsetY?: number;
+  cropZoom?: number;
 }
 
 export interface WidgetVideoContent {
@@ -101,6 +102,7 @@ export interface WidgetVideoContent {
   controls: boolean;
   offsetX?: number;
   offsetY?: number;
+  cropZoom?: number;
 }
 
 export type WidgetContent = WidgetTextContent | WidgetImageContent | WidgetVideoContent;
@@ -121,6 +123,9 @@ export const DEFAULT_WIDGET_VIDEO_CONTENT: WidgetVideoContent = {
   loop: false,
   muted: true,
   controls: true,
+  offsetX: -50,
+  offsetY: -50,
+  cropZoom: 1,
 };
 
 export interface WidgetStateItem extends Rect2D, Partial<WidgetStateItemStyle> {

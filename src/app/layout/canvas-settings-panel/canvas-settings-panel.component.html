@@ -513,6 +513,19 @@
                                 (offsetYChanged)="onImageOffsetYChange($event)"
                         />
                     }
+
+                    @if (imageContent.fitMode === 'crop') {
+                        <app-crop-position-controls
+                                idPrefix="image-crop"
+                                [offsetX]="imageCropDraft().x"
+                                [offsetY]="imageCropDraft().y"
+                                [zoom]="imageCropDraft().zoom"
+                                (anchorSelected)="setImageCropAnchor($event)"
+                                (offsetXChanged)="onImageOffsetXChange($event)"
+                                (offsetYChanged)="onImageOffsetYChange($event)"
+                                (zoomChanged)="onImageCropZoomChange($event)"
+                        />
+                    }
                 }
 
                 @if (selectedVideoContent; as videoContent) {
@@ -569,6 +582,19 @@
                                  (offsetYChanged)="onVideoOffsetYChange($event)"
                          />
                      }
+
+                    @if (videoContent.fitMode === 'crop') {
+                         <app-crop-position-controls
+                                 idPrefix="video-crop"
+                                 [offsetX]="videoCropDraft().x"
+                                 [offsetY]="videoCropDraft().y"
+                                 [zoom]="videoCropDraft().zoom"
+                                 (anchorSelected)="setVideoCropAnchor($event)"
+                                 (offsetXChanged)="onVideoOffsetXChange($event)"
+                                 (offsetYChanged)="onVideoOffsetYChange($event)"
+                                 (zoomChanged)="onVideoCropZoomChange($event)"
+                         />
+                    }
 
                     <div class="settings-panel__video-player">
                         <div class="settings-panel__video-player-controls">

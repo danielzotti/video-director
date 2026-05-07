@@ -47,6 +47,40 @@ describe('CanvasWidgetStateService', () => {
       src: 'https://example.com/image.png',
       alt: '',
       fitMode: 'cover',
+      offsetX: -50,
+      offsetY: -50,
+      cropZoom: 1,
+    });
+  });
+
+  it('normalizes crop fit mode and crop fields', () => {
+    const imageWidget = {
+      uuid: 'image-crop-widget',
+      x: 15,
+      y: 25,
+      z: 11,
+      width: 160,
+      height: 90,
+      content: {
+        type: 'image',
+        src: 'https://example.com/image.png',
+        fitMode: 'crop',
+        offsetX: 20,
+        offsetY: -140,
+        cropZoom: 8,
+      },
+    } as WidgetStateItem;
+
+    service.add(imageWidget);
+
+    expect(service.getById('image-crop-widget').content).toEqual({
+      type: 'image',
+      src: 'https://example.com/image.png',
+      alt: '',
+      fitMode: 'crop',
+      offsetX: 0,
+      offsetY: -100,
+      cropZoom: 5,
     });
   });
 
@@ -98,6 +132,9 @@ describe('CanvasWidgetStateService', () => {
       loop: false,
       muted: true,
       controls: true,
+      offsetX: -50,
+      offsetY: -50,
+      cropZoom: 1,
     });
   });
 

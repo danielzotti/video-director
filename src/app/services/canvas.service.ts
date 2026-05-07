@@ -763,11 +763,16 @@ export class CanvasService {
             return;
         }
 
+        const nextCropZoom = fitMode === 'crop'
+            ? this.normalizeMediaCropZoom(widget.content.cropZoom)
+            : widget.content.cropZoom;
+
         this.widgetsState.update({
             ...widget,
             content: {
                 ...widget.content,
                 fitMode,
+                cropZoom: nextCropZoom,
             },
         });
     }
@@ -808,11 +813,46 @@ export class CanvasService {
             return;
         }
 
+        const nextCropZoom = fitMode === 'crop'
+            ? this.normalizeMediaCropZoom(widget.content.cropZoom)
+            : widget.content.cropZoom;
+
         this.widgetsState.update({
             ...widget,
             content: {
                 ...widget.content,
                 fitMode,
+                cropZoom: nextCropZoom,
+            },
+        });
+    }
+
+    public setSelectedWidgetImageCropZoom(cropZoom: number) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'image' || !Number.isFinite(cropZoom)) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                cropZoom: this.normalizeMediaCropZoom(cropZoom),
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoCropZoom(cropZoom: number) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video' || !Number.isFinite(cropZoom)) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                cropZoom: this.normalizeMediaCropZoom(cropZoom),
             },
         });
     }
@@ -894,7 +934,7 @@ export class CanvasService {
             ...widget,
             content: {
                 ...widget.content,
-                offsetX,
+                offsetX: this.normalizeMediaOffset(offsetX),
             },
         });
     }
@@ -909,7 +949,7 @@ export class CanvasService {
             ...widget,
             content: {
                 ...widget.content,
-                offsetY,
+                offsetY: this.normalizeMediaOffset(offsetY),
             },
         });
     }
@@ -924,7 +964,7 @@ export class CanvasService {
             ...widget,
             content: {
                 ...widget.content,
-                offsetX,
+                offsetX: this.normalizeMediaOffset(offsetX),
             },
         });
     }
@@ -939,7 +979,7 @@ export class CanvasService {
             ...widget,
             content: {
                 ...widget.content,
-                offsetY,
+                offsetY: this.normalizeMediaOffset(offsetY),
             },
         });
     }
@@ -3499,7 +3539,7 @@ export class CanvasService {
         }
 
         if (type === 'image') {
-            return {type: 'image', src: '', alt: '', fitMode: 'cover'};
+            return {type: 'image', src: '', alt: '', fitMode: 'cover', offsetX: -50, offsetY: -50, cropZoom: 1};
         }
 
         return {...DEFAULT_WIDGET_VIDEO_CONTENT};
@@ -3539,6 +3579,18 @@ export class CanvasService {
 
     private isMediaContent(content: WidgetStateItem['content']): content is WidgetImageContent | WidgetVideoContent {
         return content.type === 'image' || content.type === 'video';
+    }
+
+    private normalizeMediaOffset(value: number): number {
+        return Math.max(-100, Math.min(0, value));
+    }
+
+    private normalizeMediaCropZoom(value: number | undefined): number {
+        if (!Number.isFinite(value)) {
+            return 1;
+        }
+
+        return Math.max(1, Math.min(5, value as number));
     }
 
 
@@ -3602,6 +3654,9 @@ export class CanvasService {
             img.style.width = videoStyle.width;
             img.style.height = videoStyle.height;
             img.style.objectFit = videoClone.style.objectFit || 'cover';
+            img.style.objectPosition = videoClone.style.objectPosition || '50% 50%';
+            img.style.transform = videoClone.style.transform || 'none';
+            img.style.transformOrigin = videoClone.style.transformOrigin || '50% 50%';
             img.style.display = videoStyle.display;
 
             // Track the captured frame

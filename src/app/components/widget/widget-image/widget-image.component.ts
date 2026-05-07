@@ -27,7 +27,7 @@ export class WidgetImageComponent {
 
   protected readonly coverObjectPosition = computed(() => {
     const content = this.content();
-    if (content.fitMode !== 'cover') {
+    if (content.fitMode !== 'cover' && content.fitMode !== 'crop') {
       return '50% 50%';
     }
 
@@ -36,6 +36,23 @@ export class WidgetImageComponent {
 
     return `${-offsetX}% ${-offsetY}%`;
   });
+
+  protected readonly mediaObjectFit = computed(() => {
+    const fitMode = this.content().fitMode;
+    return fitMode === 'crop' ? 'cover' : fitMode;
+  });
+
+  protected readonly mediaTransform = computed(() => {
+    const content = this.content();
+    if (content.fitMode !== 'crop') {
+      return 'none';
+    }
+
+    const zoom = Number.isFinite(content.cropZoom) ? Math.max(1, Math.min(5, content.cropZoom as number)) : 1;
+    return `scale(${zoom})`;
+  });
+
+  protected readonly mediaTransformOrigin = computed(() => this.coverObjectPosition());
 
   protected get isUrlValid(): boolean {
     return this.canvasService.isValidImageUrl(this.content().src);

@@ -1,0 +1,141 @@
+<div class="crop-position-controls">
+  <span class="crop-position-controls__label">Crop position</span>
+
+  <div class="crop-position-controls__content">
+    <div class="crop-position-controls__anchor-grid">
+      <app-ui-button
+        variant="ghost"
+        size="sm"
+        [active]="isAnchorActive('top-left')"
+        title="Top-left"
+        (click)="selectAnchor('top-left')"
+        class="crop-position-controls__anchor-button"
+      >
+        <span class="crop-position-controls__anchor-dot"></span>
+      </app-ui-button>
+      <app-ui-button
+        variant="ghost"
+        size="sm"
+        [active]="isAnchorActive('top-center')"
+        title="Top-center"
+        (click)="selectAnchor('top-center')"
+        class="crop-position-controls__anchor-button"
+      >
+        <span class="crop-position-controls__anchor-dot"></span>
+      </app-ui-button>
+      <app-ui-button
+        variant="ghost"
+        size="sm"
+        [active]="isAnchorActive('top-right')"
+        title="Top-right"
+        (click)="selectAnchor('top-right')"
+        class="crop-position-controls__anchor-button"
+      >
+        <span class="crop-position-controls__anchor-dot"></span>
+      </app-ui-button>
+
+      <app-ui-button
+        variant="ghost"
+        size="sm"
+        [active]="isAnchorActive('center-left')"
+        title="Center-left"
+        (click)="selectAnchor('center-left')"
+        class="crop-position-controls__anchor-button"
+      >
+        <span class="crop-position-controls__anchor-dot"></span>
+      </app-ui-button>
+      <app-ui-button
+        variant="ghost"
+        size="sm"
+        [active]="isAnchorActive('center')"
+        title="Center"
+        (click)="selectAnchor('center')"
+        class="crop-position-controls__anchor-button"
+      >
+        <span class="crop-position-controls__anchor-dot"></span>
+      </app-ui-button>
+      <app-ui-button
+        variant="ghost"
+        size="sm"
+        [active]="isAnchorActive('center-right')"
+        title="Center-right"
+        (click)="selectAnchor('center-right')"
+        class="crop-position-controls__anchor-button"
+      >
+        <span class="crop-position-controls__anchor-dot"></span>
+      </app-ui-button>
+
+      <app-ui-button
+        variant="ghost"
+        size="sm"
+        [active]="isAnchorActive('bottom-left')"
+        title="Bottom-left"
+        (click)="selectAnchor('bottom-left')"
+        class="crop-position-controls__anchor-button"
+      >
+        <span class="crop-position-controls__anchor-dot"></span>
+      </app-ui-button>
+      <app-ui-button
+        variant="ghost"
+        size="sm"
+        [active]="isAnchorActive('bottom-center')"
+        title="Bottom-center"
+        (click)="selectAnchor('bottom-center')"
+        class="crop-position-controls__anchor-button"
+      >
+        <span class="crop-position-controls__anchor-dot"></span>
+      </app-ui-button>
+      <app-ui-button
+        variant="ghost"
+        size="sm"
+        [active]="isAnchorActive('bottom-right')"
+        title="Bottom-right"
+        (click)="selectAnchor('bottom-right')"
+        class="crop-position-controls__anchor-button"
+      >
+        <span class="crop-position-controls__anchor-dot"></span>
+      </app-ui-button>
+    </div>
+
+    <div class="crop-position-controls__fields">
+      <div class="crop-position-controls__row">
+        <label class="crop-position-controls__field-label" [for]="idPrefix() + '-offset-x'">X</label>
+        <input
+          [id]="idPrefix() + '-offset-x'"
+          class="crop-position-controls__input"
+          type="number"
+          min="-100"
+          max="0"
+          [value]="offsetX()"
+          (input)="onOffsetXChange($event)"
+        />
+      </div>
+      <div class="crop-position-controls__row">
+        <label class="crop-position-controls__field-label" [for]="idPrefix() + '-offset-y'">Y</label>
+        <input
+          [id]="idPrefix() + '-offset-y'"
+          class="crop-position-controls__input"
+          type="number"
+          min="-100"
+          max="0"
+          [value]="offsetY()"
+          (input)="onOffsetYChange($event)"
+        />
+      </div>
+      <div class="crop-position-controls__row">
+        <label class="crop-position-controls__field-label" [for]="idPrefix() + '-zoom'">Zoom</label>
+        <input
+          [id]="idPrefix() + '-zoom'"
+          class="crop-position-controls__input"
+          type="number"
+          min="1"
+          max="5"
+          step="0.1"
+          [value]="zoom()"
+          (input)="onZoomChange($event)"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+

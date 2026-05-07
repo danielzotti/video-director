@@ -227,6 +227,7 @@ export class CanvasWidgetStateService {
         fitMode: this.normalizeImageFitMode(content.fitMode),
         offsetX: this.normalizeCoverOffset(content.offsetX),
         offsetY: this.normalizeCoverOffset(content.offsetY),
+        cropZoom: this.normalizeCropZoom(content.cropZoom),
       };
     }
 
@@ -242,6 +243,7 @@ export class CanvasWidgetStateService {
         controls: content.controls ?? DEFAULT_WIDGET_VIDEO_CONTENT.controls,
         offsetX: this.normalizeCoverOffset(content.offsetX),
         offsetY: this.normalizeCoverOffset(content.offsetY),
+        cropZoom: this.normalizeCropZoom(content.cropZoom),
       };
     }
 
@@ -313,7 +315,7 @@ export class CanvasWidgetStateService {
    }
 
    private normalizeImageFitMode(value?: string): WidgetImageFitMode {
-    return value === 'contain' ? 'contain' : 'cover';
+    return value === 'contain' || value === 'crop' ? value : 'cover';
   }
 
   private normalizeCoverOffset(value?: number): number {
@@ -321,6 +323,14 @@ export class CanvasWidgetStateService {
       return -50;
     }
 
-    return Number(value);
+    return Math.max(-100, Math.min(0, Number(value)));
+  }
+
+  private normalizeCropZoom(value?: number): number {
+    if (!Number.isFinite(value)) {
+      return 1;
+    }
+
+    return Math.max(1, Math.min(5, Number(value)));
   }
 }

@@ -462,6 +462,39 @@ describe('CanvasService', () => {
     }
   });
 
+  it('updates selected image crop settings', () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetImageFitMode('crop');
+    service.setSelectedWidgetImageOffsetX(-25);
+    service.setSelectedWidgetImageOffsetY(-75);
+    service.setSelectedWidgetImageCropZoom(2.4);
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('image');
+    if (widget?.content.type === 'image') {
+      expect(widget.content.fitMode).toBe('crop');
+      expect(widget.content.offsetX).toBe(-25);
+      expect(widget.content.offsetY).toBe(-75);
+      expect(widget.content.cropZoom).toBeCloseTo(2.4, 3);
+    }
+  });
+
+  it('clamps selected image crop values inside supported range', () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetImageFitMode('crop');
+    service.setSelectedWidgetImageOffsetX(25);
+    service.setSelectedWidgetImageOffsetY(-125);
+    service.setSelectedWidgetImageCropZoom(9);
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('image');
+    if (widget?.content.type === 'image') {
+      expect(widget.content.offsetX).toBe(0);
+      expect(widget.content.offsetY).toBe(-100);
+      expect(widget.content.cropZoom).toBe(5);
+    }
+  });
+
   it('switches selected widget content to video with default values', () => {
     service.selectWidget('2');
 
@@ -477,6 +510,9 @@ describe('CanvasService', () => {
       expect(widget.content.loop).toBeFalse();
       expect(widget.content.muted).toBeTrue();
       expect(widget.content.controls).toBeTrue();
+      expect(widget.content.offsetX).toBe(-50);
+      expect(widget.content.offsetY).toBe(-50);
+      expect(widget.content.cropZoom).toBe(1);
     }
   });
 
@@ -502,6 +538,24 @@ describe('CanvasService', () => {
       expect(widget.content.loop).toBeTrue();
       expect(widget.content.muted).toBeFalse();
       expect(widget.content.controls).toBeFalse();
+    }
+  });
+
+  it('updates selected video crop settings', () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetContentType('video');
+    service.setSelectedWidgetVideoFitMode('crop');
+    service.setSelectedWidgetVideoOffsetX(-20);
+    service.setSelectedWidgetVideoOffsetY(-60);
+    service.setSelectedWidgetVideoCropZoom(1.8);
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('video');
+    if (widget?.content.type === 'video') {
+      expect(widget.content.fitMode).toBe('crop');
+      expect(widget.content.offsetX).toBe(-20);
+      expect(widget.content.offsetY).toBe(-60);
+      expect(widget.content.cropZoom).toBeCloseTo(1.8, 3);
     }
   });
 
