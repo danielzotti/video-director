@@ -13,7 +13,13 @@
     </div>
     <div class="debug-row">
       <span class="debug-key">Selected</span>
-      <span class="debug-val">{{ cs.selectedWidgetId() ?? '—' }}</span>
+      <span
+        class="debug-val"
+        [class.debug-val--clickable]="!!cs.selectedWidgetId()"
+        [title]="cs.selectedWidgetId() ?? ''"
+        (click)="copyUuidToClipboard(cs.selectedWidgetId())">
+        {{ (cs.selectedWidgetId()?.slice(0, 8) ?? '—') }}
+      </span>
     </div>
     <div class="debug-row">
       <span class="debug-key">Dragging</span>

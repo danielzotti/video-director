@@ -147,6 +147,18 @@ export class CanvasDebugPanelComponent implements AfterViewInit {
     this.setPosition(this.position());
   }
 
+  protected async copyUuidToClipboard(uuid: string | null | undefined): Promise<void> {
+    if (!uuid) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(uuid);
+    } catch (err) {
+      console.error('Failed to copy UUID to clipboard:', err);
+    }
+  }
+
   private setPosition(next: DebugPanelPosition): void {
     const clamped = this.clampPosition(next);
     const current = this.position();
