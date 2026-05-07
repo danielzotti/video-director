@@ -103,7 +103,7 @@ export class WidgetVideoComponent {
 
   protected onVideoVolumeChange(event: Event): void {
     const element = event.currentTarget as HTMLVideoElement;
-    this.canvasService.setWidgetVideoVolumeState(this.widgetId(), element.muted ? 0 : element.volume);
+    this.canvasService.setWidgetVideoVolumeState(this.widgetId(), element.volume);
   }
 
   private ensureFirstFramePreview(element: HTMLVideoElement): void {

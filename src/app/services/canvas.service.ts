@@ -860,6 +860,13 @@ export class CanvasService {
                 muted,
             },
         });
+
+        const element = this.widgetVideoElements.get(widget.uuid);
+        if (!element) {
+            return;
+        }
+
+        this.applyWidgetVideoAudioState(widget.uuid, element, this.getWidgetVideoVolume(widget.uuid));
     }
 
     public setSelectedWidgetVideoControls(controls: boolean) {
@@ -1318,7 +1325,11 @@ export class CanvasService {
         this.setWidgetVideoPlaybackState(widgetId, !element.paused && !element.ended);
         this.setWidgetVideoTimeState(widgetId, element.currentTime || 0);
         this.setWidgetVideoDurationState(widgetId, isFinite(element.duration) ? element.duration : 0);
-        this.setWidgetVideoVolumeState(widgetId, element.volume);
+
+        const rememberedVolume = this.widgetVideoVolume()[widgetId];
+        const nextVolume = typeof rememberedVolume === 'number' ? rememberedVolume : element.volume;
+        this.setWidgetVideoVolumeState(widgetId, nextVolume);
+        this.applyWidgetVideoAudioState(widgetId, element, nextVolume);
     }
 
     public unregisterWidgetVideoElement(widgetId: string, element?: HTMLVideoElement): void {
@@ -1406,9 +1417,17 @@ export class CanvasService {
         }
 
         const clamped = Math.max(0, Math.min(1, volume));
-        element.volume = clamped;
-        element.muted = clamped === 0;
         this.setWidgetVideoVolumeState(widgetId, clamped);
+        this.applyWidgetVideoAudioState(widgetId, element, clamped);
+    }
+
+    private applyWidgetVideoAudioState(widgetId: string, element: HTMLVideoElement, volume: number): void {
+        const clamped = Math.max(0, Math.min(1, volume));
+        element.volume = clamped;
+
+        const widget = this.widgetsState.getById(widgetId);
+        const mutedBySettings = !!widget && widget.content.type === 'video' && widget.content.muted;
+        element.muted = mutedBySettings || clamped === 0;
     }
 
     public setWidgetVideoPlaybackState(widgetId: string, isPlaying: boolean): void {

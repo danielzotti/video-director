@@ -566,6 +566,39 @@ describe('CanvasService', () => {
     expect(service.isWidgetVideoPlaying('2')).toBeFalse();
   });
 
+  it('keeps video output muted when muted toggle is active even with non-zero slider volume', () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetContentType('video');
+
+    const videoElement = document.createElement('video');
+    videoElement.volume = 1;
+    videoElement.muted = false;
+    service.registerWidgetVideoElement('2', videoElement);
+
+    service.setWidgetVideoVolume('2', 0.8);
+
+    expect(service.getWidgetVideoVolume('2')).toBeCloseTo(0.8, 3);
+    expect(videoElement.volume).toBeCloseTo(0.8, 3);
+    expect(videoElement.muted).toBeTrue();
+  });
+
+  it('restores audible output after unmuting while preserving remembered volume', () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetContentType('video');
+
+    const videoElement = document.createElement('video');
+    videoElement.volume = 1;
+    videoElement.muted = false;
+    service.registerWidgetVideoElement('2', videoElement);
+
+    service.setWidgetVideoVolume('2', 0.7);
+    service.setSelectedWidgetVideoMuted(false);
+
+    expect(service.getWidgetVideoVolume('2')).toBeCloseTo(0.7, 3);
+    expect(videoElement.volume).toBeCloseTo(0.7, 3);
+    expect(videoElement.muted).toBeFalse();
+  });
+
   it('stores imported image from file as data URL', async () => {
     service.selectWidget('2');
 
