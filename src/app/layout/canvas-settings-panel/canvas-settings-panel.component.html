@@ -73,35 +73,6 @@
 
                 <div class="settings-panel__geometry-grid">
                     <div class="settings-panel__row settings-panel__row--column">
-                        <label class="settings-panel__field-label" for="widget-x">X</label>
-                        <input
-                                id="widget-x"
-                                class="settings-panel__input"
-                                type="number"
-                                [step]="widgetInputStep"
-                                [disabled]="isWidgetLocked"
-                                [value]="geometryDraft().x"
-                                (input)="onWidgetGeometryInput($event, 'x')"
-                                (blur)="onWidgetGeometryCommit($event, 'x')"
-                                (keydown.enter)="onNumericEnter($event, 'x')"
-                        />
-                    </div>
-                    <div class="settings-panel__row settings-panel__row--column">
-                        <label class="settings-panel__field-label" for="widget-y">Y</label>
-                        <input
-                                id="widget-y"
-                                class="settings-panel__input"
-                                type="number"
-                                [step]="widgetInputStep"
-                                [disabled]="isWidgetLocked"
-                                [value]="geometryDraft().y"
-                                (input)="onWidgetGeometryInput($event, 'y')"
-                                (blur)="onWidgetGeometryCommit($event, 'y')"
-                                (keydown.enter)="onNumericEnter($event, 'y')"
-                        />
-                    </div>
-                    <div class="settings-panel__vertical-separator" aria-hidden="true"></div>
-                    <div class="settings-panel__row settings-panel__row--column">
                         <label class="settings-panel__field-label" for="widget-width">W</label>
                         <input
                                 id="widget-width"
@@ -131,6 +102,36 @@
                                 (keydown.enter)="onNumericEnter($event, 'height')"
                         />
                     </div>
+                    <div class="settings-panel__vertical-separator" aria-hidden="true"></div>
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-x">X</label>
+                        <input
+                                id="widget-x"
+                                class="settings-panel__input"
+                                type="number"
+                                [step]="widgetInputStep"
+                                [disabled]="isWidgetLocked"
+                                [value]="geometryDraft().x"
+                                (input)="onWidgetGeometryInput($event, 'x')"
+                                (blur)="onWidgetGeometryCommit($event, 'x')"
+                                (keydown.enter)="onNumericEnter($event, 'x')"
+                        />
+                    </div>
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-y">Y</label>
+                        <input
+                                id="widget-y"
+                                class="settings-panel__input"
+                                type="number"
+                                [step]="widgetInputStep"
+                                [disabled]="isWidgetLocked"
+                                [value]="geometryDraft().y"
+                                (input)="onWidgetGeometryInput($event, 'y')"
+                                (blur)="onWidgetGeometryCommit($event, 'y')"
+                                (keydown.enter)="onNumericEnter($event, 'y')"
+                        />
+                    </div>
+
                 </div>
             </section>
 
@@ -210,7 +211,6 @@
                                 class="settings-panel__input settings-panel__input--color"
                                 type="color"
                                 [value]="selectedBorderColor"
-                                [disabled]="!hasBorder"
                                 (input)="onBorderColorChange($event)"
                         />
                         <span class="settings-panel__color-value"
@@ -368,85 +368,85 @@
                     </div>
 
                     <div class="settings-panel__row settings-panel__row--column">
-                         <span class="settings-panel__field-label">Vertical alignment</span>
-                         <div class="settings-panel__alignment-group">
-                             <app-ui-button
-                                     variant="ghost"
-                                     size="sm"
-                                     [active]="textContent.style.alignVertical === 'top'"
-                                     title="Allinea in alto"
-                                     (click)="setTextVerticalAlignment('top')"
-                             >
-                                 <app-ui-icon name="align-top"/>
-                             </app-ui-button>
-                             <app-ui-button
-                                     variant="ghost"
-                                     size="sm"
-                                     [active]="textContent.style.alignVertical === 'center'"
-                                     title="Allinea al centro"
-                                     (click)="setTextVerticalAlignment('center')"
-                             >
-                                 <app-ui-icon name="align-center"/>
-                             </app-ui-button>
-                             <app-ui-button
-                                     variant="ghost"
-                                     size="sm"
-                                     [active]="textContent.style.alignVertical === 'bottom'"
-                                     title="Allinea in basso"
-                                     (click)="setTextVerticalAlignment('bottom')"
-                             >
-                                 <app-ui-icon name="align-bottom"/>
-                             </app-ui-button>
-                         </div>
-                     </div>
+                        <span class="settings-panel__field-label">Vertical alignment</span>
+                        <div class="settings-panel__alignment-group">
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.alignVertical === 'top'"
+                                    title="Allinea in alto"
+                                    (click)="setTextVerticalAlignment('top')"
+                            >
+                                <app-ui-icon name="align-top"/>
+                            </app-ui-button>
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.alignVertical === 'center'"
+                                    title="Allinea al centro"
+                                    (click)="setTextVerticalAlignment('center')"
+                            >
+                                <app-ui-icon name="align-center"/>
+                            </app-ui-button>
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.alignVertical === 'bottom'"
+                                    title="Allinea in basso"
+                                    (click)="setTextVerticalAlignment('bottom')"
+                            >
+                                <app-ui-icon name="align-bottom"/>
+                            </app-ui-button>
+                        </div>
+                    </div>
 
-                     <app-ui-separator orientation="horizontal"/>
+                    <app-ui-separator orientation="horizontal"/>
 
-                     <div class="settings-panel__row settings-panel__row--column">
-                         <span class="settings-panel__field-label">Text formatting</span>
-                         <div class="settings-panel__formatting-group">
-                             <app-ui-button
-                                     variant="ghost"
-                                     size="sm"
-                                     [active]="textContent.style.bold"
-                                     title="Grassetto"
-                                     (click)="setTextBold(!textContent.style.bold)"
-                             >
-                                 <app-ui-icon name="text-bold"/>
-                             </app-ui-button>
-                             <app-ui-button
-                                     variant="ghost"
-                                     size="sm"
-                                     [active]="textContent.style.italic"
-                                     title="Corsivo"
-                                     (click)="setTextItalic(!textContent.style.italic)"
-                             >
-                                 <app-ui-icon name="text-italic"/>
-                             </app-ui-button>
-                             <app-ui-button
-                                     variant="ghost"
-                                     size="sm"
-                                     [active]="textContent.style.underline"
-                                     title="Sottolineato"
-                                     (click)="setTextUnderline(!textContent.style.underline)"
-                             >
-                                 <app-ui-icon name="text-underline"/>
-                             </app-ui-button>
-                         </div>
-                     </div>
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <span class="settings-panel__field-label">Text formatting</span>
+                        <div class="settings-panel__formatting-group">
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.bold"
+                                    title="Grassetto"
+                                    (click)="setTextBold(!textContent.style.bold)"
+                            >
+                                <app-ui-icon name="text-bold"/>
+                            </app-ui-button>
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.italic"
+                                    title="Corsivo"
+                                    (click)="setTextItalic(!textContent.style.italic)"
+                            >
+                                <app-ui-icon name="text-italic"/>
+                            </app-ui-button>
+                            <app-ui-button
+                                    variant="ghost"
+                                    size="sm"
+                                    [active]="textContent.style.underline"
+                                    title="Sottolineato"
+                                    (click)="setTextUnderline(!textContent.style.underline)"
+                            >
+                                <app-ui-icon name="text-underline"/>
+                            </app-ui-button>
+                        </div>
+                    </div>
 
-                     <div class="settings-panel__row settings-panel__row--column">
-                         <label class="settings-panel__field-label" for="widget-text-line-height">Line height</label>
-                         <input
-                                 id="widget-text-line-height"
-                                 class="settings-panel__input"
-                                 type="number"
-                                 min="0.5"
-                                 step="0.1"
-                                 [value]="textContent.style.lineHeight"
-                                 (input)="onTextLineHeightChange($event)"
-                         />
-                     </div>
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-text-line-height">Line height</label>
+                        <input
+                                id="widget-text-line-height"
+                                class="settings-panel__input"
+                                type="number"
+                                min="0.5"
+                                step="0.1"
+                                [value]="textContent.style.lineHeight"
+                                (input)="onTextLineHeightChange($event)"
+                        />
+                    </div>
                 }
 
                 @if (selectedImageContent; as imageContent) {
@@ -593,7 +593,8 @@
                                     [disabled]="!canToggleSelectedVideoPlayback"
                                     (input)="onVideoVolumeInput($event)"
                             />
-                            <span class="settings-panel__video-volume-label">{{ (selectedVideoVolume * 100) | number:'1.0-0' }}%</span>
+                            <span class="settings-panel__video-volume-label">{{ (selectedVideoVolume * 100) | number:'1.0-0' }}
+                                %</span>
                         </div>
                     </div>
 

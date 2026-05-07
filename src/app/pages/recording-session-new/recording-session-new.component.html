@@ -76,8 +76,6 @@
                                 class="widget"
                         ></app-widget>
                     }
-                } @empty {
-                    <p><em>No items.</em></p>
                 }
                 @if (canvasService.debugMode()) {
                     <div class="canvas-info">x: {{ canvasService.left() }}, y: {{ canvasService.top() }}</div>
