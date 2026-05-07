@@ -16,6 +16,7 @@ import {
 } from '../../models/canvas-widget-state.models';
 import { CanvasService } from '../../services/canvas.service';
 import { SelectOption, UiSelectComponent, UiSeparatorComponent, UiToggleComponent, UiButtonComponent, UiIconComponent } from '../../ui';
+import { CoverPositionControlsComponent } from './cover-position-controls/cover-position-controls.component';
 
 type WidgetGeometryField = 'x' | 'y' | 'width' | 'height';
 
@@ -23,7 +24,7 @@ type WidgetGeometryField = 'x' | 'y' | 'width' | 'height';
   selector: 'app-canvas-settings-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent, UiButtonComponent, UiIconComponent],
+  imports: [CommonModule, DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent, UiButtonComponent, UiIconComponent, CoverPositionControlsComponent],
   templateUrl: './canvas-settings-panel.component.html',
   styleUrl: './canvas-settings-panel.component.scss',
 })
@@ -701,17 +702,21 @@ export class CanvasSettingsPanelComponent {
     this.cs.setSelectedWidgetImageOffsetY(y);
   }
 
-  protected onImageOffsetXChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(value)) {
-      this.cs.setSelectedWidgetImageOffsetX(value);
+  protected onImageOffsetXChange(value: number | Event): void {
+    const numericValue = value instanceof Event
+      ? Number((value.target as HTMLInputElement).value)
+      : value;
+    if (Number.isFinite(numericValue)) {
+      this.cs.setSelectedWidgetImageOffsetX(numericValue);
     }
   }
 
-  protected onImageOffsetYChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(value)) {
-      this.cs.setSelectedWidgetImageOffsetY(value);
+  protected onImageOffsetYChange(value: number | Event): void {
+    const numericValue = value instanceof Event
+      ? Number((value.target as HTMLInputElement).value)
+      : value;
+    if (Number.isFinite(numericValue)) {
+      this.cs.setSelectedWidgetImageOffsetY(numericValue);
     }
   }
 
@@ -746,19 +751,27 @@ export class CanvasSettingsPanelComponent {
     this.cs.setSelectedWidgetVideoOffsetY(y);
   }
 
-  protected onVideoOffsetXChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(value)) {
-      this.cs.setSelectedWidgetVideoOffsetX(value);
-    }
-  }
+   protected onVideoOffsetXChange(value: number | Event): void {
+     if (value instanceof Event) {
+       const numValue = Number((value.target as HTMLInputElement).value);
+       if (Number.isFinite(numValue)) {
+         this.cs.setSelectedWidgetVideoOffsetX(numValue);
+       }
+     } else {
+       this.cs.setSelectedWidgetVideoOffsetX(value);
+     }
+   }
 
-  protected onVideoOffsetYChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(value)) {
-      this.cs.setSelectedWidgetVideoOffsetY(value);
-    }
-  }
+   protected onVideoOffsetYChange(value: number | Event): void {
+     if (value instanceof Event) {
+       const numValue = Number((value.target as HTMLInputElement).value);
+       if (Number.isFinite(numValue)) {
+         this.cs.setSelectedWidgetVideoOffsetY(numValue);
+       }
+     } else {
+       this.cs.setSelectedWidgetVideoOffsetY(value);
+     }
+   }
 
   protected setVideoAutoplay(value: boolean): void {
     this.cs.setSelectedWidgetVideoAutoplay(value);

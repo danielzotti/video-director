@@ -1,0 +1,124 @@
+<div class="cover-position-controls">
+  <span class="cover-position-controls__label">Cover position</span>
+
+  <div class="cover-position-controls__content">
+    <div class="cover-position-controls__anchor-grid">
+    <app-ui-button
+      variant="ghost"
+      size="sm"
+      [active]="isAnchorActive('top-left')"
+      title="Top-left"
+      (click)="selectAnchor('top-left')"
+      class="cover-position-controls__anchor-button cover-position-controls__anchor-button--top-left"
+    >
+      <span class="cover-position-controls__anchor-dot"></span>
+    </app-ui-button>
+    <app-ui-button
+      variant="ghost"
+      size="sm"
+      [active]="isAnchorActive('top-center')"
+      title="Top-center"
+      (click)="selectAnchor('top-center')"
+      class="cover-position-controls__anchor-button cover-position-controls__anchor-button--top-center"
+    >
+      <span class="cover-position-controls__anchor-dot"></span>
+    </app-ui-button>
+    <app-ui-button
+      variant="ghost"
+      size="sm"
+      [active]="isAnchorActive('top-right')"
+      title="Top-right"
+      (click)="selectAnchor('top-right')"
+      class="cover-position-controls__anchor-button cover-position-controls__anchor-button--top-right"
+    >
+      <span class="cover-position-controls__anchor-dot"></span>
+    </app-ui-button>
+
+    <app-ui-button
+      variant="ghost"
+      size="sm"
+      [active]="isAnchorActive('center-left')"
+      title="Center-left"
+      (click)="selectAnchor('center-left')"
+      class="cover-position-controls__anchor-button cover-position-controls__anchor-button--center-left"
+    >
+      <span class="cover-position-controls__anchor-dot"></span>
+    </app-ui-button>
+    <app-ui-button
+      variant="ghost"
+      size="sm"
+      [active]="isAnchorActive('center')"
+      title="Center"
+      (click)="selectAnchor('center')"
+      class="cover-position-controls__anchor-button cover-position-controls__anchor-button--center"
+    >
+      <span class="cover-position-controls__anchor-dot"></span>
+    </app-ui-button>
+    <app-ui-button
+      variant="ghost"
+      size="sm"
+      [active]="isAnchorActive('center-right')"
+      title="Center-right"
+      (click)="selectAnchor('center-right')"
+      class="cover-position-controls__anchor-button cover-position-controls__anchor-button--center-right"
+    >
+      <span class="cover-position-controls__anchor-dot"></span>
+    </app-ui-button>
+
+    <app-ui-button
+      variant="ghost"
+      size="sm"
+      [active]="isAnchorActive('bottom-left')"
+      title="Bottom-left"
+      (click)="selectAnchor('bottom-left')"
+      class="cover-position-controls__anchor-button cover-position-controls__anchor-button--bottom-left"
+    >
+      <span class="cover-position-controls__anchor-dot"></span>
+    </app-ui-button>
+    <app-ui-button
+      variant="ghost"
+      size="sm"
+      [active]="isAnchorActive('bottom-center')"
+      title="Bottom-center"
+      (click)="selectAnchor('bottom-center')"
+      class="cover-position-controls__anchor-button cover-position-controls__anchor-button--bottom-center"
+    >
+      <span class="cover-position-controls__anchor-dot"></span>
+    </app-ui-button>
+    <app-ui-button
+      variant="ghost"
+      size="sm"
+      [active]="isAnchorActive('bottom-right')"
+      title="Bottom-right"
+      (click)="selectAnchor('bottom-right')"
+      class="cover-position-controls__anchor-button cover-position-controls__anchor-button--bottom-right"
+    >
+      <span class="cover-position-controls__anchor-dot"></span>
+    </app-ui-button>
+    </div>
+
+    <div class="cover-position-controls__offset">
+      <div class="cover-position-controls__row">
+        <label class="cover-position-controls__field-label" [for]="idPrefix() + '-offset-x'">X</label>
+        <input
+          [id]="idPrefix() + '-offset-x'"
+          class="cover-position-controls__input"
+          type="number"
+          [value]="offsetX()"
+          (input)="onOffsetXChange($event)"
+        />
+      </div>
+      <div class="cover-position-controls__row">
+        <label class="cover-position-controls__field-label" [for]="idPrefix() + '-offset-y'">Y</label>
+        <input
+          [id]="idPrefix() + '-offset-y'"
+          class="cover-position-controls__input"
+          type="number"
+          [value]="offsetY()"
+          (input)="onOffsetYChange($event)"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+

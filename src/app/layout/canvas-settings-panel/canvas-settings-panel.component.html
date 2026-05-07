@@ -504,129 +504,14 @@
                     </div>
 
                     @if (imageContent.fitMode === 'cover') {
-                        <div class="settings-panel__row settings-panel__row--column">
-                            <span class="settings-panel__field-label">Cover position</span>
-                            <div>
-                                <div class="settings-panel__anchor-grid">
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="imageCoverOffsetDraft().x === '0' && imageCoverOffsetDraft().y === '0'"
-                                            title="Top-left"
-                                            (click)="setImageCoverAnchor('top-left')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--top-left"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="imageCoverOffsetDraft().x === '-50' && imageCoverOffsetDraft().y === '0'"
-                                            title="Top-center"
-                                            (click)="setImageCoverAnchor('top-center')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--top-center"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="imageCoverOffsetDraft().x === '-100' && imageCoverOffsetDraft().y === '0'"
-                                            title="Top-right"
-                                            (click)="setImageCoverAnchor('top-right')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--top-right"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="imageCoverOffsetDraft().x === '0' && imageCoverOffsetDraft().y === '-50'"
-                                            title="Center-left"
-                                            (click)="setImageCoverAnchor('center-left')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--center-left"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="imageCoverOffsetDraft().x === '-50' && imageCoverOffsetDraft().y === '-50'"
-                                            title="Center"
-                                            (click)="setImageCoverAnchor('center')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--center"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="imageCoverOffsetDraft().x === '-100' && imageCoverOffsetDraft().y === '-50'"
-                                            title="Center-right"
-                                            (click)="setImageCoverAnchor('center-right')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--center-right"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="imageCoverOffsetDraft().x === '0' && imageCoverOffsetDraft().y === '-100'"
-                                            title="Bottom-left"
-                                            (click)="setImageCoverAnchor('bottom-left')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--bottom-left"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="imageCoverOffsetDraft().x === '-50' && imageCoverOffsetDraft().y === '-100'"
-                                            title="Bottom-center"
-                                            (click)="setImageCoverAnchor('bottom-center')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--bottom-center"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="imageCoverOffsetDraft().x === '-100' && imageCoverOffsetDraft().y === '-100'"
-                                            title="Bottom-right"
-                                            (click)="setImageCoverAnchor('bottom-right')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--bottom-right"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                </div>
-
-                            </div>
-                        </div>
-
-                        <div class="settings-panel__geometry-grid settings-panel__geometry-grid--cover-offset">
-                            <div class="settings-panel__row settings-panel__row--column">
-                                <label class="settings-panel__field-label" for="image-cover-offset-x">Offset X</label>
-                                <input
-                                        id="image-cover-offset-x"
-                                        class="settings-panel__input"
-                                        type="number"
-                                        [value]="imageCoverOffsetDraft().x"
-                                        (input)="onImageOffsetXChange($event)"
-                                />
-                            </div>
-                            <div class="settings-panel__row settings-panel__row--column">
-                                <label class="settings-panel__field-label" for="image-cover-offset-y">Offset Y</label>
-                                <input
-                                        id="image-cover-offset-y"
-                                        class="settings-panel__input"
-                                        type="number"
-                                        [value]="imageCoverOffsetDraft().y"
-                                        (input)="onImageOffsetYChange($event)"
-                                />
-                            </div>
-                        </div>
+                        <app-cover-position-controls
+                                idPrefix="image-cover"
+                                [offsetX]="imageCoverOffsetDraft().x"
+                                [offsetY]="imageCoverOffsetDraft().y"
+                                (anchorSelected)="setImageCoverAnchor($event)"
+                                (offsetXChanged)="onImageOffsetXChange($event)"
+                                (offsetYChanged)="onImageOffsetYChange($event)"
+                        />
                     }
                 }
 
@@ -675,130 +560,15 @@
                     </div>
 
                     @if (videoContent.fitMode === 'cover') {
-                        <div class="settings-panel__row settings-panel__row--column">
-                            <span class="settings-panel__field-label">Cover position</span>
-                            <div class="settings-panel__cover-position-controls">
-                                <div class="settings-panel__anchor-grid">
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="videoCoverOffsetDraft().x === '0' && videoCoverOffsetDraft().y === '0'"
-                                            title="Top-left"
-                                            (click)="setVideoCoverAnchor('top-left')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--top-left"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="videoCoverOffsetDraft().x === '-50' && videoCoverOffsetDraft().y === '0'"
-                                            title="Top-center"
-                                            (click)="setVideoCoverAnchor('top-center')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--top-center"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="videoCoverOffsetDraft().x === '-100' && videoCoverOffsetDraft().y === '0'"
-                                            title="Top-right"
-                                            (click)="setVideoCoverAnchor('top-right')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--top-right"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="videoCoverOffsetDraft().x === '0' && videoCoverOffsetDraft().y === '-50'"
-                                            title="Center-left"
-                                            (click)="setVideoCoverAnchor('center-left')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--center-left"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="videoCoverOffsetDraft().x === '-50' && videoCoverOffsetDraft().y === '-50'"
-                                            title="Center"
-                                            (click)="setVideoCoverAnchor('center')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--center"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="videoCoverOffsetDraft().x === '-100' && videoCoverOffsetDraft().y === '-50'"
-                                            title="Center-right"
-                                            (click)="setVideoCoverAnchor('center-right')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--center-right"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="videoCoverOffsetDraft().x === '0' && videoCoverOffsetDraft().y === '-100'"
-                                            title="Bottom-left"
-                                            (click)="setVideoCoverAnchor('bottom-left')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--bottom-left"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="videoCoverOffsetDraft().x === '-50' && videoCoverOffsetDraft().y === '-100'"
-                                            title="Bottom-center"
-                                            (click)="setVideoCoverAnchor('bottom-center')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--bottom-center"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                    <app-ui-button
-                                            variant="ghost"
-                                            size="sm"
-                                            [active]="videoCoverOffsetDraft().x === '-100' && videoCoverOffsetDraft().y === '-100'"
-                                            title="Bottom-right"
-                                            (click)="setVideoCoverAnchor('bottom-right')"
-                                            class="settings-panel__anchor-button settings-panel__anchor-button--bottom-right"
-                                    >
-                                        <span class="settings-panel__anchor-dot"></span>
-                                    </app-ui-button>
-                                </div>
-                                <div class="settings-panel__cover-offset">
-                                    <div class="settings-panel__row settings-panel__row--column">
-                                        <label class="settings-panel__field-label" for="video-cover-offset-x">X</label>
-                                        <input
-                                                id="video-cover-offset-x"
-                                                class="settings-panel__input"
-                                                type="number"
-                                                [value]="videoCoverOffsetDraft().x"
-                                                (input)="onVideoOffsetXChange($event)"
-                                        />
-                                    </div>
-                                    <div class="settings-panel__row settings-panel__row--column">
-                                        <label class="settings-panel__field-label" for="video-cover-offset-y">Y</label>
-                                        <input
-                                                id="video-cover-offset-y"
-                                                class="settings-panel__input"
-                                                type="number"
-                                                [value]="videoCoverOffsetDraft().y"
-                                                (input)="onVideoOffsetYChange($event)"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
-                    }
+                         <app-cover-position-controls
+                                 idPrefix="video-cover"
+                                 [offsetX]="videoCoverOffsetDraft().x"
+                                 [offsetY]="videoCoverOffsetDraft().y"
+                                 (anchorSelected)="setVideoCoverAnchor($event)"
+                                 (offsetXChanged)="onVideoOffsetXChange($event)"
+                                 (offsetYChanged)="onVideoOffsetYChange($event)"
+                         />
+                     }
 
                     <div class="settings-panel__video-player">
                         <div class="settings-panel__video-player-controls">
