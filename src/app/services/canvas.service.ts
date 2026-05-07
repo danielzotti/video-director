@@ -220,6 +220,7 @@ export class CanvasService {
     private readonly PROJECT_HANDLE_DB_NAME = 'video-director.fs-handles.v1';
     private readonly PROJECT_HANDLE_STORE_NAME = 'handles';
     private readonly PROJECT_HANDLE_KEY = 'project-directory';
+    private readonly PROJECT_DIRECTORY_PROMPT_SEEN_KEY = 'video-director.project-directory-connect-prompt.v1';
     private readonly HISTORY_LIMIT = 100;
     private readonly undoStack = signal<EditorStateSnapshot[]>([]);
     private readonly redoStack = signal<EditorStateSnapshot[]>([]);
@@ -245,6 +246,7 @@ export class CanvasService {
 
     public projectName = signal<string>('Untitled Project');
     public projectDirectoryName = signal<string | null>(null);
+    public projectDirectoryRestoreReady = signal(false);
     public projectSyncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
     public projectLastSyncedAt = signal<Date | null>(null);
     public projectSyncError = signal<string | null>(null);
@@ -402,6 +404,7 @@ export class CanvasService {
         this.projectDirectoryName.set(directoryHandle.name ?? 'Selected folder');
         this.projectSyncError.set(null);
         await this.persistProjectDirectoryHandle(directoryHandle);
+        this.markProjectDirectoryPromptAsConnectedChoice();
 
         const isDirectoryEmpty = await this.isDirectoryEmpty(directoryHandle);
         if (isDirectoryEmpty) {
@@ -2382,25 +2385,33 @@ export class CanvasService {
         }
     }
 
+    private markProjectDirectoryPromptAsConnectedChoice(): void {
+        this.getLocalStorage()?.setItem(this.PROJECT_DIRECTORY_PROMPT_SEEN_KEY, '0');
+    }
+
     private async restoreProjectDirectoryConnection(): Promise<void> {
-        const restoredHandle = await this.readPersistedProjectDirectoryHandle();
-        if (!restoredHandle) {
-            return;
-        }
+        try {
+            const restoredHandle = await this.readPersistedProjectDirectoryHandle();
+            if (!restoredHandle) {
+                return;
+            }
 
-        const permission = await this.resolveDirectoryPermission(restoredHandle, false);
-        if (permission !== 'granted') {
-            await this.clearPersistedProjectDirectoryHandle();
-            return;
-        }
+            const permission = await this.resolveDirectoryPermission(restoredHandle, false);
+            if (permission !== 'granted') {
+                await this.clearPersistedProjectDirectoryHandle();
+                return;
+            }
 
-        this.projectDirectoryHandle = restoredHandle;
-        this.projectDirectoryName.set(restoredHandle.name ?? 'Selected folder');
-        this.projectSyncStatus.set('idle');
-        this.projectSyncError.set(null);
+            this.projectDirectoryHandle = restoredHandle;
+            this.projectDirectoryName.set(restoredHandle.name ?? 'Selected folder');
+            this.projectSyncStatus.set('idle');
+            this.projectSyncError.set(null);
 
-        if (this.isHistoryReady) {
-            void this.hydrateCurrentSnapshotAssetSourcesFromConnectedDirectory();
+            if (this.isHistoryReady) {
+                void this.hydrateCurrentSnapshotAssetSourcesFromConnectedDirectory();
+            }
+        } finally {
+            this.projectDirectoryRestoreReady.set(true);
         }
     }
 

@@ -156,6 +156,14 @@ describe('CanvasService', () => {
     service.widgetsState.replaceAll(createSeedWidgets());
   });
 
+  it('marks project directory restore as ready after startup restore attempt', async () => {
+    for (let attempt = 0; attempt < 20 && !service.projectDirectoryRestoreReady(); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    expect(service.projectDirectoryRestoreReady()).toBeTrue();
+  });
+
   it('returns temporary top z-index for selected widget', () => {
     service.selectWidget('1');
 

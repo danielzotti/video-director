@@ -44,6 +44,8 @@ import {Point2D} from '../../models/geometry.models';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecordingSessionNewComponent {
+    private readonly PROJECT_DIRECTORY_PROMPT_SEEN_KEY = 'video-director.project-directory-connect-prompt.v1';
+
     streamStateService = inject(StreamStateService);
     widgetStateService = inject(CanvasWidgetStateService);
     public canvasService = inject(CanvasService);
@@ -53,6 +55,7 @@ export class RecordingSessionNewComponent {
 
     protected readonly floatingPanelPosition = signal<Point2D>({x: 0, y: 0});
     protected readonly floatingLayersPanelPosition = signal<Point2D>({x: 0, y: 0});
+    protected readonly isProjectDirectoryPromptOpen = signal(false);
 
     // Min height for panels: enough to show header (~50px) + some content
     private readonly minPanelHeight = 120;
@@ -100,6 +103,7 @@ export class RecordingSessionNewComponent {
     private hasFloatingLayersPanelPosition = false;
     private readonly floatingLayersPanelMargin = 12;
     private hasInitialCanvasCentered = false;
+    private hasProjectDirectoryPromptBeenEvaluated = false;
 
     streamList = computed(() => this.streamStateService.list());
     widgetList = computed(() => this.widgetStateService.list());
@@ -147,6 +151,70 @@ export class RecordingSessionNewComponent {
                 });
             });
         });
+
+        effect(() => {
+            if (this.hasProjectDirectoryPromptBeenEvaluated) {
+                return;
+            }
+
+            if (!this.canvasService.projectDirectoryRestoreReady()) {
+                return;
+            }
+
+            this.hasProjectDirectoryPromptBeenEvaluated = true;
+
+            if (!this.canvasService.isProjectDirectorySyncSupported()) {
+                return;
+            }
+
+            if (this.canvasService.isProjectDirectoryConnected()) {
+                return;
+            }
+
+            if (this.hasProjectDirectoryPromptBeenSeen()) {
+                return;
+            }
+
+            this.isProjectDirectoryPromptOpen.set(true);
+        });
+    }
+
+    protected async connectProjectDirectoryFromPrompt(): Promise<void> {
+        try {
+            await this.canvasService.connectProjectDirectory();
+            this.isProjectDirectoryPromptOpen.set(false);
+        } catch (error) {
+            if ((error as DOMException)?.name === 'AbortError') {
+                return;
+            }
+
+            console.error('[RecordingSessionNew] connectProjectDirectoryFromPrompt failed:', error);
+        }
+    }
+
+    protected dismissProjectDirectoryPrompt(): void {
+        this.markProjectDirectoryPromptAsSeen();
+        this.isProjectDirectoryPromptOpen.set(false);
+    }
+
+    protected closeProjectDirectoryPrompt(): void {
+        this.isProjectDirectoryPromptOpen.set(false);
+    }
+
+    private hasProjectDirectoryPromptBeenSeen(): boolean {
+        return this.getLocalStorage()?.getItem(this.PROJECT_DIRECTORY_PROMPT_SEEN_KEY) === '1';
+    }
+
+    private markProjectDirectoryPromptAsSeen(): void {
+        this.getLocalStorage()?.setItem(this.PROJECT_DIRECTORY_PROMPT_SEEN_KEY, '1');
+    }
+
+    private getLocalStorage(): Storage | null {
+        try {
+            return globalThis.window ? globalThis.window.localStorage : null;
+        } catch {
+            return null;
+        }
     }
 
     protected onFloatingPanelPointerDown(event: PointerEvent): void {

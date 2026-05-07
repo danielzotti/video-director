@@ -10,6 +10,10 @@ A modern, high-performance canvas-based video recording editor built with **Angu
 - 📐 **Boundary Enforcement** – Toggleable boundary constraints to keep widgets within canvas bounds
 - 🎯 **Real-time State Management** – Angular Signals for performant reactive state with zero-dependency change detection
 - 📹 **Media Integration** – Direct browser media capture support for screen recording
+- 💾 **Project Persistence** – Automatic local snapshot persistence with undo/redo history
+- 🗜️ **Project Import/Export** – Full project archive import/export via `.zip` (state + media assets)
+- 📁 **Folder Sync Workflow** – Optional sync to a local project folder with manual sync/load/disconnect actions
+- 🛟 **Import Safety Fallback** – Backup `.zip` generation when folder sync is skipped, cancelled, or unsupported
 - 🎨 **Modern UI** – Built with SCSS and CSS Variables for dynamic styling
 
 ## Tech Stack
@@ -26,6 +30,7 @@ A modern, high-performance canvas-based video recording editor built with **Angu
 
 - **Node.js** 18+ and **npm** (or your preferred package manager)
 - A modern web browser with support for HTML5 Canvas and Media Stream API
+- For local folder sync: browser support for the File System Access API (`showDirectoryPicker`)
 
 ### Installation
 
@@ -76,6 +81,64 @@ Watch mode for development:
 ```bash
 npm run watch
 ```
+
+## Quick Start: Project Sync
+
+Get your project synced to a local folder in under 30 seconds:
+
+1. Open the **Settings panel** (gear icon, right sidebar).
+2. Scroll to the **Project** section at the bottom.
+3. Enter a **Project name** (optional).
+4. Click **Connect folder** → pick or create an empty folder on your computer.
+5. Done — the project is immediately written to `<your-folder>/state.json` and `<your-folder>/assets/`.
+
+From this point on, every change is automatically saved to that folder in the background.
+
+> **Tip:** To share the project or back it up, use **Export project (.zip)** from the actions toolbar. To restore it on another machine, use **Import project (.zip)**.
+
+---
+
+## Project Persistence and Sync
+
+VideoDirector supports a complete project persistence workflow, including local autosave, ZIP import/export, and optional synchronization to a folder on your computer.
+
+### 1) Local Autosave (Always On)
+
+- Editor state is persisted locally in browser storage after changes.
+- Undo/redo snapshots are tracked in memory to support editing history.
+- This works even when no project folder is connected.
+
+### 2) Export / Import Project Archive (`.zip`)
+
+- Use the actions toolbar to:
+  - **Export project (.zip)**
+  - **Import project (.zip)**
+- Exported archives contain a `sync/` directory with:
+  - `sync/state.json` (canvas + widgets state)
+  - `sync/assets/*` (managed image/video files)
+
+### 3) Local Folder Sync (Project Section in Settings Panel)
+
+- In **Project → Project folder sync**, you can:
+  - **Connect folder**
+  - **Sync now**
+  - **Load from folder**
+  - **Disconnect**
+- When connected, project changes are automatically synced to the selected folder (debounced writes).
+- Sync status is surfaced in the UI (`idle`, `syncing`, `error`) with pending-changes feedback.
+
+### 4) Import + Sync Behavior
+
+When importing a `.zip`, the app can also persist imported files to a selected local folder.
+
+- If folder write succeeds: project is imported and synced immediately.
+- If folder write is skipped/cancelled/unsupported: project is still imported in memory, and a **backup zip** can be saved manually.
+- The setting **"Ask folder on zip import"** controls whether the folder picker is shown during import.
+
+### 5) Browser Compatibility Notes
+
+- Local folder sync depends on File System Access API availability and granted permissions.
+- If unavailable, the editor still supports full `.zip` import/export and local browser persistence.
 
 ## Deploying to GitHub Pages
 
@@ -166,6 +229,8 @@ The application uses OnPush change detection strategy for optimal performance, r
 - **Pan**: Hold space and drag, or use middle mouse button to pan
 - **Snapping**: Enable snap-to-grid or snap-to-objects from the header controls
 - **Boundary Checks**: Toggle boundary enforcement to allow or prevent widgets from leaving the canvas
+- **Project Sync**: Connect a local folder from the settings panel to keep `sync/state.json` and `sync/assets` updated
+- **Import Safety**: If folder sync is unavailable during import, use the backup zip action to avoid losing sync artifacts
 
 ## Contributing
 

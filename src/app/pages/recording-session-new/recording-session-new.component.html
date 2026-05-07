@@ -117,6 +117,32 @@
 
 </div>
 
+@if (isProjectDirectoryPromptOpen()) {
+    <button
+            class="project-folder-modal-backdrop"
+            type="button"
+            aria-label="Close connect folder dialog"
+            (click)="closeProjectDirectoryPrompt()"
+    ></button>
+
+    <dialog class="project-folder-modal" aria-label="Connect project folder" open>
+        <h2 class="project-folder-modal__title">Connect a project folder?</h2>
+        <p class="project-folder-modal__text">
+            Your browser supports folder sync. Do you want to connect a folder to keep your project saved as local files?
+        </p>
+        <div class="project-folder-modal__actions">
+            <button class="project-folder-modal__button" type="button" (click)="dismissProjectDirectoryPrompt()">Not now</button>
+            <button
+                    class="project-folder-modal__button project-folder-modal__button--primary"
+                    type="button"
+                    (click)="connectProjectDirectoryFromPrompt()"
+            >
+                Connect folder
+            </button>
+        </div>
+    </dialog>
+}
+
 <!-- Debug Panel -->
 @if (canvasService.debugMode() && canvasService.debugPanelVisible()) {
     <app-canvas-debug-panel [show]="true"/>
