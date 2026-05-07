@@ -4,6 +4,7 @@
         [src]="content().src"
         [alt]="content().alt || 'Contenuto widget'"
         [style.object-fit]="content().fitMode"
+        [style.object-position]="coverObjectPosition()"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"
         draggable="false"

@@ -4,6 +4,7 @@
         [src]="content().src"
         [poster]="content().poster || null"
         [style.object-fit]="content().fitMode"
+        [style.object-position]="coverObjectPosition()"
         [autoplay]="content().autoplay"
         [loop]="content().loop"
         [muted]="content().muted"

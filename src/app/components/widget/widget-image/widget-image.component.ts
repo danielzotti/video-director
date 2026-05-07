@@ -25,6 +25,18 @@ export class WidgetImageComponent {
     Math.max(0, this.borderRadius() - this.borderWidth()),
   );
 
+  protected readonly coverObjectPosition = computed(() => {
+    const content = this.content();
+    if (content.fitMode !== 'cover') {
+      return '50% 50%';
+    }
+
+    const offsetX = typeof content.offsetX === 'number' ? content.offsetX : -50;
+    const offsetY = typeof content.offsetY === 'number' ? content.offsetY : -50;
+
+    return `${-offsetX}% ${-offsetY}%`;
+  });
+
   protected get isUrlValid(): boolean {
     return this.canvasService.isValidImageUrl(this.content().src);
   }

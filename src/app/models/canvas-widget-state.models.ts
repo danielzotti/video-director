@@ -86,6 +86,8 @@ export interface WidgetImageContent {
   src: string;
   alt?: string;
   fitMode: WidgetImageFitMode;
+  offsetX?: number;
+  offsetY?: number;
 }
 
 export interface WidgetVideoContent {
@@ -97,6 +99,8 @@ export interface WidgetVideoContent {
   loop: boolean;
   muted: boolean;
   controls: boolean;
+  offsetX?: number;
+  offsetY?: number;
 }
 
 export type WidgetContent = WidgetTextContent | WidgetImageContent | WidgetVideoContent;

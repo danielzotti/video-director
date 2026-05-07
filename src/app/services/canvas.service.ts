@@ -863,8 +863,23 @@ export class CanvasService {
     }
 
     public setSelectedWidgetVideoControls(controls: boolean) {
+         const widget = this.selectedWidget();
+         if (!widget || widget.content.type !== 'video') {
+             return;
+         }
+
+         this.widgetsState.update({
+             ...widget,
+             content: {
+                 ...widget.content,
+                 controls,
+             },
+         });
+     }
+
+    public setSelectedWidgetImageOffsetX(offsetX: number) {
         const widget = this.selectedWidget();
-        if (!widget || widget.content.type !== 'video') {
+        if (!widget || widget.content.type !== 'image' || !Number.isFinite(offsetX)) {
             return;
         }
 
@@ -872,12 +887,57 @@ export class CanvasService {
             ...widget,
             content: {
                 ...widget.content,
-                controls,
+                offsetX,
             },
         });
     }
 
-    public setSelectedWidgetTextFontSize(fontSize: number) {
+    public setSelectedWidgetImageOffsetY(offsetY: number) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'image' || !Number.isFinite(offsetY)) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                offsetY,
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoOffsetX(offsetX: number) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video' || !Number.isFinite(offsetX)) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                offsetX,
+            },
+        });
+    }
+
+    public setSelectedWidgetVideoOffsetY(offsetY: number) {
+        const widget = this.selectedWidget();
+        if (!widget || widget.content.type !== 'video' || !Number.isFinite(offsetY)) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            content: {
+                ...widget.content,
+                offsetY,
+            },
+        });
+    }
+
+     public setSelectedWidgetTextFontSize(fontSize: number) {
         const widget = this.selectedWidget();
         if (!widget || widget.content.type !== 'text' || !Number.isFinite(fontSize)) {
             return;

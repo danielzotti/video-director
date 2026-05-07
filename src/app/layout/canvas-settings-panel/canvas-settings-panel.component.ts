@@ -66,6 +66,8 @@ export class CanvasSettingsPanelComponent {
   protected readonly imageUrlDraft = signal('');
   protected readonly imageUrlError = signal<string | null>(null);
   protected readonly isImageUrlSaving = signal(false);
+  protected readonly imageCoverOffsetDraft = signal<{ x: string; y: string }>({ x: '-50', y: '-50' });
+  protected readonly videoCoverOffsetDraft = signal<{ x: string; y: string }>({ x: '-50', y: '-50' });
 
   private readonly minPanelHeight = 120;
   private resizeStartY = 0;
@@ -95,6 +97,30 @@ export class CanvasSettingsPanelComponent {
         y: String(widget.y),
         width: String(widget.width),
         height: String(widget.height),
+      });
+    });
+
+    // Sync image cover offset draft
+    effect(() => {
+      const imageContent = this.selectedImageContent;
+      if (!imageContent || imageContent.fitMode !== 'cover') {
+        return;
+      }
+      this.imageCoverOffsetDraft.set({
+        x: String(imageContent.offsetX ?? -50),
+        y: String(imageContent.offsetY ?? -50),
+      });
+    });
+
+    // Sync video cover offset draft
+    effect(() => {
+      const videoContent = this.selectedVideoContent;
+      if (!videoContent || videoContent.fitMode !== 'cover') {
+        return;
+      }
+      this.videoCoverOffsetDraft.set({
+        x: String(videoContent.offsetX ?? -50),
+        y: String(videoContent.offsetY ?? -50),
       });
     });
 
@@ -657,6 +683,37 @@ export class CanvasSettingsPanelComponent {
     this.cs.setSelectedWidgetImageFitMode(value);
   }
 
+  // Cover mode offset management for images
+  protected setImageCoverAnchor(anchor: 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'): void {
+    const offsetMap: Record<typeof anchor, { x: number; y: number }> = {
+      'top-left': { x: 0, y: 0 },
+      'top-center': { x: -50, y: 0 },
+      'top-right': { x: -100, y: 0 },
+      'center-left': { x: 0, y: -50 },
+      'center': { x: -50, y: -50 },
+      'center-right': { x: -100, y: -50 },
+      'bottom-left': { x: 0, y: -100 },
+      'bottom-center': { x: -50, y: -100 },
+      'bottom-right': { x: -100, y: -100 },
+    };
+    const { x, y } = offsetMap[anchor];
+    this.cs.setSelectedWidgetImageOffsetX(x);
+    this.cs.setSelectedWidgetImageOffsetY(y);
+  }
+
+  protected onImageOffsetXChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(value)) {
+      this.cs.setSelectedWidgetImageOffsetX(value);
+    }
+  }
+
+  protected onImageOffsetYChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(value)) {
+      this.cs.setSelectedWidgetImageOffsetY(value);
+    }
+  }
 
   protected onVideoPosterChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
@@ -669,6 +726,38 @@ export class CanvasSettingsPanelComponent {
     }
 
     this.cs.setSelectedWidgetVideoFitMode(value);
+  }
+
+  // Cover mode offset management for videos
+  protected setVideoCoverAnchor(anchor: 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'): void {
+    const offsetMap: Record<typeof anchor, { x: number; y: number }> = {
+      'top-left': { x: 0, y: 0 },
+      'top-center': { x: -50, y: 0 },
+      'top-right': { x: -100, y: 0 },
+      'center-left': { x: 0, y: -50 },
+      'center': { x: -50, y: -50 },
+      'center-right': { x: -100, y: -50 },
+      'bottom-left': { x: 0, y: -100 },
+      'bottom-center': { x: -50, y: -100 },
+      'bottom-right': { x: -100, y: -100 },
+    };
+    const { x, y } = offsetMap[anchor];
+    this.cs.setSelectedWidgetVideoOffsetX(x);
+    this.cs.setSelectedWidgetVideoOffsetY(y);
+  }
+
+  protected onVideoOffsetXChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(value)) {
+      this.cs.setSelectedWidgetVideoOffsetX(value);
+    }
+  }
+
+  protected onVideoOffsetYChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(value)) {
+      this.cs.setSelectedWidgetVideoOffsetY(value);
+    }
   }
 
   protected setVideoAutoplay(value: boolean): void {
@@ -773,53 +862,52 @@ export class CanvasSettingsPanelComponent {
     this.cs.setSelectedWidgetBackground(this.selectedBackgroundColor);
   }
 
-   protected onWidgetBackgroundColorChange(event: Event): void {
-     const color = (event.target as HTMLInputElement).value;
-     this.cs.setSelectedWidgetBackground(color || null);
-   }
+  protected onWidgetBackgroundColorChange(event: Event): void {
+    const color = (event.target as HTMLInputElement).value;
+    this.cs.setSelectedWidgetBackground(color || null);
+  }
 
-   protected onBorderRadiusChange(event: Event): void {
-     const value = Number((event.target as HTMLInputElement).value);
-     if (Number.isFinite(value)) { this.cs.setSelectedWidgetBorderRadius(value); }
-   }
+  protected onBorderRadiusChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(value)) { this.cs.setSelectedWidgetBorderRadius(value); }
+  }
 
-   protected onBorderWidthChange(event: Event): void {
-     const value = Number((event.target as HTMLInputElement).value);
-     if (Number.isFinite(value)) { this.cs.setSelectedWidgetBorderWidth(value); }
-   }
+  protected onBorderWidthChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(value)) { this.cs.setSelectedWidgetBorderWidth(value); }
+  }
 
-   protected onBorderColorChange(event: Event): void {
-     const color = (event.target as HTMLInputElement).value;
-     this.cs.setSelectedWidgetBorderColor(color);
-   }
+  protected onBorderColorChange(event: Event): void {
+    const color = (event.target as HTMLInputElement).value;
+    this.cs.setSelectedWidgetBorderColor(color);
+  }
 
+  protected setBorderStyle(style: WidgetBorderStyle): void {
+    this.cs.setSelectedWidgetBorderStyle(style);
+    // If style is enabled and width is zero, apply a default border width.
+    if (style !== 'none' && !this.hasBorder) {
+      this.cs.setSelectedWidgetBorderWidth(1);
+    }
+  }
 
-   protected setBorderStyle(style: WidgetBorderStyle): void {
-     this.cs.setSelectedWidgetBorderStyle(style);
-     // Se si sceglie uno stile != none e width è 0, imposta un valore iniziale
-     if (style !== 'none' && !this.hasBorder) {
-       this.cs.setSelectedWidgetBorderWidth(1);
-     }
-   }
+  protected onPaddingChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(value)) { this.cs.setSelectedWidgetPadding(value); }
+  }
 
-   protected onPaddingChange(event: Event): void {
-     const value = Number((event.target as HTMLInputElement).value);
-     if (Number.isFinite(value)) { this.cs.setSelectedWidgetPadding(value); }
-   }
+  protected setWidgetLocked(value: boolean): void {
+    this.cs.setSelectedWidgetLocked(value);
+  }
 
-   protected setWidgetLocked(value: boolean): void {
-     this.cs.setSelectedWidgetLocked(value);
-   }
+  protected setWidgetVisible(value: boolean): void {
+    this.cs.setSelectedWidgetVisible(value);
+  }
 
-   protected setWidgetVisible(value: boolean): void {
-     this.cs.setSelectedWidgetVisible(value);
-   }
+  protected deleteSelectedWidget(): void {
+    this.cs.deleteSelectedWidget();
+  }
 
-   protected deleteSelectedWidget(): void {
-     this.cs.deleteSelectedWidget();
-   }
-
-   protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {
+  protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {
     const input = event.target as HTMLInputElement;
     this.updateGeometryDraftValue(field, input.value);
   }
@@ -855,7 +943,6 @@ export class CanvasSettingsPanelComponent {
     // Keep focus on the same input after committing with Enter.
     (event.target as HTMLInputElement).focus();
   }
-
 
   private updateGeometryDraftValue(field: WidgetGeometryField, value: string): void {
     this.geometryDraft.update((draft) => ({

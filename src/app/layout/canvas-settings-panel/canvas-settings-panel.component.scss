@@ -283,29 +283,29 @@
     }
   }
 
-   &__alignment-group {
-     display: grid;
-     grid-template-columns: repeat(3, minmax(0, 1fr));
-     gap: var(--ds-space-1);
+  &__alignment-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ds-space-1);
 
-     app-ui-button {
-       width: 100%;
-       justify-content: center;
-     }
-   }
+    app-ui-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 
-   &__formatting-group {
-     display: grid;
-     grid-template-columns: repeat(3, minmax(0, 1fr));
-     gap: var(--ds-space-1);
+  &__formatting-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ds-space-1);
 
-     app-ui-button {
-       width: 100%;
-       justify-content: center;
-     }
-   }
+    app-ui-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 
-   &__border-style-group {
+  &__border-style-group {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--ds-space-1);
@@ -481,6 +481,7 @@
       max-width: 80px;
     }
   }
+
   // ── end Video player block ─────────────────────────────────────────────────
 
   &__media-dropzone,
@@ -500,8 +501,8 @@
     padding: var(--ds-space-2);
     text-align: center;
     transition: border-color var(--ds-duration-default) var(--ds-easing),
-      background var(--ds-duration-default) var(--ds-easing),
-      color var(--ds-duration-default) var(--ds-easing);
+    background var(--ds-duration-default) var(--ds-easing),
+    color var(--ds-duration-default) var(--ds-easing);
 
     &:hover {
       border-color: var(--ds-accent);
@@ -606,6 +607,43 @@
     &:active::after {
       background: var(--ds-accent);
     }
+  }
+
+  &__cover-position-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: start;
+    justify-content: space-between;
+  }
+
+  &__cover-offset {
+    display: flex;
+    flex-direction: row;
+    gap: var(--ds-space-2);
+
+    & input {
+      width: 70px;
+    }
+  }
+
+  &__anchor-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ds-space-1);
+  }
+
+  &__anchor-button {
+    width: 100%;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    padding: 0;
+  }
+
+  &__anchor-dot {
+    width: 6px;
+    height: 6px;
+    background: currentColor;
   }
 }
 
