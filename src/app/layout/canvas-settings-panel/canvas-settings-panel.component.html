@@ -709,7 +709,7 @@
 
                     <div class="settings-panel__row">
                         <app-ui-button size="sm" [disabled]="isImageUrlSaving()" (click)="closeImageUrlModal()">
-                            Annulla
+                            Cancel
                         </app-ui-button>
                         <app-ui-button size="sm" [disabled]="!canSubmitImageUrl" (click)="confirmImageUrlModal()">
                             {{ isImageUrlSaving() ? 'Converting in blob format...' : 'Import' }}

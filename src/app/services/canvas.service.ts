@@ -369,7 +369,15 @@ export class CanvasService {
         this.undoStack.set([]);
         this.redoStack.set([]);
         this.currentSnapshot = this.buildSnapshot();
-        this.writeSnapshotToStorage(this.currentSnapshot);
+
+        // During init we write only to localStorage (preserving IDB's previous session data
+        // which contains full images/videos).  restoreFromPersistenceBackends() will later
+        // apply the IDB snapshot and recover the full media content.
+        this.writeLocalStorageSnapshot(this.currentSnapshot, {
+            updatedAt: this.currentSnapshotUpdatedAt,
+            version: this.currentSnapshotVersion,
+        });
+
         this.isHistoryReady = true;
 
         if (savedSnapshot && this.projectDirectoryHandle) {
@@ -2344,16 +2352,7 @@ export class CanvasService {
         const meta = {updatedAt: now, version: this.currentSnapshotVersion};
 
         // localStorage: always sanitized – blob/data: URLs stripped to keep size small.
-        const storage = this.getLocalStorage();
-        if (storage) {
-            const lsSnapshot = this.createLocalStorageSafeSnapshot(snapshot);
-            const lsEnvelope: PersistedStateEnvelope = {...lsSnapshot, meta};
-            try {
-                storage.setItem(this.STORAGE_KEY, JSON.stringify(lsEnvelope));
-            } catch {
-                // Quota exceeded – silently ignore; IDB is the primary offline fallback.
-            }
-        }
+        this.writeLocalStorageSnapshot(snapshot, meta);
 
         // IndexedDB: full snapshot including data: URLs (no size restrictions).
         const idbEnvelope: PersistedStateEnvelope = {
@@ -2365,6 +2364,29 @@ export class CanvasService {
 
         // Update active backend signal for the UX badge.
         this.activeStorageBackend.set(this.projectDirectoryHandle ? 'sync-folder' : 'indexeddb');
+    }
+
+    /**
+     * Writes only to localStorage (no IndexedDB touch, no version/timestamp bump).
+     * Used by init() so that IndexedDB retains the previous session's full media data
+     * until restoreFromPersistenceBackends() can compare and apply the better snapshot.
+     */
+    private writeLocalStorageSnapshot(
+        snapshot: EditorStateSnapshot,
+        meta: { updatedAt: number; version: number },
+    ): void {
+        const ls = this.getLocalStorage();
+        if (!ls) {
+            return;
+        }
+
+        const lsSnapshot = this.createLocalStorageSafeSnapshot(snapshot);
+        const envelope: PersistedStateEnvelope = {...lsSnapshot, meta};
+        try {
+            ls.setItem(this.STORAGE_KEY, JSON.stringify(envelope));
+        } catch {
+            // Quota exceeded – silently ignore.
+        }
     }
 
     /**
@@ -2883,8 +2905,8 @@ export class CanvasService {
         }
 
         const idbUpdatedAt = idbEnvelope.meta?.updatedAt ?? 0;
-        if (idbUpdatedAt <= this.currentSnapshotUpdatedAt) {
-            // localStorage snapshot is the same age or newer – no override needed.
+        if (idbUpdatedAt < this.currentSnapshotUpdatedAt) {
+            // localStorage is definitively newer (e.g. IDB was cleared) – skip.
             this.activeStorageBackend.set(this.projectDirectoryHandle ? 'sync-folder' : 'indexeddb');
             return;
         }
