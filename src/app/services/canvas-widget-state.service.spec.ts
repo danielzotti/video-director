@@ -107,6 +107,43 @@ describe('CanvasWidgetStateService', () => {
     });
   });
 
+  it('preserves text shadow style fields for text widgets', () => {
+    const textWidget = {
+      uuid: 'text-shadow-widget',
+      x: 20,
+      y: 40,
+      z: 14,
+      width: 220,
+      height: 120,
+      content: {
+        type: 'text',
+        text: 'Shadow text',
+        style: {
+          ...DEFAULT_WIDGET_TEXT_STYLE,
+          textShadowColor: '#ff0000',
+          textShadowBlur: 12,
+          textShadowOffsetX: 3,
+          textShadowOffsetY: 5,
+        },
+      },
+    } as WidgetStateItem;
+
+    service.add(textWidget);
+
+    const normalized = service.getById('text-shadow-widget');
+    expect(normalized.content).toEqual({
+      type: 'text',
+      text: 'Shadow text',
+      style: {
+        ...DEFAULT_WIDGET_TEXT_STYLE,
+        textShadowColor: '#ff0000',
+        textShadowBlur: 12,
+        textShadowOffsetX: 3,
+        textShadowOffsetY: 5,
+      },
+    });
+  });
+
   it('normalizes video content with default playback options', () => {
     const videoWidget = {
       uuid: 'video-widget',

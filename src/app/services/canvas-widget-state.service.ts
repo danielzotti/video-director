@@ -281,6 +281,10 @@ export class CanvasWidgetStateService {
         italic: content.style?.italic ?? DEFAULT_WIDGET_TEXT_STYLE.italic,
         underline: content.style?.underline ?? DEFAULT_WIDGET_TEXT_STYLE.underline,
         lineHeight: this.normalizeLineHeight(content.style?.lineHeight),
+        textShadowColor: this.normalizeTextShadowColor(content.style?.textShadowColor),
+        textShadowBlur: this.normalizeTextShadowBlur(content.style?.textShadowBlur),
+        textShadowOffsetX: this.normalizeTextShadowOffset(content.style?.textShadowOffsetX),
+        textShadowOffsetY: this.normalizeTextShadowOffset(content.style?.textShadowOffsetY),
       },
     };
   }
@@ -308,6 +312,31 @@ export class CanvasWidgetStateService {
 
     const color = value.trim();
     return color || DEFAULT_WIDGET_TEXT_STYLE.color;
+  }
+
+  private normalizeTextShadowColor(value?: string): string {
+    if (typeof value !== 'string') {
+      return DEFAULT_WIDGET_TEXT_STYLE.textShadowColor ?? '#000000';
+    }
+
+    const color = value.trim();
+    return color || (DEFAULT_WIDGET_TEXT_STYLE.textShadowColor ?? '#000000');
+  }
+
+  private normalizeTextShadowBlur(value?: number): number {
+    if (!Number.isFinite(value)) {
+      return DEFAULT_WIDGET_TEXT_STYLE.textShadowBlur ?? 0;
+    }
+
+    return Math.max(0, Math.round(value as number));
+  }
+
+  private normalizeTextShadowOffset(value?: number): number {
+    if (!Number.isFinite(value)) {
+      return 0;
+    }
+
+    return Math.round(value as number);
   }
 
   private normalizeHorizontalAlignment(value?: string): WidgetTextAlignmentHorizontal {

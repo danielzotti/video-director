@@ -130,11 +130,11 @@ export class WidgetTextComponent {
    protected get computedTextShadow(): string | null {
      const style = this.content().style;
      const shadowBlur = style.textShadowBlur ?? 0;
-     if (shadowBlur === 0) {
+      const offsetX = style.textShadowOffsetX ?? 0;
+      const offsetY = style.textShadowOffsetY ?? 0;
+      if (shadowBlur === 0 && offsetX === 0 && offsetY === 0) {
        return null;
      }
-     const offsetX = style.textShadowOffsetX ?? 0;
-     const offsetY = style.textShadowOffsetY ?? 0;
      const color = style.textShadowColor ?? '#000000';
      return `${offsetX}px ${offsetY}px ${shadowBlur}px ${color}`;
    }
