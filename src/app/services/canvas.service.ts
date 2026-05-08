@@ -119,6 +119,20 @@ interface EditorStateSnapshot {
     widgets: WidgetStateItem[];
 }
 
+/** Envelope stored in IndexedDB and as state.json in the project folder.
+ *  The `meta` field carries timestamps used to resolve sync conflicts. */
+interface PersistedStateEnvelope extends EditorStateSnapshot {
+    meta?: {
+        /** Unix epoch ms - used to pick the most-recent snapshot when merging backends. */
+        updatedAt: number;
+        /** Monotonic counter - tie-breaks when updatedAt values are equal. */
+        version: number;
+    };
+}
+
+/** Which storage backend is currently active for persistence. */
+export type StorageBackend = 'sync-folder' | 'indexeddb' | 'localstorage';
+
 type ImportArchivePersistResult =
     | { status: 'saved'; directoryHandle: FileSystemDirectoryHandleLike }
     | { status: 'skipped' }
@@ -212,6 +226,9 @@ export class CanvasService {
     private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(null, null);
 
     private readonly STORAGE_KEY = 'video-director.editor-state.v1';
+    private readonly EDITOR_STATE_DB_NAME = 'video-director.editor-state.v2';
+    private readonly EDITOR_STATE_STORE_NAME = 'state';
+    private readonly EDITOR_STATE_RECORD_KEY = 'current';
     private readonly PROJECT_STATE_FILE = 'state.json';
     private readonly PROJECT_SYNC_DIR = 'sync';
     private readonly PROJECT_ASSETS_DIR = 'assets';
@@ -237,6 +254,10 @@ export class CanvasService {
     private isHistoryReady = false;
     private pendingSnapshot: EditorStateSnapshot | null = null;
     private isSnapshotFlushScheduled = false;
+    /** Monotonic version counter - incremented on every committed write. */
+    private currentSnapshotVersion = 0;
+    /** Unix epoch ms of the last committed snapshot write. */
+    private currentSnapshotUpdatedAt = 0;
 
     private projectDirectoryHandle: FileSystemDirectoryHandleLike | null = null;
     private readonly projectSyncDebounceMs = 700;
@@ -253,6 +274,8 @@ export class CanvasService {
     public projectHasPendingChanges = signal(false);
     public importPromptForDirectory = signal(true);
     public projectImportNotice = signal<ProjectImportNotice | null>(null);
+    /** Active persistence backend – drives the status badge in the settings panel. */
+    public readonly activeStorageBackend = signal<StorageBackend>('localstorage');
     private pendingImportBackupBlob = signal<Blob | null>(null);
     private pendingImportBackupFileName = signal('project-import-sync-backup.zip');
     public readonly hasPendingImportBackup = computed(() => !!this.pendingImportBackupBlob());
@@ -296,7 +319,12 @@ export class CanvasService {
         this.canvasEl = canvas;
         this.canvasWrapperEl = canvasWrapper ?? null;
 
-        const savedSnapshot = this.loadSnapshotFromStorage();
+        const savedEnvelope = this.loadSnapshotEnvelopeFromStorage();
+        const savedSnapshot = savedEnvelope?.snapshot ?? null;
+        if (savedEnvelope?.meta) {
+            this.currentSnapshotUpdatedAt = savedEnvelope.meta.updatedAt;
+            this.currentSnapshotVersion = savedEnvelope.meta.version;
+        }
 
         this.canManageCanvas.set(true); // !!this.canvasWrapperEl
 
@@ -442,28 +470,52 @@ export class CanvasService {
         try {
             const projectFile = await directoryHandle.getFileHandle(this.PROJECT_STATE_FILE, {create: false});
             const raw = await (await projectFile.getFile()).text();
-            const parsed = JSON.parse(raw) as Partial<EditorStateSnapshot>;
+            const parsed = JSON.parse(raw) as Partial<PersistedStateEnvelope>;
 
             if (!parsed.canvas || !Array.isArray(parsed.widgets)) {
                 throw new Error('Invalid project file format.');
             }
 
-            const hydratedSnapshot = await this.hydrateSnapshotAssetsFromDirectory(
-                {
-                    canvas: parsed.canvas as CanvasSnapshot,
-                    widgets: parsed.widgets as WidgetStateItem[],
-                },
-                directoryHandle,
-            );
+            const folderEnvelope: PersistedStateEnvelope = {
+                canvas: parsed.canvas as CanvasSnapshot,
+                widgets: parsed.widgets as WidgetStateItem[],
+                meta: parsed.meta ?? {updatedAt: 0, version: 0},
+            };
+
+            // Merge: pick the most-recently updated snapshot between folder and IndexedDB.
+            const idbEnvelope = await this.loadSnapshotFromIndexedDb();
+            const winner = this.pickWinnerEnvelope(folderEnvelope, idbEnvelope);
+            const idbWon = idbEnvelope !== null && winner === idbEnvelope;
+
+            let hydratedSnapshot: EditorStateSnapshot;
+            if (idbWon) {
+                // IndexedDB snapshot is newer; it already contains data: URLs, no hydration needed.
+                hydratedSnapshot = {canvas: idbEnvelope.canvas, widgets: idbEnvelope.widgets};
+            } else {
+                // Folder snapshot won; hydrate asset paths from the connected directory.
+                hydratedSnapshot = await this.hydrateSnapshotAssetsFromDirectory(
+                    {canvas: folderEnvelope.canvas, widgets: folderEnvelope.widgets},
+                    directoryHandle,
+                );
+            }
 
             this.applySnapshot(hydratedSnapshot);
             this.currentSnapshot = this.buildSnapshot();
+            // Bump metadata so the winning version is recorded correctly.
+            this.currentSnapshotVersion = (winner.meta?.version ?? 0) + 1;
+            this.currentSnapshotUpdatedAt = Date.now();
             this.writeSnapshotToStorage(this.currentSnapshot);
             this.undoStack.set([]);
             this.redoStack.set([]);
             this.projectSyncStatus.set('idle');
             this.projectLastSyncedAt.set(new Date());
-            this.projectHasPendingChanges.set(false);
+            this.projectHasPendingChanges.set(idbWon);
+            this.activeStorageBackend.set('sync-folder');
+
+            if (idbWon) {
+                // IndexedDB had newer data → schedule a sync so the folder catches up.
+                this.scheduleProjectDirectorySync();
+            }
         } catch (error) {
             this.projectSyncStatus.set('error');
             this.projectSyncError.set(error instanceof Error ? error.message : 'Unable to load project from directory.');
@@ -2251,6 +2303,11 @@ export class CanvasService {
     }
 
     private loadSnapshotFromStorage(): EditorStateSnapshot | null {
+        return this.loadSnapshotEnvelopeFromStorage()?.snapshot ?? null;
+    }
+
+    /** Loads snapshot from localStorage and includes persistence metadata if available. */
+    private loadSnapshotEnvelopeFromStorage(): { snapshot: EditorStateSnapshot; meta: { updatedAt: number; version: number } } | null {
         const storage = this.getLocalStorage();
         if (!storage) {
             return null;
@@ -2262,15 +2319,18 @@ export class CanvasService {
         }
 
         try {
-            const parsed = JSON.parse(raw) as Partial<EditorStateSnapshot>;
+            const parsed = JSON.parse(raw) as Partial<PersistedStateEnvelope>;
 
             if (!parsed.canvas || !Array.isArray(parsed.widgets)) {
                 return null;
             }
 
             return {
-                canvas: parsed.canvas as CanvasSnapshot,
-                widgets: parsed.widgets as WidgetStateItem[],
+                snapshot: {
+                    canvas: parsed.canvas as CanvasSnapshot,
+                    widgets: parsed.widgets as WidgetStateItem[],
+                },
+                meta: parsed.meta ?? {updatedAt: 0, version: 0},
             };
         } catch {
             return null;
@@ -2278,23 +2338,41 @@ export class CanvasService {
     }
 
     private writeSnapshotToStorage(snapshot: EditorStateSnapshot) {
+        const now = Date.now();
+        this.currentSnapshotVersion += 1;
+        this.currentSnapshotUpdatedAt = now;
+        const meta = {updatedAt: now, version: this.currentSnapshotVersion};
+
+        // localStorage: always sanitized – blob/data: URLs stripped to keep size small.
         const storage = this.getLocalStorage();
-        if (!storage) {
-            return;
+        if (storage) {
+            const lsSnapshot = this.createLocalStorageSafeSnapshot(snapshot);
+            const lsEnvelope: PersistedStateEnvelope = {...lsSnapshot, meta};
+            try {
+                storage.setItem(this.STORAGE_KEY, JSON.stringify(lsEnvelope));
+            } catch {
+                // Quota exceeded – silently ignore; IDB is the primary offline fallback.
+            }
         }
 
-        const storageSnapshot = this.createStorageSnapshot(snapshot);
-        storage.setItem(this.STORAGE_KEY, JSON.stringify(storageSnapshot));
+        // IndexedDB: full snapshot including data: URLs (no size restrictions).
+        const idbEnvelope: PersistedStateEnvelope = {
+            canvas: {...snapshot.canvas},
+            widgets: snapshot.widgets.map((w) => this.cloneWidget(w)),
+            meta,
+        };
+        void this.writeSnapshotToIndexedDb(idbEnvelope);
+
+        // Update active backend signal for the UX badge.
+        this.activeStorageBackend.set(this.projectDirectoryHandle ? 'sync-folder' : 'indexeddb');
     }
 
-    private createStorageSnapshot(snapshot: EditorStateSnapshot): EditorStateSnapshot {
-        if (!this.projectDirectoryHandle) {
-            return {
-                canvas: {...snapshot.canvas},
-                widgets: snapshot.widgets.map((widget) => this.cloneWidget(widget)),
-            };
-        }
-
+    /**
+     * Creates a localStorage-safe snapshot: data: and blob: URLs are stripped (or
+     * replaced with asset folder paths when a project folder is connected).
+     * This keeps localStorage lean and avoids hitting quota limits.
+     */
+    private createLocalStorageSafeSnapshot(snapshot: EditorStateSnapshot): EditorStateSnapshot {
         return {
             canvas: {...snapshot.canvas},
             widgets: snapshot.widgets.map((widget) => {
@@ -2303,23 +2381,31 @@ export class CanvasService {
                 }
 
                 const source = widget.content.src.trim();
-                const isManagedAssetSource = source.startsWith(`${this.PROJECT_ASSETS_DIR}/`);
-                const isExternalUrl = source.startsWith('http://') || source.startsWith('https://');
-                const isInlineOrBlobSource = source.startsWith('data:') || source.startsWith('blob:');
+                const isInlineOrBlob = source.startsWith('data:') || source.startsWith('blob:');
 
-                if (!source || isManagedAssetSource || isExternalUrl || !isInlineOrBlobSource) {
+                if (!isInlineOrBlob) {
+                    // External URL or already an asset path → keep as-is.
                     return this.cloneWidget(widget);
                 }
 
-                const fallbackExtension = widget.content.type === 'video' ? 'mp4' : 'png';
-                const extension = this.resolveManagedAssetSourceExtension(source, fallbackExtension);
+                if (this.projectDirectoryHandle) {
+                    // Replace with a relative asset path so the folder can resolve it.
+                    const fallbackExt = widget.content.type === 'video' ? 'mp4' : 'png';
+                    const ext = this.resolveManagedAssetSourceExtension(source, fallbackExt);
+                    return {
+                        ...this.cloneWidget(widget),
+                        content: {
+                            ...widget.content,
+                            src: `${this.PROJECT_ASSETS_DIR}/${this.PROJECT_MANAGED_ASSET_PREFIX}${widget.uuid}.${ext}`,
+                        },
+                    };
+                }
 
+                // No folder connected: drop the inline blob to avoid quota issues.
+                // The full data: URL is preserved in IndexedDB.
                 return {
                     ...this.cloneWidget(widget),
-                    content: {
-                        ...widget.content,
-                        src: `${this.PROJECT_ASSETS_DIR}/${this.PROJECT_MANAGED_ASSET_PREFIX}${widget.uuid}.${extension}`,
-                    },
+                    content: {...widget.content, src: ''},
                 };
             }),
         };
@@ -2668,6 +2754,172 @@ export class CanvasService {
             request.onerror = () => resolve(null);
             request.onblocked = () => resolve(null);
         });
+    }
+
+    // ─── IndexedDB editor-state store ────────────────────────────────────────
+
+    private openEditorStateDb(): Promise<IDBDatabase | null> {
+        return new Promise((resolve) => {
+            if (typeof indexedDB === 'undefined') {
+                resolve(null);
+                return;
+            }
+
+            let request: IDBOpenDBRequest;
+            try {
+                request = indexedDB.open(this.EDITOR_STATE_DB_NAME, 1);
+            } catch {
+                resolve(null);
+                return;
+            }
+
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(this.EDITOR_STATE_STORE_NAME)) {
+                    db.createObjectStore(this.EDITOR_STATE_STORE_NAME);
+                }
+            };
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => resolve(null);
+            request.onblocked = () => resolve(null);
+        });
+    }
+
+    private async loadSnapshotFromIndexedDb(): Promise<PersistedStateEnvelope | null> {
+        const db = await this.openEditorStateDb();
+        if (!db) {
+            return null;
+        }
+
+        try {
+            return await new Promise<PersistedStateEnvelope | null>((resolve) => {
+                const tx = db.transaction(this.EDITOR_STATE_STORE_NAME, 'readonly');
+                const req = tx.objectStore(this.EDITOR_STATE_STORE_NAME).get(this.EDITOR_STATE_RECORD_KEY);
+                req.onsuccess = () => resolve((req.result as PersistedStateEnvelope | undefined) ?? null);
+                req.onerror = () => resolve(null);
+                tx.onabort = () => resolve(null);
+            });
+        } finally {
+            db.close();
+        }
+    }
+
+    private async writeSnapshotToIndexedDb(envelope: PersistedStateEnvelope): Promise<void> {
+        const db = await this.openEditorStateDb();
+        if (!db) {
+            return;
+        }
+
+        try {
+            await new Promise<void>((resolve) => {
+                const tx = db.transaction(this.EDITOR_STATE_STORE_NAME, 'readwrite');
+                try {
+                    tx.objectStore(this.EDITOR_STATE_STORE_NAME).put(envelope, this.EDITOR_STATE_RECORD_KEY);
+                } catch {
+                    resolve();
+                    return;
+                }
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => resolve();
+                tx.onabort = () => resolve();
+            });
+        } finally {
+            db.close();
+        }
+    }
+
+    /**
+     * Returns the snapshot with the most recent `meta.updatedAt`.
+     * Tie-break order: higher version → sync-folder wins in absolute tie.
+     */
+    private pickWinnerEnvelope(
+        folderEnvelope: PersistedStateEnvelope,
+        idbEnvelope: PersistedStateEnvelope | null,
+    ): PersistedStateEnvelope {
+        if (!idbEnvelope) {
+            return folderEnvelope;
+        }
+
+        const folderTs = folderEnvelope.meta?.updatedAt ?? 0;
+        const idbTs = idbEnvelope.meta?.updatedAt ?? 0;
+
+        if (folderTs > idbTs) {
+            return folderEnvelope;
+        }
+
+        if (idbTs > folderTs) {
+            return idbEnvelope;
+        }
+
+        // Equal timestamps: compare versions.
+        const folderVer = folderEnvelope.meta?.version ?? 0;
+        const idbVer = idbEnvelope.meta?.version ?? 0;
+
+        if (idbVer > folderVer) {
+            return idbEnvelope;
+        }
+
+        // Absolute tie or folder has higher version → sync-folder wins.
+        return folderEnvelope;
+    }
+
+    /**
+     * Async bootstrap step called after the initial page render.
+     * Loads the IndexedDB snapshot and applies it if it is newer than what
+     * was already restored from localStorage.  This delivers full image/video
+     * data back to the canvas without blocking the initial synchronous init().
+     */
+    public async restoreFromPersistenceBackends(): Promise<void> {
+        if (!this.isHistoryReady) {
+            return;
+        }
+
+        const idbEnvelope = await this.loadSnapshotFromIndexedDb();
+        if (!idbEnvelope) {
+            // Nothing in IDB yet – localStorage baseline is fine.
+            this.activeStorageBackend.set(this.projectDirectoryHandle ? 'sync-folder' : 'localstorage');
+            return;
+        }
+
+        const idbUpdatedAt = idbEnvelope.meta?.updatedAt ?? 0;
+        if (idbUpdatedAt <= this.currentSnapshotUpdatedAt) {
+            // localStorage snapshot is the same age or newer – no override needed.
+            this.activeStorageBackend.set(this.projectDirectoryHandle ? 'sync-folder' : 'indexeddb');
+            return;
+        }
+
+        // IndexedDB has a newer snapshot (e.g. more recent session that updated IDB
+        // but localStorage was wiped or is behind).  Apply it silently.
+        const wasHistoryReady = this.isHistoryReady;
+        this.isHistoryReady = false;
+
+        this.applySnapshot({canvas: idbEnvelope.canvas, widgets: idbEnvelope.widgets});
+        this.currentSnapshot = this.buildSnapshot();
+        this.currentSnapshotUpdatedAt = idbUpdatedAt;
+        this.currentSnapshotVersion = idbEnvelope.meta?.version ?? 0;
+
+        // Refresh localStorage with the better data.
+        const ls = this.getLocalStorage();
+        if (ls) {
+            const lsSnapshot = this.createLocalStorageSafeSnapshot(this.currentSnapshot);
+            const lsEnvelope: PersistedStateEnvelope = {
+                ...lsSnapshot,
+                meta: {updatedAt: this.currentSnapshotUpdatedAt, version: this.currentSnapshotVersion},
+            };
+            try {
+                ls.setItem(this.STORAGE_KEY, JSON.stringify(lsEnvelope));
+            } catch { /* ignore quota errors */ }
+        }
+
+        this.undoStack.set([]);
+        this.redoStack.set([]);
+        this.isHistoryReady = wasHistoryReady;
+        this.activeStorageBackend.set(this.projectDirectoryHandle ? 'sync-folder' : 'indexeddb');
+
+        if (this.projectDirectoryHandle) {
+            void this.hydrateCurrentSnapshotAssetSourcesFromConnectedDirectory();
+        }
     }
 
     public async exportToFile(filename?: string): Promise<void> {

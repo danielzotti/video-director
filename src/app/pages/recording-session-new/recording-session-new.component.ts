@@ -44,8 +44,6 @@ import {Point2D} from '../../models/geometry.models';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecordingSessionNewComponent {
-    private readonly PROJECT_DIRECTORY_PROMPT_SEEN_KEY = 'video-director.project-directory-connect-prompt.v1';
-
     streamStateService = inject(StreamStateService);
     widgetStateService = inject(CanvasWidgetStateService);
     public canvasService = inject(CanvasService);
@@ -163,15 +161,18 @@ export class RecordingSessionNewComponent {
 
             this.hasProjectDirectoryPromptBeenEvaluated = true;
 
+            // Restore from the best available backend (IndexedDB > localStorage).
+            void this.canvasService.restoreFromPersistenceBackends();
+
+            // Show the folder-sync prompt on EVERY refresh when:
+            //  • File System Access API is supported
+            //  • No folder is already connected
+            // If the API is not supported, IndexedDB is used silently.
             if (!this.canvasService.isProjectDirectorySyncSupported()) {
                 return;
             }
 
             if (this.canvasService.isProjectDirectoryConnected()) {
-                return;
-            }
-
-            if (this.hasProjectDirectoryPromptBeenSeen()) {
                 return;
             }
 
@@ -193,7 +194,8 @@ export class RecordingSessionNewComponent {
     }
 
     protected dismissProjectDirectoryPrompt(): void {
-        this.markProjectDirectoryPromptAsSeen();
+        // User chose IndexedDB for this session – just close the prompt.
+        // It will reappear on the next page refresh (by design).
         this.isProjectDirectoryPromptOpen.set(false);
     }
 
@@ -201,21 +203,6 @@ export class RecordingSessionNewComponent {
         this.isProjectDirectoryPromptOpen.set(false);
     }
 
-    private hasProjectDirectoryPromptBeenSeen(): boolean {
-        return this.getLocalStorage()?.getItem(this.PROJECT_DIRECTORY_PROMPT_SEEN_KEY) === '1';
-    }
-
-    private markProjectDirectoryPromptAsSeen(): void {
-        this.getLocalStorage()?.setItem(this.PROJECT_DIRECTORY_PROMPT_SEEN_KEY, '1');
-    }
-
-    private getLocalStorage(): Storage | null {
-        try {
-            return globalThis.window ? globalThis.window.localStorage : null;
-        } catch {
-            return null;
-        }
-    }
 
     protected onFloatingPanelPointerDown(event: PointerEvent): void {
         if (this.canvasService.settingsPanelLayout() !== 'floating' || event.button !== 0) {

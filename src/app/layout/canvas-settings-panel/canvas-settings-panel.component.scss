@@ -645,6 +645,25 @@
     height: 6px;
     background: currentColor;
   }
+
+  &__storage-backend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 11px;
+
+    &-label { color: var(--ds-text-secondary); }
+
+    &-badge {
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 500;
+      &--folder { background: rgba(34, 197, 94, .14); color: #16a34a; }
+      &--idb    { background: color-mix(in srgb, var(--ds-accent) 14%, transparent); color: var(--ds-accent); }
+      &--ls     { background: rgba(245, 158, 11, .14); color: #b45309; }
+    }
+  }
 }
 
 .debug-row {

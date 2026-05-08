@@ -912,6 +912,16 @@
                                 {{ projectSyncStatusLabel }}
                             </span>
                         </div>
+                        <!-- Storage backend badge: shows which backend is currently active -->
+                        <div class="settings-panel__storage-backend">
+                            <span class="settings-panel__storage-backend-label">Storage:</span>
+                            <span
+                                    class="settings-panel__storage-backend-badge"
+                                    [class.settings-panel__storage-backend-badge--folder]="activeStorageBackend === 'sync-folder'"
+                                    [class.settings-panel__storage-backend-badge--idb]="activeStorageBackend === 'indexeddb'"
+                                    [class.settings-panel__storage-backend-badge--ls]="activeStorageBackend === 'localstorage'"
+                            >{{ activeStorageBackendLabel }}</span>
+                        </div>
 
                         @if (isProjectDirectorySyncSupported) {
                             <div class="settings-panel__sync-actions">

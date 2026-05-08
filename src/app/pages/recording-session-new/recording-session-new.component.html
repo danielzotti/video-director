@@ -126,16 +126,19 @@
     <dialog class="project-folder-modal" aria-label="Connect project folder" open>
         <h2 class="project-folder-modal__title">Connect a project folder?</h2>
         <p class="project-folder-modal__text">
-            Your browser supports folder sync. Do you want to connect a folder to keep your project saved as local files?
+            Your browser supports local folder sync. Connecting a folder is the <strong>recommended</strong> option — your project will be saved as real files on disk.
+        </p>
+        <p class="project-folder-modal__text">
+            If you skip this, the project will be saved automatically in <strong>IndexedDB</strong> (browser storage). You can always connect a folder later from the Settings panel.
         </p>
         <div class="project-folder-modal__actions">
-            <button class="project-folder-modal__button" type="button" (click)="dismissProjectDirectoryPrompt()">Not now</button>
+            <button class="project-folder-modal__button" type="button" (click)="dismissProjectDirectoryPrompt()">Use IndexedDB</button>
             <button
                     class="project-folder-modal__button project-folder-modal__button--primary"
                     type="button"
                     (click)="connectProjectDirectoryFromPrompt()"
             >
-                Connect folder
+                Connect folder (recommended)
             </button>
         </div>
     </dialog>

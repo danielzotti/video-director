@@ -394,6 +394,19 @@ export class CanvasSettingsPanelComponent {
     return this.hasPendingProjectChanges ? 'pending' : 'idle';
   }
 
+  protected get activeStorageBackendLabel(): string {
+    const backend = this.cs.activeStorageBackend();
+    switch (backend) {
+      case 'sync-folder': return 'Folder sync';
+      case 'indexeddb':   return 'IndexedDB';
+      case 'localstorage': return 'Emergency (localStorage)';
+    }
+  }
+
+  protected get activeStorageBackend() {
+    return this.cs.activeStorageBackend();
+  }
+
   protected get projectSyncError(): string | null {
     return this.cs.projectSyncError();
   }
