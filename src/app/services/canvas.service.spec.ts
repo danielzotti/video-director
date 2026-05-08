@@ -796,6 +796,32 @@ describe('CanvasService', () => {
     expect(transparent?.background).toBeUndefined();
   });
 
+  it('updates selected widget background opacity and clamps values', () => {
+    service.selectWidget('1');
+
+    service.setSelectedWidgetBackgroundOpacity(65);
+    expect(service.widgetsState.getById('1')?.backgroundOpacity).toBe(65);
+
+    service.setSelectedWidgetBackgroundOpacity(150);
+    expect(service.widgetsState.getById('1')?.backgroundOpacity).toBe(100);
+
+    service.setSelectedWidgetBackgroundOpacity(-20);
+    expect(service.widgetsState.getById('1')?.backgroundOpacity).toBe(0);
+  });
+
+  it('updates selected widget opacity and clamps values', () => {
+    service.selectWidget('1');
+
+    service.setSelectedWidgetOpacity(70);
+    expect(service.widgetsState.getById('1')?.opacity).toBe(70);
+
+    service.setSelectedWidgetOpacity(140);
+    expect(service.widgetsState.getById('1')?.opacity).toBe(100);
+
+    service.setSelectedWidgetOpacity(-10);
+    expect(service.widgetsState.getById('1')?.opacity).toBe(0);
+  });
+
   it('updates selected widget visibility', () => {
     service.selectWidget('1');
     service.setSelectedWidgetVisible(false);

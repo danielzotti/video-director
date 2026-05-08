@@ -15,13 +15,18 @@ export interface WidgetStateItemSize {
 export interface WidgetStateItemSizeAndPosition extends WidgetStateItemPosition, WidgetStateItemSize {}
 
 export interface WidgetStateItemStyle {
+  opacity: number;
   background: string;
+  backgroundOpacity: number;
   borderRadius: number;
   borderWidth: number;
   borderColor: string;
   borderStyle: WidgetBorderStyle;
   padding: number;
 }
+
+export const DEFAULT_WIDGET_OPACITY = 100;
+export const DEFAULT_WIDGET_BACKGROUND_OPACITY = 100;
 
 export const WIDGET_BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted'] as const;
 export type WidgetBorderStyle = typeof WIDGET_BORDER_STYLES[number];

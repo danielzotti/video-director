@@ -12,6 +12,8 @@ import {
   WidgetContentType,
   WidgetBorderStyle,
   WIDGET_BORDER_STYLES,
+  DEFAULT_WIDGET_OPACITY,
+  DEFAULT_WIDGET_BACKGROUND_OPACITY,
   DEFAULT_WIDGET_BORDER,
 } from '../../models/canvas-widget-state.models';
 import { CanvasService } from '../../services/canvas.service';
@@ -311,9 +313,17 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected get selectedBackgroundColor(): string {
-    return this.selectedWidget?.background && this.selectedWidget.background !== 'transparent'
-      ? this.selectedWidget.background
-      : '#ffffff';
+    const background = this.selectedWidget?.background;
+    if (!background || background === 'transparent') {
+      return '#ffffff';
+    }
+
+    const rgb = this.parseColorToRgb(background);
+    return rgb ? this.rgbToHex(rgb) : '#ffffff';
+  }
+
+  protected get selectedBackgroundOpacity(): number {
+    return this.selectedWidget?.backgroundOpacity ?? DEFAULT_WIDGET_BACKGROUND_OPACITY;
   }
 
   protected get selectedBorderRadius(): number {
@@ -346,6 +356,10 @@ export class CanvasSettingsPanelComponent {
 
   protected get isWidgetVisible(): boolean {
     return this.selectedWidget?.visible ?? true;
+  }
+
+  protected get selectedWidgetOpacity(): number {
+    return this.selectedWidget?.opacity ?? DEFAULT_WIDGET_OPACITY;
   }
 
   protected readonly borderStyleOptions = WIDGET_BORDER_STYLES;
@@ -931,6 +945,59 @@ export class CanvasSettingsPanelComponent {
     this.cs.setSelectedWidgetBackground(color || null);
   }
 
+  protected onWidgetBackgroundOpacityChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+
+    this.cs.setSelectedWidgetBackgroundOpacity(value);
+  }
+
+  private parseColorToRgb(color: string): { r: number; g: number; b: number } | null {
+    const value = color.trim();
+    if (!value) {
+      return null;
+    }
+
+    const hex = value.match(/^#([\da-f]{3}|[\da-f]{6}|[\da-f]{8})$/i);
+    if (hex) {
+      const raw = hex[1];
+      if (raw.length === 3) {
+        return {
+          r: Number.parseInt(raw[0] + raw[0], 16),
+          g: Number.parseInt(raw[1] + raw[1], 16),
+          b: Number.parseInt(raw[2] + raw[2], 16),
+        };
+      }
+
+      return {
+        r: Number.parseInt(raw.slice(0, 2), 16),
+        g: Number.parseInt(raw.slice(2, 4), 16),
+        b: Number.parseInt(raw.slice(4, 6), 16),
+      };
+    }
+
+    const rgb = value.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*[\d.]+)?\s*\)$/i);
+    if (!rgb) {
+      return null;
+    }
+
+    return {
+      r: Math.max(0, Math.min(255, Number(rgb[1]))),
+      g: Math.max(0, Math.min(255, Number(rgb[2]))),
+      b: Math.max(0, Math.min(255, Number(rgb[3]))),
+    };
+  }
+
+  private rgbToHex({ r, g, b }: { r: number; g: number; b: number }): string {
+    return `#${this.toHexByte(r)}${this.toHexByte(g)}${this.toHexByte(b)}`;
+  }
+
+  private toHexByte(value: number): string {
+    return Math.round(value).toString(16).padStart(2, '0');
+  }
+
   protected onBorderRadiusChange(event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
     if (Number.isFinite(value)) { this.cs.setSelectedWidgetBorderRadius(value); }
@@ -965,6 +1032,15 @@ export class CanvasSettingsPanelComponent {
 
   protected setWidgetVisible(value: boolean): void {
     this.cs.setSelectedWidgetVisible(value);
+  }
+
+  protected onWidgetOpacityChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+
+    this.cs.setSelectedWidgetOpacity(value);
   }
 
   protected deleteSelectedWidget(): void {

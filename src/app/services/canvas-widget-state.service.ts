@@ -1,6 +1,8 @@
 import {computed, Injectable, Signal, signal, WritableSignal} from '@angular/core';
 import {v4 as uuid} from 'uuid';
 import {
+  DEFAULT_WIDGET_OPACITY,
+  DEFAULT_WIDGET_BACKGROUND_OPACITY,
   DEFAULT_WIDGET_CONTENT,
   DEFAULT_WIDGET_TEXT_STYLE,
   DEFAULT_WIDGET_VIDEO_CONTENT,
@@ -207,8 +209,26 @@ export class CanvasWidgetStateService {
       ...widget,
       locked: widget.locked ?? false,
       visible: widget.visible ?? true,
+      opacity: this.normalizeOpacity(widget.opacity),
+      backgroundOpacity: this.normalizeBackgroundOpacity(widget.backgroundOpacity),
       content: this.normalizeContent(widget.content),
     };
+  }
+
+  private normalizeOpacity(value?: number): number {
+    if (!Number.isFinite(value)) {
+      return DEFAULT_WIDGET_OPACITY;
+    }
+
+    return Math.max(0, Math.min(100, Math.round(Number(value))));
+  }
+
+  private normalizeBackgroundOpacity(value?: number): number {
+    if (!Number.isFinite(value)) {
+      return DEFAULT_WIDGET_BACKGROUND_OPACITY;
+    }
+
+    return Math.max(0, Math.min(100, Math.round(Number(value))));
   }
 
   private normalizeContent(content?: WidgetContent): WidgetContent {

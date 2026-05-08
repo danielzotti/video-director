@@ -1259,6 +1259,30 @@ export class CanvasService {
         });
     }
 
+    public setSelectedWidgetBackgroundOpacity(opacityPercent: number) {
+        const widget = this.selectedWidget();
+        if (!widget || !Number.isFinite(opacityPercent)) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            backgroundOpacity: Math.max(0, Math.min(100, Math.round(opacityPercent))),
+        });
+    }
+
+    public setSelectedWidgetOpacity(opacityPercent: number) {
+        const widget = this.selectedWidget();
+        if (!widget || !Number.isFinite(opacityPercent)) {
+            return;
+        }
+
+        this.widgetsState.update({
+            ...widget,
+            opacity: Math.max(0, Math.min(100, Math.round(opacityPercent))),
+        });
+    }
+
     public setSelectedWidgetBorderRadius(borderRadius: number) {
         const widget = this.selectedWidget();
         if (!widget) {

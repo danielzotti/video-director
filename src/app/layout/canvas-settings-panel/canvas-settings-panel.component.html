@@ -63,6 +63,23 @@
                             (checkedChange)="setWidgetVisible($event)"
                     />
                 </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-opacity">Opacity</label>
+                    <div class="settings-panel__opacity-row">
+                        <input
+                                id="widget-opacity"
+                                class="settings-panel__range"
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="1"
+                                [value]="selectedWidgetOpacity"
+                                (input)="onWidgetOpacityChange($event)"
+                        />
+                        <span class="settings-panel__video-volume-label">{{ selectedWidgetOpacity }}%</span>
+                    </div>
+                </div>
             </section>
 
             <app-ui-separator orientation="horizontal"/>
@@ -155,6 +172,27 @@
                             [checked]="hasTransparentBackground"
                             (checkedChange)="setBackgroundTransparent($event)"
                     />
+                </div>
+
+                <div class="settings-panel__row settings-panel__row--column">
+                    <label class="settings-panel__field-label" for="widget-background-opacity">Background opacity</label>
+                    <div class="settings-panel__opacity-row">
+                        <input
+                                id="widget-background-opacity"
+                                class="settings-panel__range"
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="1"
+                                [disabled]="hasTransparentBackground"
+                                [value]="selectedBackgroundOpacity"
+                                (input)="onWidgetBackgroundOpacityChange($event)"
+                        />
+                        <span class="settings-panel__video-volume-label"
+                              [class.settings-panel__color-value--muted]="hasTransparentBackground">
+                            {{ selectedBackgroundOpacity }}%
+                        </span>
+                    </div>
                 </div>
             </section>
 

@@ -169,5 +169,96 @@ describe('CanvasWidgetStateService', () => {
 
     expect(service.getById('legacy-visible').visible).toBeTrue();
   });
+
+  it('normalizes missing widget opacity to 100', () => {
+    const legacyWidget = {
+      uuid: 'legacy-widget-opacity-default',
+      x: 0,
+      y: 0,
+      z: 32,
+      width: 120,
+      height: 60,
+      content: DEFAULT_WIDGET_CONTENT,
+    } as WidgetStateItem;
+
+    service.add(legacyWidget);
+
+    expect(service.getById('legacy-widget-opacity-default').opacity).toBe(100);
+  });
+
+  it('clamps widget opacity in range 0-100', () => {
+    const widget = {
+      uuid: 'legacy-widget-opacity-clamp',
+      x: 10,
+      y: 10,
+      z: 33,
+      width: 120,
+      height: 60,
+      opacity: 140,
+      content: DEFAULT_WIDGET_CONTENT,
+    } as WidgetStateItem;
+
+    service.add(widget);
+    expect(service.getById('legacy-widget-opacity-clamp').opacity).toBe(100);
+
+    const normalized = service.getById('legacy-widget-opacity-clamp');
+    expect(normalized).toBeTruthy();
+    if (!normalized) {
+      return;
+    }
+
+    service.update({
+      ...normalized,
+      opacity: -5,
+    });
+
+    expect(service.getById('legacy-widget-opacity-clamp').opacity).toBe(0);
+  });
+
+  it('normalizes missing background opacity to 100', () => {
+    const legacyWidget = {
+      uuid: 'legacy-opacity-default',
+      x: 10,
+      y: 10,
+      z: 40,
+      width: 120,
+      height: 60,
+      background: '#ffffff',
+      content: DEFAULT_WIDGET_CONTENT,
+    } as WidgetStateItem;
+
+    service.add(legacyWidget);
+
+    expect(service.getById('legacy-opacity-default').backgroundOpacity).toBe(100);
+  });
+
+  it('clamps background opacity in range 0-100', () => {
+    const widget = {
+      uuid: 'legacy-opacity-clamp',
+      x: 10,
+      y: 10,
+      z: 41,
+      width: 120,
+      height: 60,
+      background: '#ffffff',
+      backgroundOpacity: 132,
+      content: DEFAULT_WIDGET_CONTENT,
+    } as WidgetStateItem;
+
+    service.add(widget);
+    expect(service.getById('legacy-opacity-clamp').backgroundOpacity).toBe(100);
+
+    const normalized = service.getById('legacy-opacity-clamp');
+    expect(normalized).toBeTruthy();
+    if (!normalized) {
+      return;
+    }
+
+    service.update({
+      ...normalized,
+      backgroundOpacity: -12,
+    });
+    expect(service.getById('legacy-opacity-clamp').backgroundOpacity).toBe(0);
+  });
 });
 

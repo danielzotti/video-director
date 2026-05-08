@@ -1,5 +1,5 @@
 import {AfterViewInit, Directive, effect, ElementRef, HostBinding, HostListener, inject, input, Renderer2} from '@angular/core';
-import {WidgetStateItem} from '../models/canvas-widget-state.models';
+import {DEFAULT_WIDGET_BACKGROUND_OPACITY, DEFAULT_WIDGET_OPACITY, WidgetStateItem} from '../models/canvas-widget-state.models';
 
 import {CanvasService, ResizePosition} from "../services/canvas.service";
 
@@ -19,7 +19,6 @@ export class CanvasWidgetDirective implements AfterViewInit {
         'bottom-left',
     ];
     private static readonly BASE_RESIZER_SIZE = 8;
-    private static readonly EDGE_HANDLE_MULTIPLIER = 8;
     private static readonly CORNER_HANDLE_MULTIPLIER = 2.5;
 
     private readonly renderer = inject(Renderer2);
@@ -31,8 +30,8 @@ export class CanvasWidgetDirective implements AfterViewInit {
     constructor() {
         effect(() => {
             this.canvasService.canResizeWidget();
-            this.widget().locked;
-            this.applyResizerCursorState();
+            const widgetLocked = !!this.widget().locked;
+            this.applyResizerCursorState(widgetLocked);
         });
     }
 
@@ -55,7 +54,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
         for (const position of CanvasWidgetDirective.RESIZE_HANDLES) {
             this.addResizer({position});
         }
-        this.applyResizerCursorState();
+        this.applyResizerCursorState(!!this.widget().locked);
     }
 
     @HostBinding('class')
@@ -72,7 +71,8 @@ export class CanvasWidgetDirective implements AfterViewInit {
             left: widget.x + 'px',
             width: widget.width + 'px',
             height: widget.height + 'px',
-            backgroundColor: widget.background ?? 'transparent',
+            backgroundColor: this.getWidgetBackgroundColor(widget),
+            opacity: this.normalizeWidgetOpacity(widget.opacity) / 100,
             zIndex: this.canvasService.getWidgetRenderZIndex(widget),
             position: 'absolute',
             borderRadius: (widget.borderRadius ?? 0) + 'px',
@@ -110,7 +110,6 @@ export class CanvasWidgetDirective implements AfterViewInit {
     }) {
 
         const resizerSize = CanvasWidgetDirective.BASE_RESIZER_SIZE;
-        // const edgeHandleSize = CanvasWidgetDirective.EDGE_HANDLE_MULTIPLIER * resizerSize;
         const cornerHandleSize = CanvasWidgetDirective.CORNER_HANDLE_MULTIPLIER * resizerSize;
         const edgeOffset = -Math.floor(resizerSize / 4);
         const cornerOffset = -Math.floor(resizerSize / 2);
@@ -182,13 +181,43 @@ export class CanvasWidgetDirective implements AfterViewInit {
         this.renderer.appendChild(this.elRef.nativeElement, resizer);
     }
 
-    private applyResizerCursorState(): void {
-        const canResize = this.canvasService.canResizeWidget() && !this.widget().locked;
+    private applyResizerCursorState(isWidgetLocked: boolean): void {
+        const canResize = this.canvasService.canResizeWidget() && !isWidgetLocked;
 
         for (const resizer of this.resizerEls) {
             const resizeCursor = resizer.dataset['resizeCursor'] ?? 'default';
             this.renderer.setStyle(resizer, 'cursor', canResize ? resizeCursor : 'default');
         }
+    }
+
+    private getWidgetBackgroundColor(widget: WidgetStateItem): string {
+        const background = widget.background?.trim();
+        if (!background || background === 'transparent') {
+            return 'transparent';
+        }
+
+        const opacity = this.normalizeBackgroundOpacity(widget.backgroundOpacity);
+        if (opacity >= 100) {
+            return background;
+        }
+
+        return `color-mix(in srgb, ${background} ${opacity}%, transparent)`;
+    }
+
+    private normalizeBackgroundOpacity(value?: number): number {
+        if (!Number.isFinite(value)) {
+            return DEFAULT_WIDGET_BACKGROUND_OPACITY;
+        }
+
+        return Math.max(0, Math.min(100, Math.round(Number(value))));
+    }
+
+    private normalizeWidgetOpacity(value?: number): number {
+        if (!Number.isFinite(value)) {
+            return DEFAULT_WIDGET_OPACITY;
+        }
+
+        return Math.max(0, Math.min(100, Math.round(Number(value))));
     }
 
 }
