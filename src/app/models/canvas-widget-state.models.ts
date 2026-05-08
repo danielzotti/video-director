@@ -23,6 +23,10 @@ export interface WidgetStateItemStyle {
   borderColor: string;
   borderStyle: WidgetBorderStyle;
   padding: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
 }
 
 export const DEFAULT_WIDGET_OPACITY = 100;
@@ -31,12 +35,16 @@ export const DEFAULT_WIDGET_BACKGROUND_OPACITY = 100;
 export const WIDGET_BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted'] as const;
 export type WidgetBorderStyle = typeof WIDGET_BORDER_STYLES[number];
 
-export const DEFAULT_WIDGET_BORDER: Pick<WidgetStateItemStyle, 'borderRadius' | 'borderWidth' | 'borderColor' | 'borderStyle' | 'padding'> = {
+export const DEFAULT_WIDGET_BORDER: Pick<WidgetStateItemStyle, 'borderRadius' | 'borderWidth' | 'borderColor' | 'borderStyle' | 'padding' | 'shadowColor' | 'shadowBlur' | 'shadowOffsetX' | 'shadowOffsetY'> = {
   borderRadius: 0,
   borderWidth: 0,
   borderColor: '#000000',
   borderStyle: 'none',
   padding: 0,
+  shadowColor: '#000000',
+  shadowBlur: 0,
+  shadowOffsetX: 0,
+  shadowOffsetY: 0,
 };
 
 export const WIDGET_CONTENT_TYPES = ['text', 'image', 'video'] as const;
@@ -65,6 +73,10 @@ export interface WidgetTextStyle {
   italic: boolean;
   underline: boolean;
   lineHeight: number;
+  textShadowColor?: string;
+  textShadowBlur?: number;
+  textShadowOffsetX?: number;
+  textShadowOffsetY?: number;
 }
 
 export const DEFAULT_WIDGET_TEXT_STYLE: WidgetTextStyle = {
@@ -78,6 +90,10 @@ export const DEFAULT_WIDGET_TEXT_STYLE: WidgetTextStyle = {
   italic: false,
   underline: false,
   lineHeight: 1.2,
+  textShadowColor: '#000000',
+  textShadowBlur: 0,
+  textShadowOffsetX: 0,
+  textShadowOffsetY: 0,
 };
 
 export interface WidgetTextContent {

@@ -346,13 +346,33 @@ export class CanvasSettingsPanelComponent {
     return (this.selectedWidget?.borderWidth ?? 0) > 0;
   }
 
-  protected get selectedPadding(): number {
-    return this.selectedWidget?.padding ?? DEFAULT_WIDGET_BORDER.padding;
-  }
+   protected get selectedPadding(): number {
+     return this.selectedWidget?.padding ?? DEFAULT_WIDGET_BORDER.padding;
+   }
 
-  protected get isWidgetLocked(): boolean {
-    return !!this.selectedWidget?.locked;
-  }
+   protected get selectedShadowColor(): string {
+     return this.selectedWidget?.shadowColor ?? DEFAULT_WIDGET_BORDER.shadowColor ?? '#000000';
+   }
+
+   protected get selectedShadowBlur(): number {
+     return this.selectedWidget?.shadowBlur ?? DEFAULT_WIDGET_BORDER.shadowBlur ?? 0;
+   }
+
+   protected get selectedShadowOffsetX(): number {
+     return this.selectedWidget?.shadowOffsetX ?? DEFAULT_WIDGET_BORDER.shadowOffsetX ?? 0;
+   }
+
+   protected get selectedShadowOffsetY(): number {
+     return this.selectedWidget?.shadowOffsetY ?? DEFAULT_WIDGET_BORDER.shadowOffsetY ?? 0;
+   }
+
+   protected get hasShadow(): boolean {
+     return (this.selectedWidget?.shadowBlur ?? 0) > 0;
+   }
+
+   protected get isWidgetLocked(): boolean {
+     return !!this.selectedWidget?.locked;
+   }
 
   protected get isWidgetVisible(): boolean {
     return this.selectedWidget?.visible ?? true;
@@ -607,16 +627,61 @@ export class CanvasSettingsPanelComponent {
       this.cs.setSelectedWidgetTextAutoSize(value);
     }
 
-     protected onTextLineHeightChange(event: Event): void {
-      const value = Number((event.target as HTMLInputElement).value);
-      if (!Number.isFinite(value)) {
-        return;
-      }
+      protected onTextLineHeightChange(event: Event): void {
+       const value = Number((event.target as HTMLInputElement).value);
+       if (!Number.isFinite(value)) {
+         return;
+       }
 
-      this.cs.setSelectedWidgetTextLineHeight(value);
-    }
+       this.cs.setSelectedWidgetTextLineHeight(value);
+     }
 
-  protected openImageFilePicker(input: HTMLInputElement): void {
+     protected get selectedTextShadowColor(): string {
+       const textContent = this.selectedTextContent;
+       return textContent?.style.textShadowColor ?? '#000000';
+     }
+
+     protected get selectedTextShadowBlur(): number {
+       const textContent = this.selectedTextContent;
+       return textContent?.style.textShadowBlur ?? 0;
+     }
+
+     protected get selectedTextShadowOffsetX(): number {
+       const textContent = this.selectedTextContent;
+       return textContent?.style.textShadowOffsetX ?? 0;
+     }
+
+     protected get selectedTextShadowOffsetY(): number {
+       const textContent = this.selectedTextContent;
+       return textContent?.style.textShadowOffsetY ?? 0;
+     }
+
+     protected get hasTextShadow(): boolean {
+       const textContent = this.selectedTextContent;
+       return (textContent?.style.textShadowBlur ?? 0) > 0;
+     }
+
+     protected onTextShadowColorChange(event: Event): void {
+       const color = (event.target as HTMLInputElement).value;
+       this.cs.setSelectedWidgetTextShadowColor(color);
+     }
+
+     protected onTextShadowBlurChange(event: Event): void {
+       const value = Number((event.target as HTMLInputElement).value);
+       if (Number.isFinite(value)) { this.cs.setSelectedWidgetTextShadowBlur(value); }
+     }
+
+     protected onTextShadowOffsetXChange(event: Event): void {
+       const value = Number((event.target as HTMLInputElement).value);
+       if (Number.isFinite(value)) { this.cs.setSelectedWidgetTextShadowOffsetX(value); }
+     }
+
+     protected onTextShadowOffsetYChange(event: Event): void {
+       const value = Number((event.target as HTMLInputElement).value);
+       if (Number.isFinite(value)) { this.cs.setSelectedWidgetTextShadowOffsetY(value); }
+     }
+
+   protected openImageFilePicker(input: HTMLInputElement): void {
     input.value = '';
     input.click();
   }
@@ -1021,12 +1086,32 @@ export class CanvasSettingsPanelComponent {
     }
   }
 
-  protected onPaddingChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(value)) { this.cs.setSelectedWidgetPadding(value); }
-  }
+   protected onPaddingChange(event: Event): void {
+     const value = Number((event.target as HTMLInputElement).value);
+     if (Number.isFinite(value)) { this.cs.setSelectedWidgetPadding(value); }
+   }
 
-  protected setWidgetLocked(value: boolean): void {
+   protected onShadowColorChange(event: Event): void {
+     const color = (event.target as HTMLInputElement).value;
+     this.cs.setSelectedWidgetShadowColor(color);
+   }
+
+   protected onShadowBlurChange(event: Event): void {
+     const value = Number((event.target as HTMLInputElement).value);
+     if (Number.isFinite(value)) { this.cs.setSelectedWidgetShadowBlur(value); }
+   }
+
+   protected onShadowOffsetXChange(event: Event): void {
+     const value = Number((event.target as HTMLInputElement).value);
+     if (Number.isFinite(value)) { this.cs.setSelectedWidgetShadowOffsetX(value); }
+   }
+
+   protected onShadowOffsetYChange(event: Event): void {
+     const value = Number((event.target as HTMLInputElement).value);
+     if (Number.isFinite(value)) { this.cs.setSelectedWidgetShadowOffsetY(value); }
+   }
+
+   protected setWidgetLocked(value: boolean): void {
     this.cs.setSelectedWidgetLocked(value);
   }
 

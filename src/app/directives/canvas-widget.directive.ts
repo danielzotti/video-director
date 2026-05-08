@@ -66,6 +66,8 @@ export class CanvasWidgetDirective implements AfterViewInit {
         const bw = widget.borderWidth ?? 0;
         const bs = widget.borderStyle ?? 'none';
 
+        const shadowStyles = this.getBoxShadowStyle(widget);
+
         return {
             top: widget.y + 'px',
             left: widget.x + 'px',
@@ -81,6 +83,7 @@ export class CanvasWidgetDirective implements AfterViewInit {
             borderColor: bw > 0 ? (widget.borderColor ?? '#000000') : 'transparent',
             padding: (widget.padding ?? 0) + 'px',
             boxSizing: 'border-box',
+            boxShadow: shadowStyles,
             cursor: this.canvasService.canMoveWidget() && !widget.locked ? 'move' : 'default',
         };
     }
@@ -218,6 +221,19 @@ export class CanvasWidgetDirective implements AfterViewInit {
         }
 
         return Math.max(0, Math.min(100, Math.round(Number(value))));
+    }
+
+    private getBoxShadowStyle(widget: WidgetStateItem): string {
+        const shadowBlur = widget.shadowBlur ?? 0;
+        if (shadowBlur === 0) {
+            return 'none';
+        }
+
+        const offsetX = widget.shadowOffsetX ?? 0;
+        const offsetY = widget.shadowOffsetY ?? 0;
+        const color = widget.shadowColor ?? '#000000';
+
+        return `${offsetX}px ${offsetY}px ${shadowBlur}px ${color}`;
     }
 
 }

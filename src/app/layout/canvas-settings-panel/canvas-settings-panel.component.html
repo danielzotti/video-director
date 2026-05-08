@@ -296,14 +296,76 @@
                                 (click)="setBorderStyle('dotted')"
                         >
                             <app-ui-icon name="border-dotted"/>
-                        </app-ui-button>
+                            </app-ui-button>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <app-ui-separator orientation="horizontal"/>
-            <section class="settings-panel__section">
-                <div class="settings-panel__section-label">Content</div>
+                <app-ui-separator orientation="horizontal"/>
+
+                <!-- SHADOW section -->
+                <section class="settings-panel__section">
+                    <div class="settings-panel__section-label">Shadow</div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-shadow-blur">Blur</label>
+                        <input
+                                id="widget-shadow-blur"
+                                class="settings-panel__input"
+                                type="number"
+                                min="0"
+                                step="1"
+                                [value]="selectedShadowBlur"
+                                (input)="onShadowBlurChange($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__field-triplet">
+                        <div class="settings-panel__row settings-panel__row--column">
+                            <label class="settings-panel__field-label" for="widget-shadow-offset-x">Offset X</label>
+                            <input
+                                    id="widget-shadow-offset-x"
+                                    class="settings-panel__input"
+                                    type="number"
+                                    step="1"
+                                    [value]="selectedShadowOffsetX"
+                                    (input)="onShadowOffsetXChange($event)"
+                            />
+                        </div>
+                        <div class="settings-panel__row settings-panel__row--column">
+                            <label class="settings-panel__field-label" for="widget-shadow-offset-y">Offset Y</label>
+                            <input
+                                    id="widget-shadow-offset-y"
+                                    class="settings-panel__input"
+                                    type="number"
+                                    step="1"
+                                    [value]="selectedShadowOffsetY"
+                                    (input)="onShadowOffsetYChange($event)"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-shadow-color">Color</label>
+                        <div class="settings-panel__color-row">
+                            <input
+                                    id="widget-shadow-color"
+                                    class="settings-panel__input settings-panel__input--color"
+                                    type="color"
+                                    [value]="selectedShadowColor"
+                                    (input)="onShadowColorChange($event)"
+                            />
+                            <span class="settings-panel__color-value"
+                                  [class.settings-panel__color-value--muted]="!hasShadow">
+                                {{ selectedShadowColor }}
+                            </span>
+                        </div>
+                    </div>
+                </section>
+
+                <app-ui-separator orientation="horizontal"/>
+                <section class="settings-panel__section">
+                    <div class="settings-panel__section-label">Content</div>
 
                 <div class="settings-panel__row settings-panel__row--column">
                     <app-ui-select
@@ -360,6 +422,61 @@
                                     (input)="onTextColorChange($event)"
                             />
                             <span class="settings-panel__color-value">{{ textContent.style.color }}</span>
+                        </div>
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-text-shadow-blur">Text shadow blur</label>
+                        <input
+                                id="widget-text-shadow-blur"
+                                class="settings-panel__input"
+                                type="number"
+                                min="0"
+                                step="1"
+                                [value]="selectedTextShadowBlur"
+                                (input)="onTextShadowBlurChange($event)"
+                        />
+                    </div>
+
+                    <div class="settings-panel__field-triplet">
+                        <div class="settings-panel__row settings-panel__row--column">
+                            <label class="settings-panel__field-label" for="widget-text-shadow-offset-x">Offset X</label>
+                            <input
+                                    id="widget-text-shadow-offset-x"
+                                    class="settings-panel__input"
+                                    type="number"
+                                    step="1"
+                                    [value]="selectedTextShadowOffsetX"
+                                    (input)="onTextShadowOffsetXChange($event)"
+                            />
+                        </div>
+                        <div class="settings-panel__row settings-panel__row--column">
+                            <label class="settings-panel__field-label" for="widget-text-shadow-offset-y">Offset Y</label>
+                            <input
+                                    id="widget-text-shadow-offset-y"
+                                    class="settings-panel__input"
+                                    type="number"
+                                    step="1"
+                                    [value]="selectedTextShadowOffsetY"
+                                    (input)="onTextShadowOffsetYChange($event)"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-text-shadow-color">Text shadow color</label>
+                        <div class="settings-panel__color-row">
+                            <input
+                                    id="widget-text-shadow-color"
+                                    class="settings-panel__input settings-panel__input--color"
+                                    type="color"
+                                    [value]="selectedTextShadowColor"
+                                    (input)="onTextShadowColorChange($event)"
+                            />
+                            <span class="settings-panel__color-value"
+                                  [class.settings-panel__color-value--muted]="!hasTextShadow">
+                                {{ selectedTextShadowColor }}
+                            </span>
                         </div>
                     </div>
 

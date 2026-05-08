@@ -123,11 +123,23 @@ export class WidgetTextComponent {
     return this.content().style.autoSize ? 'pre' : null;
   }
 
-  protected get overflowWrapStyle(): string | null {
-    return this.content().style.autoSize ? 'normal' : null;
-  }
+   protected get overflowWrapStyle(): string | null {
+     return this.content().style.autoSize ? 'normal' : null;
+   }
 
-  private scheduleAutoFontSizeRecompute(): void {
+   protected get computedTextShadow(): string | null {
+     const style = this.content().style;
+     const shadowBlur = style.textShadowBlur ?? 0;
+     if (shadowBlur === 0) {
+       return null;
+     }
+     const offsetX = style.textShadowOffsetX ?? 0;
+     const offsetY = style.textShadowOffsetY ?? 0;
+     const color = style.textShadowColor ?? '#000000';
+     return `${offsetX}px ${offsetY}px ${shadowBlur}px ${color}`;
+   }
+
+   private scheduleAutoFontSizeRecompute(): void {
     if (this.pendingFontSizeRaf !== null) {
       cancelAnimationFrame(this.pendingFontSizeRaf);
     }

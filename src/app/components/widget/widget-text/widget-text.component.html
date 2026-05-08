@@ -13,4 +13,5 @@
     [style.font-style]="content().style.italic ? 'italic' : 'normal'"
     [style.text-decoration]="content().style.underline ? 'underline' : 'none'"
     [style.line-height]="content().style.lineHeight"
+    [style.text-shadow]="computedTextShadow ?? undefined"
 >{{ content().text }}</div>

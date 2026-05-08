@@ -1221,25 +1221,97 @@ export class CanvasService {
          });
      }
 
-     public setSelectedWidgetTextLineHeight(lineHeight: number) {
-         const widget = this.selectedWidget();
-         if (!widget || widget.content.type !== 'text' || !Number.isFinite(lineHeight)) {
-             return;
-         }
+      public setSelectedWidgetTextLineHeight(lineHeight: number) {
+          const widget = this.selectedWidget();
+          if (!widget || widget.content.type !== 'text' || !Number.isFinite(lineHeight)) {
+              return;
+          }
 
-         this.widgetsState.update({
-             ...widget,
-             content: {
-                 ...widget.content,
-                 style: {
-                     ...widget.content.style,
-                     lineHeight: Math.max(0.5, lineHeight),
-                 },
-             },
-         });
-     }
+          this.widgetsState.update({
+              ...widget,
+              content: {
+                  ...widget.content,
+                  style: {
+                      ...widget.content.style,
+                      lineHeight: Math.max(0.5, lineHeight),
+                  },
+              },
+          });
+      }
 
-     public setSelectedWidgetName(name: string) {
+      public setSelectedWidgetTextShadowColor(textShadowColor: string) {
+          const widget = this.selectedWidget();
+          if (!widget || widget.content.type !== 'text') {
+              return;
+          }
+
+          this.widgetsState.update({
+              ...widget,
+              content: {
+                  ...widget.content,
+                  style: {
+                      ...widget.content.style,
+                      textShadowColor,
+                  },
+              },
+          });
+      }
+
+      public setSelectedWidgetTextShadowBlur(textShadowBlur: number) {
+          const widget = this.selectedWidget();
+          if (!widget || widget.content.type !== 'text' || !Number.isFinite(textShadowBlur)) {
+              return;
+          }
+
+          this.widgetsState.update({
+              ...widget,
+              content: {
+                  ...widget.content,
+                  style: {
+                      ...widget.content.style,
+                      textShadowBlur: Math.max(0, textShadowBlur),
+                  },
+              },
+          });
+      }
+
+      public setSelectedWidgetTextShadowOffsetX(textShadowOffsetX: number) {
+          const widget = this.selectedWidget();
+          if (!widget || widget.content.type !== 'text' || !Number.isFinite(textShadowOffsetX)) {
+              return;
+          }
+
+          this.widgetsState.update({
+              ...widget,
+              content: {
+                  ...widget.content,
+                  style: {
+                      ...widget.content.style,
+                      textShadowOffsetX,
+                  },
+              },
+          });
+      }
+
+      public setSelectedWidgetTextShadowOffsetY(textShadowOffsetY: number) {
+          const widget = this.selectedWidget();
+          if (!widget || widget.content.type !== 'text' || !Number.isFinite(textShadowOffsetY)) {
+              return;
+          }
+
+          this.widgetsState.update({
+              ...widget,
+              content: {
+                  ...widget.content,
+                  style: {
+                      ...widget.content.style,
+                      textShadowOffsetY,
+                  },
+              },
+          });
+      }
+
+      public setSelectedWidgetName(name: string) {
         const widget = this.selectedWidget();
         if (!widget) {
             return;
@@ -1315,15 +1387,47 @@ export class CanvasService {
         this.widgetsState.update({...widget, borderStyle});
     }
 
-    public setSelectedWidgetPadding(padding: number) {
-        const widget = this.selectedWidget();
-        if (!widget) {
-            return;
-        }
-        this.widgetsState.update({...widget, padding: Math.max(0, padding)});
-    }
+     public setSelectedWidgetPadding(padding: number) {
+         const widget = this.selectedWidget();
+         if (!widget) {
+             return;
+         }
+         this.widgetsState.update({...widget, padding: Math.max(0, padding)});
+     }
 
-    public setSelectedWidgetLocked(locked: boolean) {
+     public setSelectedWidgetShadowColor(shadowColor: string) {
+         const widget = this.selectedWidget();
+         if (!widget) {
+             return;
+         }
+         this.widgetsState.update({...widget, shadowColor});
+     }
+
+     public setSelectedWidgetShadowBlur(shadowBlur: number) {
+         const widget = this.selectedWidget();
+         if (!widget) {
+             return;
+         }
+         this.widgetsState.update({...widget, shadowBlur: Math.max(0, shadowBlur)});
+     }
+
+     public setSelectedWidgetShadowOffsetX(shadowOffsetX: number) {
+         const widget = this.selectedWidget();
+         if (!widget) {
+             return;
+         }
+         this.widgetsState.update({...widget, shadowOffsetX});
+     }
+
+     public setSelectedWidgetShadowOffsetY(shadowOffsetY: number) {
+         const widget = this.selectedWidget();
+         if (!widget) {
+             return;
+         }
+         this.widgetsState.update({...widget, shadowOffsetY});
+     }
+
+     public setSelectedWidgetLocked(locked: boolean) {
         const widget = this.selectedWidget();
         if (!widget) {
             return;
