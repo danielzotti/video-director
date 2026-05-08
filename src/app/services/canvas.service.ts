@@ -226,9 +226,10 @@ export class CanvasService {
     private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(null, null);
 
     private readonly STORAGE_KEY = 'video-director.editor-state.v1';
-    private readonly EDITOR_STATE_DB_NAME = 'video-director.editor-state.v2';
+    private readonly EDITOR_STATE_DB_NAME = 'video-director.editor-state.v3';
     private readonly EDITOR_STATE_STORE_NAME = 'state';
     private readonly EDITOR_STATE_RECORD_KEY = 'current';
+    private readonly MEDIA_BLOBS_STORE_NAME = 'media-blobs';
     private readonly PROJECT_STATE_FILE = 'state.json';
     private readonly PROJECT_SYNC_DIR = 'sync';
     private readonly PROJECT_ASSETS_DIR = 'assets';
@@ -1565,67 +1566,75 @@ export class CanvasService {
         this.setWidgetVideoPlaybackState(widgetId, false);
     }
 
+    /**
+     * Set selected widget image from a file.
+     * Converts the File to a Blob and creates an Object URL or data URL for display.
+     */
     public async setSelectedWidgetImageFromFile(file: File): Promise<void> {
-        const selected = this.selectedWidget();
-        if (!selected || selected.content.type !== 'image') {
-            return;
-        }
-
         if (!file.type.startsWith('image/')) {
             return;
         }
 
-        const dataUrl = await this.blobToDataUrl(file);
-        this.applySelectedWidgetImageDataUrl({dataUrl, fallbackName: file.name});
-        // Eagerly write to the project folder if connected so the asset is on disk immediately.
-        await this.eagerWriteImageToProjectFolder(selected.uuid, file);
+        const blob = new Blob([await file.arrayBuffer()], {type: file.type});
+        const objectUrl = URL.createObjectURL(blob);
+        const fallbackName = file.name;
+        this.applySelectedWidgetImageDataUrl({dataUrl: objectUrl, fallbackName});
+
+        // Eagerly write to project folder if connected
+        const selected = this.selectedWidget();
+        if (selected && selected.content.type === 'image') {
+            void this.eagerWriteImageToProjectFolder(selected.uuid, blob);
+        }
     }
 
-    public async setSelectedWidgetVideoFromFile(file: File): Promise<void> {
-        const selected = this.selectedWidget();
-        if (!selected || selected.content.type !== 'video') {
+    /**
+     * Set selected widget image from a URL.
+     * Fetches the image and creates an Object URL for display.
+     */
+    public async setSelectedWidgetImageFromUrl(url: string): Promise<void> {
+        const trimmedUrl = url.trim();
+        if (!trimmedUrl) {
             return;
         }
 
+        try {
+            const blob = await this.resolveImageBlobFromSource(trimmedUrl);
+            if (!blob) {
+                throw new Error('Failed to fetch image');
+            }
+
+            const objectUrl = URL.createObjectURL(blob);
+            const fallbackName = this.resolveFileNameFromSource(trimmedUrl, 'image.png');
+            this.applySelectedWidgetImageDataUrl({dataUrl: objectUrl, fallbackName});
+
+            // Eagerly write to project folder if connected
+            const selected = this.selectedWidget();
+            if (selected && selected.content.type === 'image') {
+                void this.eagerWriteImageToProjectFolder(selected.uuid, blob);
+            }
+        } catch (err) {
+            console.error('[CanvasService] setSelectedWidgetImageFromUrl failed:', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Set selected widget video from a file.
+     * Converts the File to a Blob and creates an Object URL for playback.
+     */
+    public async setSelectedWidgetVideoFromFile(file: File): Promise<void> {
         if (!file.type.startsWith('video/')) {
             return;
         }
 
-        const dataUrl = await this.blobToDataUrl(file);
-        this.applySelectedWidgetVideoDataUrl(dataUrl);
-        await this.eagerWriteVideoToProjectFolder(selected.uuid, file);
-    }
+        const blob = new Blob([await file.arrayBuffer()], {type: file.type});
+        const objectUrl = URL.createObjectURL(blob);
+        this.applySelectedWidgetVideoDataUrl(objectUrl);
 
-    public async setSelectedWidgetImageFromUrl(url: string): Promise<void> {
-        const trimmedUrl = url.trim();
-        if (!trimmedUrl) {
-            throw new Error('Image URL is empty');
-        }
-
-        let imageBlob: Blob;
-
-        try {
-            const response = await fetch(trimmedUrl, {mode: 'cors', credentials: 'omit'});
-            if (!response.ok) {
-                throw new Error(`Image fetch failed: ${response.status}`);
-            }
-
-            imageBlob = await response.blob();
-        } catch (error) {
-            throw new Error('Unable to fetch image from URL', {cause: error});
-        }
-
-        if (!imageBlob.type.startsWith('image/')) {
-            throw new Error('The provided URL is not an image resource');
-        }
-
-        const fallbackName = this.resolveFileNameFromSource(trimmedUrl, 'image-from-url');
-        const dataUrl = await this.blobToDataUrl(imageBlob);
-        this.applySelectedWidgetImageDataUrl({dataUrl, fallbackName});
-        // Eagerly write to the project folder if connected so the asset is on disk immediately.
-        const widgetUuid = this.selectedWidget()?.uuid;
-        if (widgetUuid) {
-            await this.eagerWriteImageToProjectFolder(widgetUuid, imageBlob);
+        // Eagerly write to project folder if connected
+        const selected = this.selectedWidget();
+        if (selected && selected.content.type === 'video') {
+            void this.eagerWriteVideoToProjectFolder(selected.uuid, blob);
         }
     }
 
@@ -2789,7 +2798,7 @@ export class CanvasService {
 
             let request: IDBOpenDBRequest;
             try {
-                request = indexedDB.open(this.EDITOR_STATE_DB_NAME, 1);
+                request = indexedDB.open(this.EDITOR_STATE_DB_NAME, 3);
             } catch {
                 resolve(null);
                 return;
@@ -2799,6 +2808,10 @@ export class CanvasService {
                 const db = request.result;
                 if (!db.objectStoreNames.contains(this.EDITOR_STATE_STORE_NAME)) {
                     db.createObjectStore(this.EDITOR_STATE_STORE_NAME);
+                }
+                // Create media-blobs store for efficient Blob storage
+                if (!db.objectStoreNames.contains(this.MEDIA_BLOBS_STORE_NAME)) {
+                    db.createObjectStore(this.MEDIA_BLOBS_STORE_NAME);
                 }
             };
 
@@ -2815,13 +2828,83 @@ export class CanvasService {
         }
 
         try {
-            return await new Promise<PersistedStateEnvelope | null>((resolve) => {
+            // Load state envelope
+            const state = await new Promise<PersistedStateEnvelope | null>((resolve) => {
                 const tx = db.transaction(this.EDITOR_STATE_STORE_NAME, 'readonly');
                 const req = tx.objectStore(this.EDITOR_STATE_STORE_NAME).get(this.EDITOR_STATE_RECORD_KEY);
                 req.onsuccess = () => resolve((req.result as PersistedStateEnvelope | undefined) ?? null);
                 req.onerror = () => resolve(null);
                 tx.onabort = () => resolve(null);
             });
+
+            if (!state) {
+                return null;
+            }
+
+            // Load all media blobs
+            const mediaBlobs = await new Promise<Map<string, Blob>>((resolve) => {
+                const tx = db.transaction(this.MEDIA_BLOBS_STORE_NAME, 'readonly');
+                const store = tx.objectStore(this.MEDIA_BLOBS_STORE_NAME);
+                const req = store.getAll();
+
+                const blobs = new Map<string, Blob>();
+                req.onsuccess = () => {
+                    const result = req.result;
+                    if (Array.isArray(result)) {
+                        // Get all keys first
+                        const keysReq = store.getAllKeys();
+                        keysReq.onsuccess = () => {
+                            const keys = keysReq.result;
+                            for (let i = 0; i < keys.length; i++) {
+                                const key = String(keys[i]);
+                                const blob = result[i];
+                                if (blob instanceof Blob) {
+                                    blobs.set(key, blob);
+                                }
+                            }
+                            resolve(blobs);
+                        };
+                        keysReq.onerror = () => resolve(blobs);
+                    } else {
+                        resolve(blobs);
+                    }
+                };
+                req.onerror = () => resolve(blobs);
+                tx.onabort = () => resolve(blobs);
+            });
+
+            // Reconstruct widgets with Object URLs from blobs
+            const hydratedState: PersistedStateEnvelope = {
+                ...state,
+                widgets: await Promise.all(state.widgets.map(async (widget) => {
+                    if (!this.isMediaContent(widget.content)) {
+                        return widget;
+                    }
+
+                    const source = widget.content.src.trim();
+                    if (!source.startsWith('__blob:')) {
+                        return widget;
+                    }
+
+                    const widgetUuid = source.slice('__blob:'.length);
+                    const blob = mediaBlobs.get(widgetUuid);
+                    if (!blob) {
+                        return widget;
+                    }
+
+                    // Create Object URL from blob for efficient rendering
+                    const objectUrl = URL.createObjectURL(blob);
+                    return {
+                        ...widget,
+                        content: {
+                            ...widget.content,
+                            src: objectUrl,
+                        },
+                    };
+                })),
+            };
+
+            return hydratedState;
         } finally {
             db.close();
         }
@@ -2834,10 +2917,52 @@ export class CanvasService {
         }
 
         try {
+            // First, extract and save all media blobs separately
+            const mediaBlobs = new Map<string, Blob>();
+            const widgetsWithoutBlobs = await Promise.all(envelope.widgets.map(async (widget) => {
+                if (!this.isMediaContent(widget.content)) {
+                    return widget;
+                }
+
+                const source = widget.content.src.trim();
+                if (!source) {
+                    return widget;
+                }
+
+                // Try to extract blob from the source
+                const blob = await this.resolveImageBlobFromSource(source);
+                if (blob) {
+                    mediaBlobs.set(widget.uuid, blob);
+                    // Store reference key instead of data URL
+                    return {
+                        ...widget,
+                        content: {
+                            ...widget.content,
+                            src: `__blob:${widget.uuid}`,
+                        },
+                    };
+                }
+
+                return widget;
+            }));
+
+            // Write state envelope (with blob references instead of data URLs)
+            const envelopeToSave: PersistedStateEnvelope = {
+                ...envelope,
+                widgets: widgetsWithoutBlobs,
+            };
+
             await new Promise<void>((resolve) => {
-                const tx = db.transaction(this.EDITOR_STATE_STORE_NAME, 'readwrite');
+                const tx = db.transaction([this.EDITOR_STATE_STORE_NAME, this.MEDIA_BLOBS_STORE_NAME], 'readwrite');
                 try {
-                    tx.objectStore(this.EDITOR_STATE_STORE_NAME).put(envelope, this.EDITOR_STATE_RECORD_KEY);
+                    // Write the state
+                    tx.objectStore(this.EDITOR_STATE_STORE_NAME).put(envelopeToSave, this.EDITOR_STATE_RECORD_KEY);
+
+                    // Write all media blobs
+                    const blobsStore = tx.objectStore(this.MEDIA_BLOBS_STORE_NAME);
+                    for (const [widgetUuid, blob] of mediaBlobs.entries()) {
+                        blobsStore.put(blob, widgetUuid);
+                    }
                 } catch {
                     resolve();
                     return;

@@ -672,6 +672,7 @@ export class CanvasSettingsPanelComponent {
 
     try {
       await this.cs.setSelectedWidgetImageFromUrl(url);
+      this.isImageUrlSaving.set(false);
       this.closeImageUrlModal();
     } catch {
       this.imageUrlError.set('Impossibile scaricare l\'immagine da questo URL (controlla CORS/URL).');
