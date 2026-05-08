@@ -2873,7 +2873,8 @@ export class CanvasService {
                 tx.onabort = () => resolve(blobs);
             });
 
-            // Reconstruct widgets with Object URLs from blobs
+            // Reconstruct widgets with data URLs from blobs
+            // (data URLs work better with html-to-image export than Object URLs)
             const hydratedState: PersistedStateEnvelope = {
                 ...state,
                 widgets: await Promise.all(state.widgets.map(async (widget) => {
@@ -2892,13 +2893,13 @@ export class CanvasService {
                         return widget;
                     }
 
-                    // Create Object URL from blob for efficient rendering
-                    const objectUrl = URL.createObjectURL(blob);
+                    // Convert blob to data URL for compatibility with html-to-image export
+                    const dataUrl = await this.blobToDataUrl(blob);
                     return {
                         ...widget,
                         content: {
                             ...widget.content,
-                            src: objectUrl,
+                            src: dataUrl,
                         },
                     };
                 })),
