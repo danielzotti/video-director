@@ -1,0 +1,20 @@
+:host {
+  position: relative;
+  display: block;
+  text-align: left;
+  height: 100%;
+}
+
+.marker {
+  fill: var(--ds-border-default);
+
+  &.main {
+    fill: var(--ds-border-strong);
+    width: 2px;
+  }
+}
+
+.timeline-marker__body {
+  position: absolute;
+  top: 0;
+}

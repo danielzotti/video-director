@@ -156,4 +156,8 @@ export interface WidgetStateItem extends Rect2D, Partial<WidgetStateItemStyle> {
   visible?: boolean;
   content: WidgetContent;
   name?: string;
+  /** Start time in the timeline in milliseconds (0 = beginning). */
+  timelineStart?: number;
+  /** End time in the timeline in milliseconds. */
+  timelineEnd?: number;
 }

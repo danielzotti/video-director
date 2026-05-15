@@ -23,6 +23,7 @@ import {CanvasLayersPanelComponent} from '../../layout/canvas-layers-panel/canva
 import {CanvasToolbarComponent} from '../../layout/canvas-toolbar/canvas-toolbar.component';
 import {ActionsToolbarComponent} from '../../layout/actions-toolbar/actions-toolbar.component';
 import {WidgetCreateToolbarComponent} from '../../layout/widget-create-toolbar/widget-create-toolbar.component';
+import {TimelinePanelComponent} from '../../components/timeline/timeline-panel/timeline-panel.component';
 import {Point2D} from '../../models/geometry.models';
 
 @Component({
@@ -38,6 +39,7 @@ import {Point2D} from '../../models/geometry.models';
         CanvasToolbarComponent,
         ActionsToolbarComponent,
         WidgetCreateToolbarComponent,
+        TimelinePanelComponent,
     ],
     templateUrl: './recording-session-new.component.html',
     styleUrl: './recording-session-new.component.scss',

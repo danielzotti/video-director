@@ -1,0 +1,60 @@
+:host {
+  display: block;
+  position: relative;
+  overflow-y: hidden;
+}
+
+.layer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  height: 40px;
+  background-color: var(--ds-surface-2);
+  border-bottom: 1px solid var(--ds-border-subtle);
+
+  &.is-child {
+    background-color: var(--ds-surface-1);
+  }
+}
+
+.layer__name {
+  flex-grow: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  min-width: 0;
+
+  &:hover {
+    background-color: var(--ds-surface-3);
+    border-radius: var(--ds-radius-xs);
+  }
+}
+
+.layer__name__text {
+  display: block;
+  font-size: var(--ds-font-sm);
+  color: var(--ds-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer__is-visible,
+.layer__is-locked {
+  display: inline-flex;
+  align-items: center;
+
+  input[type='checkbox'] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--ds-accent);
+  }
+}
+
+.layer__is-main-video {
+  color: var(--ds-accent);
+  font-size: 12px;
+  font-weight: bold;
+}
+

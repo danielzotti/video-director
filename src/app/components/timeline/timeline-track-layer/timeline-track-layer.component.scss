@@ -1,0 +1,69 @@
+:host {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.layer {
+  position: absolute;
+  height: 100%;
+  cursor: move;
+  background-color: var(--ds-accent-muted);
+  border: 1px solid var(--ds-accent);
+  border-radius: var(--ds-radius-xs);
+  box-sizing: border-box;
+  touch-action: none; /* required for pointer capture on touch devices */
+
+  &.is-locked {
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
+.layer__line {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 2px;
+  background-color: var(--ds-accent);
+  border-radius: 1px;
+}
+
+.layer__resize-handler {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 1;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    background-color: var(--ds-accent);
+    width: 7px;
+    height: 7px;
+  }
+
+  &.start {
+    left: -3px;
+
+    &::before {
+      left: 1px;
+    }
+  }
+
+  &.end {
+    right: -3px;
+
+    &::before {
+      right: 1px;
+    }
+  }
+
+}

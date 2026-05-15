@@ -1,0 +1,181 @@
+// Design tokens from project
+$border-color: var(--ds-border-default);
+$bg-color: var(--ds-surface-1);
+$accent-color: var(--ds-accent);
+$header-height: 40px;
+$layer-height: 40px;
+
+.timeline {
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: scroll;
+}
+
+.header-container {
+  display: block;
+  background-color: $bg-color;
+  border-bottom: 1px solid $border-color;
+  height: $header-height;
+  width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 8;
+}
+
+.time-row {
+  line-height: $header-height;
+  height: $header-height;
+  position: relative;
+  display: flex;
+}
+
+.time-markers {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.time-labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.layers-container {
+  display: block;
+  position: relative;
+}
+
+.layer-row {
+  position: relative;
+  height: $layer-height;
+  display: flex;
+
+  &.is-locked {
+    opacity: 0.6;
+  }
+}
+
+.layers {
+  display: block;
+  position: relative;
+}
+
+#cursor-time {
+  position: absolute;
+  transform: translateX(-50%);
+  top: 5px;
+  z-index: 9;
+  width: 0;
+  height: 10px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid $accent-color;
+  left: calc(100% - 2.5px);
+
+  &::before {
+    content: '';
+    width: 10px;
+    height: 5px;
+    position: absolute;
+    top: -10px;
+    left: -5px;
+    background-color: $accent-color;
+    border-radius: 2px;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 30px;
+    background-color: white;
+  }
+}
+
+#slider {
+  --range-margin-fix: -8px;
+  -webkit-appearance: none;
+  margin: 0 var(--range-margin-fix);
+  width: calc(100% - (2 * var(--range-margin-fix)));
+  background-color: transparent;
+  height: 100%;
+  outline: none;
+  position: absolute;
+  display: block;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+#slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: transparent;
+  width: 16px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+#slider::-moz-range-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: transparent;
+  width: 16px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+#cursor {
+  position: absolute;
+  height: 100%;
+  width: 1px;
+  background-color: white;
+  top: 0;
+  z-index: 9;
+}
+
+.cursor-container {
+  display: block;
+  position: absolute;
+  width: 100%;
+  top: $header-height;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9;
+  pointer-events: none;
+}
+
+.cursor-animation {
+  transition: left 100ms linear;
+}
+
+.layer {
+  position: relative;
+  flex-grow: 1;
+}
+
+app-timeline-time-markers {
+  line-height: $header-height;
+  height: 100%;
+}
+
+

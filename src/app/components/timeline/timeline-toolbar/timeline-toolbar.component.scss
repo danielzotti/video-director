@@ -1,0 +1,90 @@
+
+$toolbar-height: 36px;
+$toolbar-padding: 8px;
+
+:host {
+  display: flex;
+  position: relative;
+  height: $toolbar-height;
+  padding: 0 $toolbar-padding;
+  background-color: var(--ds-surface-1);
+  border-bottom: 1px solid var(--ds-border-default);
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.actions-container {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  width: 80px;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--ds-text-primary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--ds-radius-xs);
+
+  &:hover {
+    background: var(--ds-surface-3);
+  }
+
+  app-ui-icon {
+    --ui-icon-size: var(--ds-icon-size-lg);
+  }
+}
+
+.time-container {
+  flex-grow: 1;
+  text-align: center;
+}
+
+.time {
+  font-size: var(--ds-font-sm);
+  color: var(--ds-text-primary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.zoom-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 140px;
+}
+
+.zoom-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--ds-text-primary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--ds-radius-xs);
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--ds-surface-3);
+  }
+
+  app-ui-icon {
+    --ui-icon-size: var(--ds-icon-size-md);
+  }
+}
+
+#timeline-zoom-slider {
+  flex-grow: 1;
+  height: 2px;
+  accent-color: var(--ds-accent);
+  cursor: pointer;
+}

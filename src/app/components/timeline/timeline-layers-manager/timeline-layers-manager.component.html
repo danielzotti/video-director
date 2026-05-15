@@ -1,0 +1,36 @@
+<div class="layers-manager" (scroll)="syncTimelineScroll($event)">
+  <!-- Headers row -->
+  <div class="layers-headers">
+    <span class="layer__name">Layer Name</span>
+    <span class="layer__is-visible" title="Visibility">👁️</span>
+    <span class="layer__is-locked" title="Lock status">🔒</span>
+  </div>
+
+  <!-- Layers list -->
+  <div class="layers-container">
+    @for (layer of layers(); track trackLayers(0, layer)) {
+      <div
+        class="layer-row"
+        [class.is-dragging]="draggedUuid === layer.uuid"
+        draggable="true"
+        (dragstart)="onLayerDragStart($event, layer)"
+        (dragover)="onLayerDragOver($event, $index)"
+        (drop)="onLayerDrop($event, $index)"
+        (dragend)="onLayerDragEnd()"
+      >
+        <app-timeline-layer-item
+          [layer]="layer"
+          [isMainVideo]="layer.uuid === mainVideoId()"
+          [isChild]="false"
+          [isLastChild]="false"
+          (layerClicked)="onLayerClicked($event)"
+          (layerMultiClicked)="onLayerMultiClicked($event)"
+          (layerIsVisibleChanged)="onLayerIsVisibleChanged($event)"
+          (layerIsLockedChanged)="onLayerIsLockedChanged($event)"
+        />
+      </div>
+    }
+  </div>
+</div>
+
+

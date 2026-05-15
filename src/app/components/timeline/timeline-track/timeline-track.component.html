@@ -1,0 +1,97 @@
+<div class="timeline" #container (scroll)="syncTimelineScroll($event)">
+  <!-- Sticky header: time markers + labels + scrubber -->
+  <div class="header-container" [style.width]="timelineTotalWidthPx">
+    <div class="time-row">
+      <div class="time-markers">
+        <app-timeline-time-markers
+          [isHeader]="true"
+          [zoom]="zoom()"
+          [maxMs]="maxMs"
+          [step]="stepMs"
+          [stepPx]="stepPx"
+        />
+      </div>
+      <div class="time-labels">
+        <app-timeline-time-labels
+          [zoom]="zoom()"
+          [maxMs]="maxMs"
+          [step]="stepMs"
+          [stepPx]="stepPx"
+          precision="s"
+          [printEveryMs]="printEveryMs"
+        />
+      </div>
+    </div>
+
+    <!-- Playhead indicator (triangle) -->
+    <div
+      #cursorTime
+      id="cursor-time"
+      [class.cursor-animation]="hasCursorAnimation"
+    ></div>
+
+    <!-- Scrubber input -->
+    <input
+      id="slider"
+      #slider
+      type="range"
+      min="0"
+      [step]="stepMs"
+      [max]="maxMs"
+      [value]="time() * zoom()"
+      (mousedown)="onSliderMouseDown($event)"
+      (mouseup)="onSliderMouseUp($event)"
+      (keydown)="onSliderMouseDown($event)"
+      (keyup)="onSliderMouseUp($event)"
+      (input)="onSliderChange($event)"
+    />
+  </div>
+
+  <!-- Layer rows -->
+  <div #layersContainer class="layers-container" [style.width]="timelineTotalWidthPx">
+    <div class="layers">
+      @for (layer of layers(); track trackLayers(0, layer)) {
+        <div
+          class="layer-row"
+          [class.is-selected]="false"
+          [class.is-visible]="layer.visible ?? true"
+          [class.is-locked]="layer.locked"
+        >
+          <app-timeline-time-markers
+            [isHeader]="false"
+            [zoom]="zoom()"
+            [maxMs]="maxMs"
+            [step]="stepMs"
+            [stepPx]="stepPx"
+          />
+          <app-timeline-track-layer
+            class="layer"
+            [layer]="layer"
+            [isLocked]="!!layer.locked"
+            [stepPx]="stepPx"
+            [maxMs]="maxMs"
+            [step]="stepMs"
+            [zoom]="zoom()"
+            (layerChanged)="onLayerChanged($event)"
+            (pointerdown)="onLayerClicked(layer)"
+          />
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Playhead cursor line -->
+  <div
+    class="cursor-container"
+    [style.width]="timelineTotalWidthPx"
+    [style.height]="timelineCursorHeight"
+  >
+    <div
+      #cursor
+      id="cursor"
+      [class.cursor-animation]="hasCursorAnimation"
+      [style.height]="timelineCursorHeight"
+    ></div>
+  </div>
+</div>
+

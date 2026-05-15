@@ -1,0 +1,25 @@
+@if (isHeader()) {
+  <svg class="timeline-marker__header" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="PatternHeaderMain" x="0" y="0" [attr.width]="spaceBetweenMainMarkers()" height="1">
+        <rect class="marker main" x="0" y="0" width="1" height="100%" />
+      </pattern>
+    </defs>
+    <rect class="marker-container main" fill="url(#PatternHeaderMain)" width="100%" height="100%" />
+  </svg>
+}
+
+@if (!isHeader()) {
+  <svg class="timeline-marker__body" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="Pattern" x="0" y="0" [attr.width]="spaceBetweenMarkers()" height="100%">
+        <rect class="marker" x="0" y="0" width="1" height="100%" />
+      </pattern>
+      <pattern id="PatternMain" x="0" y="0" [attr.width]="spaceBetweenMainMarkers()" height="100%">
+        <rect class="marker main" x="0" y="0" width="1" height="100%" />
+      </pattern>
+    </defs>
+    <rect class="marker-container" fill="url(#Pattern)" width="100%" height="100%" />
+    <rect class="marker-container main" fill="url(#PatternMain)" width="100%" height="100%" />
+  </svg>
+}

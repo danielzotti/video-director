@@ -1,0 +1,5 @@
+@for (g of groups(); track g) {
+  <div [style.width]="labelWidth()" class="time-label">
+    {{ printTimeWithUnit(g) }}
+  </div>
+}

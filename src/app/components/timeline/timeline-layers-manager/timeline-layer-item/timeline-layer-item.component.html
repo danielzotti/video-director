@@ -1,0 +1,33 @@
+<div class="layer" [class.is-child]="isChild()">
+  <span class="layer__name" (click)="onLayerLabelClick($event)">
+    <span class="layer__name__text" [title]="layer().name">
+      {{ layer().name }}
+    </span>
+  </span>
+
+  <span class="layer__is-visible">
+    <input
+      type="checkbox"
+      [checked]="layer().visible ?? true"
+      (change)="onLayerIsVisibleClick($event)"
+      [title]="(layer().visible ?? true) ? 'Hide layer' : 'Show layer'"
+    />
+  </span>
+
+  <span class="layer__is-locked">
+    <input
+      type="checkbox"
+      [checked]="layer().locked"
+      (change)="onLayerIsLockedClick($event)"
+      [title]="layer().locked ? 'Unlock layer' : 'Lock layer'"
+    />
+  </span>
+
+  @if (isMainVideo()) {
+    <span class="layer__is-main-video" title="Main video stream">
+      ◆
+    </span>
+  }
+</div>
+
+

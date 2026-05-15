@@ -1,0 +1,105 @@
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  OnChanges,
+  output,
+  SimpleChanges,
+} from '@angular/core';
+import { TimelineWidget } from '../../../models/timeline.models';
+import { TimelineService } from '../../../services/timeline.service';
+import { TimelineLayerItemComponent } from './timeline-layer-item/timeline-layer-item.component';
+
+@Component({
+  selector: 'app-timeline-layers-manager',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TimelineLayerItemComponent],
+  templateUrl: './timeline-layers-manager.component.html',
+  styleUrl: './timeline-layers-manager.component.scss',
+})
+export class TimelineLayersManagerComponent implements OnChanges, AfterViewInit {
+  private readonly timelineService = inject(TimelineService);
+
+  readonly layers = input.required<TimelineWidget[]>();
+  readonly mainVideoId = input<string | null>(null);
+  readonly scrollTop = input(0);
+
+  readonly scrolled = output<number>();
+  readonly layerClicked = output<string>();
+  readonly layerIsVisibleChanged = output<TimelineWidget>();
+  readonly layerIsLockedChanged = output<TimelineWidget>();
+
+  draggedUuid: string | null = null;
+  private dragOverIndex: number | null = null;
+
+  ngAfterViewInit(): void {
+    // Sync initial scroll
+  }
+
+  ngOnChanges(_changes: SimpleChanges): void {
+    // Any layer changes trigger
+  }
+
+  syncTimelineScroll(event: Event): void {
+    this.scrolled.emit((event.target as HTMLElement).scrollTop);
+  }
+
+  trackLayers(_i: number, item: TimelineWidget): string {
+    return item.uuid;
+  }
+
+  // ---- Drag & Drop (HTML5 API) ----
+  onLayerDragStart(event: DragEvent, layer: TimelineWidget): void {
+    this.draggedUuid = layer.uuid;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', layer.uuid);
+    }
+  }
+
+  onLayerDragOver(event: DragEvent, _index: number): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  onLayerDrop(event: DragEvent, targetIndex: number): void {
+    event.preventDefault();
+    if (!this.draggedUuid) return;
+
+    // Find the source index
+    const sourceIndex = this.layers().findIndex(l => l.uuid === this.draggedUuid);
+    if (sourceIndex === -1 || sourceIndex === targetIndex) return;
+
+    // Reorder through the service
+    this.timelineService.reorderLayers(this.draggedUuid, targetIndex);
+    this.draggedUuid = null;
+  }
+
+  onLayerDragEnd(): void {
+    this.draggedUuid = null;
+    this.dragOverIndex = null;
+  }
+
+  onLayerIsVisibleChanged(layer: TimelineWidget): void {
+    this.layerIsVisibleChanged.emit(layer);
+  }
+
+  onLayerIsLockedChanged(layer: TimelineWidget): void {
+    this.layerIsLockedChanged.emit(layer);
+  }
+
+  onLayerClicked(uuid: string): void {
+    this.layerClicked.emit(uuid);
+  }
+
+  onLayerMultiClicked(uuid: string): void {
+    this.layerClicked.emit(uuid);
+  }
+}
+
+

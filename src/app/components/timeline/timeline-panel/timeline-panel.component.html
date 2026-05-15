@@ -1,0 +1,45 @@
+<div class="timeline-panel" [class.timeline-panel--closed]="!isOpened()">
+  <!-- Header: toggle + title -->
+  <div class="timeline-panel__header">
+    <button
+      type="button"
+      class="timeline-panel__toggle"
+      (click)="onTogglePanel(!isOpened())"
+      [attr.aria-expanded]="isOpened()"
+    >
+      {{ isOpened() ? '▼' : '▶' }}
+    </button>
+    <h3 class="timeline-panel__title">Timeline</h3>
+  </div>
+
+  @if (isOpened()) {
+    <!-- Toolbar -->
+    <div class="timeline-panel__toolbar">
+      <app-timeline-toolbar />
+    </div>
+
+    <!-- Main content: layers manager + track -->
+    <div class="timeline-panel__content">
+      <div class="timeline-panel__layers-manager">
+        <app-timeline-layers-manager
+          [layers]="layers()"
+          [mainVideoId]="null"
+          [scrollTop]="layersManagerScrollTop()"
+          (scrolled)="onLayersManagerScrolled($event)"
+          (layerClicked)="onLayerClicked($event)"
+          (layerIsVisibleChanged)="onLayerIsVisibleChanged($event)"
+          (layerIsLockedChanged)="onLayerIsLockedChanged($event)"
+        />
+      </div>
+
+      <div class="timeline-panel__track">
+        <app-timeline-track
+          [scrollTop]="trackScrollTop()"
+          (scrolled)="onTrackScrolled($event)"
+          (layerClicked)="onLayerClicked($event)"
+        />
+      </div>
+    </div>
+  }
+</div>
+

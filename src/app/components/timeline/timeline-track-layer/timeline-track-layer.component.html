@@ -1,0 +1,25 @@
+<div
+  class="layer"
+  [class.is-locked]="layer().locked || isLocked()"
+  [style]="style"
+  (pointerdown)="onMovePointerDown($event)"
+  (pointermove)="onMovePointerMove($event)"
+  (pointerup)="onMovePointerUp($event)"
+>
+  <div class="layer__line"></div>
+
+  @if (!isLocked() && !layer().locked) {
+    <div
+      class="layer__resize-handler start"
+      (pointerdown)="onResizeLeftPointerDown($event)"
+      (pointermove)="onResizeLeftPointerMove($event)"
+      (pointerup)="onResizeLeftPointerUp($event)"
+    ></div>
+    <div
+      class="layer__resize-handler end"
+      (pointerdown)="onResizeRightPointerDown($event)"
+      (pointermove)="onResizeRightPointerMove($event)"
+      (pointerup)="onResizeRightPointerUp($event)"
+    ></div>
+  }
+</div>

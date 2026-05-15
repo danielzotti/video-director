@@ -1,0 +1,36 @@
+<div class="actions-container">
+  @if (!isPlaying()) {
+    <button class="action" type="button" title="Play" (click)="onPlayClick()">
+      <app-ui-icon name="play" />
+    </button>
+  } @else {
+    <button class="action" type="button" title="Pause" (click)="onPauseClick()">
+      <app-ui-icon name="pause" />
+    </button>
+  }
+  <button class="action" type="button" title="Reset to start" (click)="onResetTimeClick()">
+    <app-ui-icon name="undo" />
+  </button>
+</div>
+
+<div class="time-container">
+  <div class="time">{{ time() | timer }}&nbsp;/&nbsp;{{ duration() | timer: compactFormat }}</div>
+</div>
+
+<div class="zoom-container">
+  <button type="button" class="zoom-control" title="Zoom out" (click)="zoomOut()">
+    <app-ui-icon name="zoom-out" />
+  </button>
+  <input
+    id="timeline-zoom-slider"
+    type="range"
+    min="1"
+    [max]="maxZoom"
+    [step]="stepValue"
+    [value]="zoom()"
+    (input)="onZoomSliderChange($event)"
+  />
+  <button type="button" class="zoom-control" title="Zoom in" (click)="zoomIn()">
+    <app-ui-icon name="zoom-in" />
+  </button>
+</div>
