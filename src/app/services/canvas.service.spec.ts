@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing';
 import {CanvasService} from './canvas.service';
-import {DEFAULT_WIDGET_TEXT_STYLE, WidgetStateList} from '../models/canvas-widget-state.models';
+import {DEFAULT_WIDGET_TEXT_STYLE, WidgetStateList, WidgetStateItem} from '../models/canvas-widget-state.models';
 
 describe('CanvasService', () => {
   let service: CanvasService;
@@ -1203,6 +1203,45 @@ describe('CanvasService', () => {
     if (imageWidget?.content.type === 'image') {
       expect(imageWidget.content.src.startsWith('data:image/')).toBeTrue();
     }
+  });
+
+  it('preserves existing asset files when connecting a non-empty directory on first sync', async () => {
+    // Simulate a directory that already has a state.json and asset files from a previous session
+    const persistentWidget: WidgetStateItem = {
+      uuid: '1',
+      x: 10,
+      y: 10,
+      z: 0,
+      width: 50,
+      height: 50,
+      content: {
+        type: 'text',
+        text: 'Existing widget',
+        style: {...DEFAULT_WIDGET_TEXT_STYLE},
+      },
+    };
+
+    const persistedSnapshot = {
+      canvas: {width: 1000, height: 800, zoom: 1, top: 0, left: 0, snapSize: 1, settingsPanelLayout: 'floating' as const, layersPanelLayout: 'floating' as const},
+      widgets: [persistentWidget],
+      meta: {version: 1, updatedAt: Date.now()},
+    };
+
+    const fileMap = new Map<string, Blob>([
+      ['state.json', new Blob([JSON.stringify(persistedSnapshot)], {type: 'application/json'})],
+      ['assets/widget-999.png', new Blob(['old-image'], {type: 'image/png'})],
+    ]);
+
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    // Connect the non-empty directory
+    await service.connectProjectDirectory();
+
+    // The old asset file should be preserved even if it's not referenced by any current widget
+    expect(fileMap.has('assets/widget-999.png')).toBeTrue();
   });
 });
 
