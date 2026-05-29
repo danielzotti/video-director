@@ -17,16 +17,6 @@
   border-top: 1px solid var(--ds-border-default);
 }
 
-.timeline-panel__resize-handle {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 6px;
-  cursor: ns-resize;
-  z-index: 2;
-}
-
 .timeline-panel__header {
   display: flex;
   align-items: center;
@@ -36,6 +26,7 @@
   border-bottom: 1px solid var(--ds-border-default);
   height: 36px;
   flex-shrink: 0;
+  cursor: ns-resize;
 }
 
 .timeline-panel__toggle {

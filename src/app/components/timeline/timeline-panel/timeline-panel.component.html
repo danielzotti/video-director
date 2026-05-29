@@ -1,16 +1,16 @@
 <div class="timeline-panel">
   <div
-    class="timeline-panel__resize-handle"
+    class="timeline-panel__header"
     role="separator"
     aria-label="Resize timeline panel"
     aria-orientation="horizontal"
     (pointerdown)="onResizeHandlePointerDown($event)"
-  ></div>
+  >
 
-  <div class="timeline-panel__header">
     <button
       type="button"
       class="timeline-panel__toggle"
+      (pointerdown)="$event.stopPropagation()"
       (click)="onTogglePanel()"
       [attr.aria-expanded]="isOpened()"
     >
