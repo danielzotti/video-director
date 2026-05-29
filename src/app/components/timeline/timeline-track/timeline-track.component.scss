@@ -20,6 +20,7 @@ $layer-height: 40px;
   max-width: 100%;
   max-height: 100%;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .header-container {

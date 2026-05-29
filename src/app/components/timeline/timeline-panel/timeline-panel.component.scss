@@ -71,10 +71,34 @@
 
 .timeline-panel__layers-manager {
   min-width: 250px;
-  max-width: 350px;
   height: 100%;
-  border-right: 1px solid var(--ds-border-default);
   flex-shrink: 0;
+}
+
+.timeline-panel__layers-resize-handle {
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+  background: transparent;
+  flex-shrink: 0;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 28px;
+    border-radius: 99px;
+    background-color: var(--ds-border-default);
+  }
+
+  &:hover::after,
+  &:active::after {
+    background-color: var(--ds-accent);
+  }
 }
 
 .timeline-panel__track {

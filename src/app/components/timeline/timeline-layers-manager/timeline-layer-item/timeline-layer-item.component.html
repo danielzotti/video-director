@@ -3,8 +3,10 @@
   [class.is-child]="isChild()"
   [class.is-hidden]="!isLayerVisible()"
   [class.is-locked]="isLayerLocked()"
+  [class.is-selected]="isSelected()"
+  (click)="onLayerClick($event)"
 >
-  <button class="layer__name" type="button" (click)="onLayerLabelClick($event)">
+  <div class="layer__name">
     <span class="layer__icon" [title]="layer().content.type">
       <app-ui-icon [name]="getLayerContentIcon()"></app-ui-icon>
     </span>
@@ -15,7 +17,7 @@
     @if (isMainVideo()) {
       <span class="layer__is-main-video" title="Main video stream">◆</span>
     }
-  </button>
+  </div>
 
   <div class="layer__actions">
     <button
@@ -37,5 +39,4 @@
     </button>
   </div>
 </div>
-
 

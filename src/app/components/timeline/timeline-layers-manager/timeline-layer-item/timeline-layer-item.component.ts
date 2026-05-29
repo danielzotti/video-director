@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TimelineWidget } from '../../../../models/timeline.models';
 import { CanvasWidgetStateService } from '../../../../services/canvas-widget-state.service';
+import { CanvasService } from '../../../../services/canvas.service';
 import { UiIconComponent } from '../../../../ui';
 import type { UiIconName } from '../../../../ui';
 
@@ -14,6 +15,7 @@ import type { UiIconName } from '../../../../ui';
 })
 export class TimelineLayerItemComponent {
   private readonly widgetsState = inject(CanvasWidgetStateService);
+  private readonly canvasService = inject(CanvasService);
 
   readonly layer = input.required<TimelineWidget>();
   readonly isMainVideo = input(false);
@@ -24,6 +26,8 @@ export class TimelineLayerItemComponent {
   readonly layerIsLockedChanged = output<TimelineWidget>();
   readonly layerClicked = output<string>();
   readonly layerMultiClicked = output<string>();
+
+  readonly isSelected = computed(() => this.canvasService.selectedWidgetId() === this.layer().uuid);
 
   getLayerDisplayName(): string {
     const widget = this.widgetsState.getById(this.layer().uuid);
@@ -59,9 +63,7 @@ export class TimelineLayerItemComponent {
     return !!this.widgetsState.getById(this.layer().uuid)?.locked;
   }
 
-  onLayerLabelClick(event: MouseEvent): void {
-    event.stopPropagation();
-
+  onLayerClick(event: MouseEvent): void {
     if (event.shiftKey) {
       this.layerMultiClicked.emit(this.layer().uuid);
     } else {

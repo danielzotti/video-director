@@ -26,8 +26,8 @@
     </div>
 
     <!-- Main content: layers manager + track -->
-    <div class="timeline-panel__content">
-      <div class="timeline-panel__layers-manager">
+    <div class="timeline-panel__content" #timelineContent>
+      <div class="timeline-panel__layers-manager" [style.width.px]="layersManagerWidth()">
         <app-timeline-layers-manager
           [layers]="layers()"
           [mainVideoId]="null"
@@ -38,6 +38,14 @@
           (layerIsLockedChanged)="onLayerIsLockedChanged($event)"
         />
       </div>
+
+      <div
+        class="timeline-panel__layers-resize-handle"
+        role="separator"
+        aria-label="Resize timeline layers panel"
+        aria-orientation="vertical"
+        (pointerdown)="onLayersResizeHandlePointerDown($event)"
+      ></div>
 
       <div class="timeline-panel__track">
         <app-timeline-track
