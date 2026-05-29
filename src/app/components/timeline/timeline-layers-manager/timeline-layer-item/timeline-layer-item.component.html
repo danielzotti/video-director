@@ -1,33 +1,41 @@
-<div class="layer" [class.is-child]="isChild()">
-  <span class="layer__name" (click)="onLayerLabelClick($event)">
-    <span class="layer__name__text" [title]="layer().name">
-      {{ layer().name }}
+<div
+  class="layer"
+  [class.is-child]="isChild()"
+  [class.is-hidden]="!isLayerVisible()"
+  [class.is-locked]="isLayerLocked()"
+>
+  <button class="layer__name" type="button" (click)="onLayerLabelClick($event)">
+    <span class="layer__icon" [title]="layer().content.type">
+      <app-ui-icon [name]="getLayerContentIcon()"></app-ui-icon>
     </span>
-  </span>
-
-  <span class="layer__is-visible">
-    <input
-      type="checkbox"
-      [checked]="layer().visible ?? true"
-      (change)="onLayerIsVisibleClick($event)"
-      [title]="(layer().visible ?? true) ? 'Hide layer' : 'Show layer'"
-    />
-  </span>
-
-  <span class="layer__is-locked">
-    <input
-      type="checkbox"
-      [checked]="layer().locked"
-      (change)="onLayerIsLockedClick($event)"
-      [title]="layer().locked ? 'Unlock layer' : 'Lock layer'"
-    />
-  </span>
-
-  @if (isMainVideo()) {
-    <span class="layer__is-main-video" title="Main video stream">
-      ◆
+    <span class="layer__name__text" [title]="getLayerDisplayName()">
+      {{ getLayerDisplayName() }}
     </span>
-  }
+
+    @if (isMainVideo()) {
+      <span class="layer__is-main-video" title="Main video stream">◆</span>
+    }
+  </button>
+
+  <div class="layer__actions">
+    <button
+      class="layer__btn layer__btn--icon"
+      type="button"
+      [title]="isLayerVisible() ? 'Hide widget' : 'Show widget'"
+      (click)="onLayerIsVisibleClick($event)"
+    >
+      <app-ui-icon [name]="isLayerVisible() ? 'eye' : 'eye-off'"></app-ui-icon>
+    </button>
+
+    <button
+      class="layer__btn layer__btn--icon"
+      type="button"
+      [title]="isLayerLocked() ? 'Unlock widget' : 'Lock widget'"
+      (click)="onLayerIsLockedClick($event)"
+    >
+      <app-ui-icon [name]="isLayerLocked() ? 'lock' : 'unlock'"></app-ui-icon>
+    </button>
+  </div>
 </div>
 
 

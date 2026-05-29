@@ -1,14 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  inject,
   signal,
   computed,
+  inject,
 } from '@angular/core';
 import { TimelineService } from '../../../services/timeline.service';
+import { CanvasService } from '../../../services/canvas.service';
 import { TimelineToolbarComponent } from '../timeline-toolbar/timeline-toolbar.component';
 import { TimelineLayersManagerComponent } from '../timeline-layers-manager/timeline-layers-manager.component';
 import { TimelineTrackComponent } from '../timeline-track/timeline-track.component';
+import { TimelineWidget } from '../../../models/timeline.models';
 
 @Component({
   selector: 'app-timeline-panel',
@@ -20,6 +22,7 @@ import { TimelineTrackComponent } from '../timeline-track/timeline-track.compone
 })
 export class TimelinePanelComponent {
   private readonly timelineService = inject(TimelineService);
+  private readonly canvasService = inject(CanvasService);
 
   readonly layers = this.timelineService.layers;
   readonly isOpened = signal(true);
@@ -47,15 +50,15 @@ export class TimelinePanelComponent {
     this.layersManagerScrollTop.set(scrollTop);
   }
 
-  onLayerClicked(_uuid: string): void {
-    // TODO: select widget in canvas
+  onLayerClicked(uuid: string): void {
+    this.canvasService.selectWidget(uuid);
   }
 
-  onLayerIsVisibleChanged(layer: any): void {
-    this.timelineService.updateLayerTiming(layer.uuid, layer.timelineStart, layer.timelineEnd);
+  onLayerIsVisibleChanged(layer: TimelineWidget): void {
+    this.canvasService.setWidgetVisible(layer.uuid, layer.visible ?? true);
   }
 
-  onLayerIsLockedChanged(layer: any): void {
-    this.timelineService.updateLayerTiming(layer.uuid, layer.timelineStart, layer.timelineEnd);
+  onLayerIsLockedChanged(layer: TimelineWidget): void {
+    this.canvasService.setWidgetLocked(layer.uuid, !!layer.locked);
   }
 }

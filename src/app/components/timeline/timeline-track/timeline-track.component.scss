@@ -5,17 +5,21 @@ $accent-color: var(--ds-accent);
 $header-height: 40px;
 $layer-height: 40px;
 
-.timeline {
-  position: absolute;
-  bottom: 0;
-  top: 0;
-  left: 0;
-  right: 0;
+:host {
+  display: block;
+  position: relative;
   width: 100%;
-  max-width: 100%;
   height: 100%;
+  min-height: 0;
+}
+
+.timeline {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
   max-height: 100%;
-  overflow: scroll;
+  overflow: auto;
 }
 
 .header-container {
@@ -177,5 +181,3 @@ app-timeline-time-markers {
   line-height: $header-height;
   height: 100%;
 }
-
-

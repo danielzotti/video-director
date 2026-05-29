@@ -1,26 +1,27 @@
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  effect,
+  ElementRef,
   inject,
   input,
-  OnChanges,
   output,
-  SimpleChanges,
+  viewChild,
 } from '@angular/core';
 import { TimelineWidget } from '../../../models/timeline.models';
 import { TimelineService } from '../../../services/timeline.service';
+import { UiIconComponent } from '../../../ui';
 import { TimelineLayerItemComponent } from './timeline-layer-item/timeline-layer-item.component';
 
 @Component({
   selector: 'app-timeline-layers-manager',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TimelineLayerItemComponent],
+  imports: [TimelineLayerItemComponent, UiIconComponent],
   templateUrl: './timeline-layers-manager.component.html',
   styleUrl: './timeline-layers-manager.component.scss',
 })
-export class TimelineLayersManagerComponent implements OnChanges, AfterViewInit {
+export class TimelineLayersManagerComponent {
   private readonly timelineService = inject(TimelineService);
 
   readonly layers = input.required<TimelineWidget[]>();
@@ -32,15 +33,19 @@ export class TimelineLayersManagerComponent implements OnChanges, AfterViewInit 
   readonly layerIsVisibleChanged = output<TimelineWidget>();
   readonly layerIsLockedChanged = output<TimelineWidget>();
 
+  private readonly containerRef = viewChild<ElementRef<HTMLDivElement>>('container');
+
   draggedUuid: string | null = null;
   private dragOverIndex: number | null = null;
 
-  ngAfterViewInit(): void {
-    // Sync initial scroll
-  }
-
-  ngOnChanges(_changes: SimpleChanges): void {
-    // Any layer changes trigger
+  constructor() {
+    effect(() => {
+      const top = this.scrollTop();
+      const el = this.containerRef()?.nativeElement;
+      if (el && el.scrollTop !== top) {
+        el.scrollTop = top;
+      }
+    });
   }
 
   syncTimelineScroll(event: Event): void {
@@ -60,7 +65,7 @@ export class TimelineLayersManagerComponent implements OnChanges, AfterViewInit 
     }
   }
 
-  onLayerDragOver(event: DragEvent, _index: number): void {
+  onLayerDragOver(event: DragEvent): void {
     event.preventDefault();
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
@@ -101,5 +106,3 @@ export class TimelineLayersManagerComponent implements OnChanges, AfterViewInit 
     this.layerClicked.emit(uuid);
   }
 }
-
-

@@ -72,6 +72,7 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
     this.destroy$.complete();
   }
 
+
   // ---- Drag (move) -----------------------------------------------
 
   onMovePointerDown(event: PointerEvent): void {
@@ -91,7 +92,8 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
     this.layerChangedSubject.next();
   }
 
-  onMovePointerUp(_event: PointerEvent): void {
+  onMovePointerUp(event: PointerEvent): void {
+    event.preventDefault();
     this.clearDrag();
   }
 
@@ -114,7 +116,8 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
     this.layerChangedSubject.next();
   }
 
-  onResizeLeftPointerUp(_event: PointerEvent): void {
+  onResizeLeftPointerUp(event: PointerEvent): void {
+    event.preventDefault();
     this.clearDrag();
   }
 
@@ -137,7 +140,8 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
     this.layerChangedSubject.next();
   }
 
-  onResizeRightPointerUp(_event: PointerEvent): void {
+  onResizeRightPointerUp(event: PointerEvent): void {
+    event.preventDefault();
     this.clearDrag();
   }
 
@@ -182,8 +186,8 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
 
   private clampStyle({ left, width, action }: { left: number; width: number; action: 'move' | 'resize' }): { left: number; width: number } {
     const minWidth = this.stepPx();
-    let newLeft = left;
-    let newWidth = width;
+    let newLeft;
+    let newWidth;
 
     if (action === 'move') {
       newLeft = Math.max(0, Math.min(left, this.maxPx - width));

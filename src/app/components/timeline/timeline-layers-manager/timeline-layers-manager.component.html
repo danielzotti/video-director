@@ -1,12 +1,14 @@
-<div class="layers-manager" (scroll)="syncTimelineScroll($event)">
-  <!-- Headers row -->
+<div class="layers-manager" #container (scroll)="syncTimelineScroll($event)">
   <div class="layers-headers">
-    <span class="layer__name">Layer Name</span>
-    <span class="layer__is-visible" title="Visibility">👁️</span>
-    <span class="layer__is-locked" title="Lock status">🔒</span>
+    <span class="layer__name">Layer</span>
+    <span class="layer__is-visible" title="Visibility">
+      <app-ui-icon name="eye"></app-ui-icon>
+    </span>
+    <span class="layer__is-locked" title="Lock status">
+      <app-ui-icon name="lock"></app-ui-icon>
+    </span>
   </div>
 
-  <!-- Layers list -->
   <div class="layers-container">
     @for (layer of layers(); track trackLayers(0, layer)) {
       <div
@@ -14,7 +16,7 @@
         [class.is-dragging]="draggedUuid === layer.uuid"
         draggable="true"
         (dragstart)="onLayerDragStart($event, layer)"
-        (dragover)="onLayerDragOver($event, $index)"
+        (dragover)="onLayerDragOver($event)"
         (drop)="onLayerDrop($event, $index)"
         (dragend)="onLayerDragEnd()"
       >
@@ -32,5 +34,3 @@
     }
   </div>
 </div>
-
-

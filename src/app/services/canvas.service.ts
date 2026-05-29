@@ -264,6 +264,7 @@ export class CanvasService {
     private pendingSnapshot: EditorStateSnapshot | null = null;
     private isSnapshotFlushScheduled = false;
     private shouldFlushSnapshotAfterInteraction = false;
+    private isPointerDragInProgress = false;
     /** Monotonic version counter - incremented on every committed write. */
     private currentSnapshotVersion = 0;
     /** Unix epoch ms of the last committed snapshot write. */
@@ -1920,6 +1921,7 @@ export class CanvasService {
         event.stopPropagation();
 
         this.isDraggingCanvas.set(true);
+        this.beginPointerDragInteraction();
         el.classList.add(this.CANVAS_DRAGGING_CLASS);
 
         this.canvasDragStartPointer = {x: event.clientX, y: event.clientY};
@@ -1945,6 +1947,7 @@ export class CanvasService {
 
         el.classList.remove(this.CANVAS_DRAGGING_CLASS);
         this.isDraggingCanvas.set(false);
+        this.endPointerDragInteraction();
         this.canvasDragStartPointer = null;
         this.canvasDragStartOffset = null;
 
@@ -2017,7 +2020,10 @@ export class CanvasService {
                 el: this.activeWidgetEl,
                 event,
             });
+            return;
         }
+
+        this.endPointerDragInteraction();
     }
 
     public widgetDragStart({widget, el, event}: { widget: WidgetStateItem, el: HTMLElement, event: PointerLikeEvent }) {
@@ -2040,6 +2046,7 @@ export class CanvasService {
         event.stopPropagation();
 
         this.isDraggingWidget.set(true);
+        this.beginPointerDragInteraction();
         this.activeWidgetEl = el;
         el.classList.add(this.WIDGET_DRAGGING_CLASS);
         el.style.zIndex = '9999';
@@ -2091,6 +2098,7 @@ export class CanvasService {
         el.classList.remove(this.WIDGET_DRAGGING_CLASS);
         el.style.zIndex = this.getWidgetRenderZIndex(widget).toString();
         this.isDraggingWidget.set(false);
+        this.endPointerDragInteraction();
         this.activeWidgetEl = null;
         this.widgetDragOffset = null;
         this.objectSnapGuides.set({});
@@ -2106,6 +2114,7 @@ export class CanvasService {
         });
 
         this.flushDeferredSnapshotAfterInteraction();
+        this.scheduleProjectDirectorySync();
     }
 
     public widgetResizeStart({widget, el, event, position}: {
@@ -2122,6 +2131,7 @@ export class CanvasService {
         event.stopPropagation();
 
         this.isResizingWidget.set(true);
+        this.beginPointerDragInteraction();
         this.widgetResizingPosition.set(position);
         this.selectWidget(widget.uuid);
         this.activeWidgetEl = el;
@@ -2197,6 +2207,7 @@ export class CanvasService {
         el.classList.remove(this.WIDGET_RESIZING_CLASS);
         el.style.zIndex = this.getWidgetRenderZIndex(widget).toString();
         this.isResizingWidget.set(false);
+        this.endPointerDragInteraction();
         this.widgetResizingPosition.set(null);
         this.activeWidgetEl = null;
         this.resizeStartPointer = null;
@@ -2223,6 +2234,7 @@ export class CanvasService {
         });
 
         this.flushDeferredSnapshotAfterInteraction();
+        this.scheduleProjectDirectorySync();
     }
 
     private canvasZoomBy(delta: number, focalPoint?: Point2D) {
@@ -2364,7 +2376,7 @@ export class CanvasService {
         this.projectHasPendingChanges.set(true);
 
         // Keep filesystem writes out of hot pointer-move loops.
-        if (this.isDraggingCanvas() || this.isDraggingWidget() || this.isResizingWidget()) {
+        if (this.isDraggingCanvas() || this.isDraggingWidget() || this.isResizingWidget() || this.isPointerDragInProgress) {
             return;
         }
 
@@ -2380,6 +2392,14 @@ export class CanvasService {
 
     private isInteractionInProgress(): boolean {
         return this.isDraggingCanvas() || this.isDraggingWidget() || this.isResizingWidget();
+    }
+
+    private beginPointerDragInteraction(): void {
+        this.isPointerDragInProgress = true;
+    }
+
+    private endPointerDragInteraction(): void {
+        this.isPointerDragInProgress = false;
     }
 
     private flushDeferredSnapshotAfterInteraction(): void {

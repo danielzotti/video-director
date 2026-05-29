@@ -19,13 +19,16 @@ export class TimelineService {
   /**
    * All canvas widgets mapped to TimelineWidget with guaranteed
    * timelineStart / timelineEnd values (defaults to 0 / duration).
+   * Sorted by z-index in descending order (same as layers panel).
    */
   readonly layers = computed<TimelineWidget[]>(() =>
-    this.widgetStateService.list().map(w => ({
-      ...w,
-      timelineStart: w.timelineStart ?? 0,
-      timelineEnd: w.timelineEnd ?? this._duration(),
-    }))
+    [...this.widgetStateService.list()]
+      .sort((a, b) => b.z - a.z)
+      .map(w => ({
+        ...w,
+        timelineStart: w.timelineStart ?? 0,
+        timelineEnd: w.timelineEnd ?? this._duration(),
+      }))
   );
 
   private timer: ReturnType<typeof setInterval> | null = null;

@@ -15,12 +15,14 @@
   border-radius: var(--ds-radius-xs);
   box-sizing: border-box;
   touch-action: none; /* required for pointer capture on touch devices */
+  overflow: hidden;
 
   &.is-locked {
     cursor: default;
     opacity: 0.6;
   }
 }
+
 
 .layer__line {
   position: absolute;
