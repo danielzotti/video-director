@@ -10,11 +10,30 @@
 }
 
 .header-toolbar {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--ds-space-2, 8px);
   padding-block: 5px;
+  width: 100%;
+
+  &__spacer {
+    min-width: 0;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ds-space-2, 8px);
+  }
+
+  &__status {
+    display: flex;
+    align-items: center;
+    justify-self: end;
+    min-width: 0;
+  }
 }
 
 .editor {

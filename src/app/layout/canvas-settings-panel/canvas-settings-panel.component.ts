@@ -20,6 +20,7 @@ import { CanvasService } from '../../services/canvas.service';
 import { SelectOption, UiSelectComponent, UiSeparatorComponent, UiToggleComponent, UiButtonComponent, UiIconComponent } from '../../ui';
 import { CoverPositionControlsComponent } from './cover-position-controls/cover-position-controls.component';
 import { CropPositionControlsComponent } from './crop-position-controls/crop-position-controls.component';
+import { ProjectSyncBadgeComponent } from '../../components/project-sync-badge/project-sync-badge.component';
 
 type WidgetGeometryField = 'x' | 'y' | 'width' | 'height';
 type MediaAnchor = 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
@@ -28,7 +29,7 @@ type MediaAnchor = 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'ce
   selector: 'app-canvas-settings-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent, UiButtonComponent, UiIconComponent, CoverPositionControlsComponent, CropPositionControlsComponent],
+  imports: [CommonModule, DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent, UiButtonComponent, UiIconComponent, CoverPositionControlsComponent, CropPositionControlsComponent, ProjectSyncBadgeComponent],
   templateUrl: './canvas-settings-panel.component.html',
   styleUrl: './canvas-settings-panel.component.scss',
 })
@@ -400,33 +401,10 @@ export class CanvasSettingsPanelComponent {
     return this.cs.projectDirectoryName() ?? '-';
   }
 
-  protected get projectSyncStatusLabel(): string {
-    const status = this.cs.projectSyncStatus();
-
-    if (status === 'syncing') {
-      return 'Syncing...';
-    }
-
-    if (status === 'error') {
-      return 'Sync error';
-    }
-
-    const lastSync = this.cs.projectLastSyncedAt();
-    return lastSync ? `Last sync: ${lastSync.toLocaleTimeString()}` : 'Idle';
-  }
-
   protected get hasPendingProjectChanges(): boolean {
     return this.cs.projectHasPendingChanges();
   }
 
-  protected get projectSyncBadgeVariant(): 'idle' | 'pending' | 'syncing' | 'error' {
-    const status = this.cs.projectSyncStatus();
-    if (status === 'syncing' || status === 'error') {
-      return status;
-    }
-
-    return this.hasPendingProjectChanges ? 'pending' : 'idle';
-  }
 
   protected get activeStorageBackendLabel(): string {
     const backend = this.cs.activeStorageBackend();

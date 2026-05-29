@@ -1,0 +1,14 @@
+@if (isVisible()) {
+	<span
+			class="settings-panel__sync-badge"
+			[class.settings-panel__sync-badge--idle]="variant() === 'idle'"
+			[class.settings-panel__sync-badge--pending]="variant() === 'pending'"
+			[class.settings-panel__sync-badge--syncing]="variant() === 'syncing'"
+			[class.settings-panel__sync-badge--error]="variant() === 'error'"
+			[class.settings-panel__sync-badge--compact]="compact()"
+			[attr.title]="badgeTitle()"
+	>
+		{{ statusLabel() }}
+	</span>
+}
+

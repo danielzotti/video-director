@@ -1057,15 +1057,7 @@
                     <div class="settings-panel__row settings-panel__row--column">
                         <div class="settings-panel__sync-header">
                             <span class="settings-panel__field-label">Project folder sync</span>
-                            <span
-                                    class="settings-panel__sync-badge"
-                                    [class.settings-panel__sync-badge--idle]="projectSyncBadgeVariant === 'idle'"
-                                    [class.settings-panel__sync-badge--pending]="projectSyncBadgeVariant === 'pending'"
-                                    [class.settings-panel__sync-badge--syncing]="projectSyncBadgeVariant === 'syncing'"
-                                    [class.settings-panel__sync-badge--error]="projectSyncBadgeVariant === 'error'"
-                            >
-                                {{ projectSyncStatusLabel }}
-                            </span>
+                            <app-project-sync-badge/>
                         </div>
                         <!-- Storage backend badge: shows which backend is currently active -->
                         <div class="settings-panel__storage-backend">

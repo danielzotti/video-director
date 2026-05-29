@@ -25,6 +25,7 @@ import {ActionsToolbarComponent} from '../../layout/actions-toolbar/actions-tool
 import {WidgetCreateToolbarComponent} from '../../layout/widget-create-toolbar/widget-create-toolbar.component';
 import {TimelinePanelComponent} from '../../components/timeline/timeline-panel/timeline-panel.component';
 import {Point2D} from '../../models/geometry.models';
+import {ProjectSyncBadgeComponent} from '../../components/project-sync-badge/project-sync-badge.component';
 
 @Component({
     selector: 'app-recording-session-new',
@@ -40,6 +41,7 @@ import {Point2D} from '../../models/geometry.models';
         ActionsToolbarComponent,
         WidgetCreateToolbarComponent,
         TimelinePanelComponent,
+        ProjectSyncBadgeComponent,
     ],
     templateUrl: './recording-session-new.component.html',
     styleUrl: './recording-session-new.component.scss',
