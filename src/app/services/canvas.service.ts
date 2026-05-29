@@ -250,11 +250,20 @@ export class CanvasService {
     private readonly widgetVideoDuration = signal<Record<string, number>>({});
     private readonly widgetVideoVolume = signal<Record<string, number>>({});
 
+    /**
+     * Keeps track of blob: URLs created during the current session and their associated
+     * MIME types.  This is needed because blob: URLs do not embed MIME-type information in
+     * the URL string itself, so `resolveManagedAssetSourceExtension` would otherwise always
+     * fall back to the generic 'png' extension even for JPEG (or other) blobs.
+     */
+    private readonly blobMimeTypeRegistry = new Map<string, string>();
+
     private currentSnapshot: EditorStateSnapshot | null = null;
     private isApplyingSnapshot = false;
     private isHistoryReady = false;
     private pendingSnapshot: EditorStateSnapshot | null = null;
     private isSnapshotFlushScheduled = false;
+    private shouldFlushSnapshotAfterInteraction = false;
     /** Monotonic version counter - incremented on every committed write. */
     private currentSnapshotVersion = 0;
     /** Unix epoch ms of the last committed snapshot write. */
@@ -265,6 +274,8 @@ export class CanvasService {
     private projectSyncTimeout: ReturnType<typeof setTimeout> | null = null;
     private isProjectSyncInFlight = false;
     private isProjectSyncQueued = false;
+    /** Skip cleanup on the first sync of a non-empty directory to preserve existing assets. */
+    private isFirstNonEmptyDirectorySyncForThisSession = false;
 
     public projectName = signal<string>('Untitled Project');
     public projectDirectoryName = signal<string | null>(null);
@@ -291,6 +302,12 @@ export class CanvasService {
             }
 
             if (!this.isHistoryReady) {
+                return;
+            }
+
+            if (this.isInteractionInProgress()) {
+                // Pointer interactions update frequently; defer persistence work until end.
+                this.shouldFlushSnapshotAfterInteraction = true;
                 return;
             }
 
@@ -449,6 +466,9 @@ export class CanvasService {
             return;
         }
 
+        // Track that this is the first sync for this non-empty directory in this session
+        // so we can skip asset cleanup to preserve existing files
+        this.isFirstNonEmptyDirectorySyncForThisSession = true;
         await this.loadProjectFromDirectory();
     }
 
@@ -459,6 +479,7 @@ export class CanvasService {
         this.projectSyncError.set(null);
         this.projectLastSyncedAt.set(null);
         this.projectHasPendingChanges.set(false);
+        this.isFirstNonEmptyDirectorySyncForThisSession = false;
         void this.clearPersistedProjectDirectoryHandle();
 
         if (this.projectSyncTimeout) {
@@ -491,40 +512,24 @@ export class CanvasService {
                 meta: parsed.meta ?? {updatedAt: 0, version: 0},
             };
 
-            // Merge: pick the most-recently updated snapshot between folder and IndexedDB.
-            const idbEnvelope = await this.loadSnapshotFromIndexedDb();
-            const winner = this.pickWinnerEnvelope(folderEnvelope, idbEnvelope);
-            const idbWon = idbEnvelope !== null && winner === idbEnvelope;
-
-            let hydratedSnapshot: EditorStateSnapshot;
-            if (idbWon) {
-                // IndexedDB snapshot is newer; it already contains data: URLs, no hydration needed.
-                hydratedSnapshot = {canvas: idbEnvelope.canvas, widgets: idbEnvelope.widgets};
-            } else {
-                // Folder snapshot won; hydrate asset paths from the connected directory.
-                hydratedSnapshot = await this.hydrateSnapshotAssetsFromDirectory(
-                    {canvas: folderEnvelope.canvas, widgets: folderEnvelope.widgets},
-                    directoryHandle,
-                );
-            }
+            // When the user explicitly selects a sync folder, treat that folder as source of truth.
+            const hydratedSnapshot = await this.hydrateSnapshotAssetsFromDirectory(
+                {canvas: folderEnvelope.canvas, widgets: folderEnvelope.widgets},
+                directoryHandle,
+            );
 
             this.applySnapshot(hydratedSnapshot);
             this.currentSnapshot = this.buildSnapshot();
-            // Bump metadata so the winning version is recorded correctly.
-            this.currentSnapshotVersion = (winner.meta?.version ?? 0) + 1;
+            // Bump metadata so subsequent writes have a monotonic version.
+            this.currentSnapshotVersion = (folderEnvelope.meta?.version ?? 0) + 1;
             this.currentSnapshotUpdatedAt = Date.now();
             this.writeSnapshotToStorage(this.currentSnapshot);
             this.undoStack.set([]);
             this.redoStack.set([]);
             this.projectSyncStatus.set('idle');
             this.projectLastSyncedAt.set(new Date());
-            this.projectHasPendingChanges.set(idbWon);
+            this.projectHasPendingChanges.set(false);
             this.activeStorageBackend.set('sync-folder');
-
-            if (idbWon) {
-                // IndexedDB had newer data → schedule a sync so the folder catches up.
-                this.scheduleProjectDirectorySync();
-            }
         } catch (error) {
             this.projectSyncStatus.set('error');
             this.projectSyncError.set(error instanceof Error ? error.message : 'Unable to load project from directory.');
@@ -548,8 +553,11 @@ export class CanvasService {
         this.projectSyncError.set(null);
 
         try {
-            const directorySnapshot = await this.createDirectorySnapshot(directoryHandle);
+            const directorySnapshot = await this.createDirectorySnapshot(directoryHandle, {
+                skipCleanup: this.isFirstNonEmptyDirectorySyncForThisSession,
+            });
             await this.writeSnapshotToDirectory(directoryHandle, directorySnapshot);
+            this.isFirstNonEmptyDirectorySyncForThisSession = false;
             this.projectSyncStatus.set('idle');
             this.projectLastSyncedAt.set(new Date());
             this.projectHasPendingChanges.set(false);
@@ -1490,7 +1498,7 @@ export class CanvasService {
         }
 
         const step = this.canSnapToGrid()
-            ? Math.max(1, this.snapSize()) * (shiftKey ? 10 : 1)
+            ? Math.max(1, this.snapSize()) * (shiftKey ? 3 : 1)
             : (shiftKey ? 10 : 1);
 
         const delta: Point2D = {x: 0, y: 0};
@@ -1704,14 +1712,14 @@ export class CanvasService {
         }
 
         const blob = new Blob([await file.arrayBuffer()], {type: file.type});
-        const objectUrl = URL.createObjectURL(blob);
+        const dataUrl = await this.blobToDataUrl(blob);
         const fallbackName = file.name;
-        this.applySelectedWidgetImageDataUrl({dataUrl: objectUrl, fallbackName});
+        this.applySelectedWidgetImageDataUrl({dataUrl, fallbackName});
 
         // Eagerly write to project folder if connected
         const selected = this.selectedWidget();
         if (selected && selected.content.type === 'image') {
-            void this.eagerWriteImageToProjectFolder(selected.uuid, blob);
+            await this.eagerWriteImageToProjectFolder(selected.uuid, blob);
         }
     }
 
@@ -1732,6 +1740,7 @@ export class CanvasService {
             }
 
             const objectUrl = URL.createObjectURL(blob);
+            this.blobMimeTypeRegistry.set(objectUrl, blob.type);
             const fallbackName = this.resolveFileNameFromSource(trimmedUrl, 'image.png');
             this.applySelectedWidgetImageDataUrl({dataUrl: objectUrl, fallbackName});
 
@@ -1756,13 +1765,13 @@ export class CanvasService {
         }
 
         const blob = new Blob([await file.arrayBuffer()], {type: file.type});
-        const objectUrl = URL.createObjectURL(blob);
-        this.applySelectedWidgetVideoDataUrl(objectUrl);
+        const dataUrl = await this.blobToDataUrl(blob);
+        this.applySelectedWidgetVideoDataUrl(dataUrl);
 
         // Eagerly write to project folder if connected
         const selected = this.selectedWidget();
         if (selected && selected.content.type === 'video') {
-            void this.eagerWriteVideoToProjectFolder(selected.uuid, blob);
+            await this.eagerWriteVideoToProjectFolder(selected.uuid, blob);
         }
     }
 
@@ -1938,6 +1947,11 @@ export class CanvasService {
         this.isDraggingCanvas.set(false);
         this.canvasDragStartPointer = null;
         this.canvasDragStartOffset = null;
+
+        this.flushDeferredSnapshotAfterInteraction();
+
+        // Flush a debounced sync once panning stops.
+        this.scheduleProjectDirectorySync();
     }
 
     public handleGlobalPointerMove(event: PointerLikeEvent) {
@@ -2090,6 +2104,8 @@ export class CanvasService {
             ...stateWidget,
             ...this.widgetDragService.readElementPosition(el),
         });
+
+        this.flushDeferredSnapshotAfterInteraction();
     }
 
     public widgetResizeStart({widget, el, event, position}: {
@@ -2205,6 +2221,8 @@ export class CanvasService {
             x: rect.x,
             y: rect.y,
         });
+
+        this.flushDeferredSnapshotAfterInteraction();
     }
 
     private canvasZoomBy(delta: number, focalPoint?: Point2D) {
@@ -2345,6 +2363,11 @@ export class CanvasService {
 
         this.projectHasPendingChanges.set(true);
 
+        // Keep filesystem writes out of hot pointer-move loops.
+        if (this.isDraggingCanvas() || this.isDraggingWidget() || this.isResizingWidget()) {
+            return;
+        }
+
         if (this.projectSyncTimeout) {
             clearTimeout(this.projectSyncTimeout);
         }
@@ -2353,6 +2376,20 @@ export class CanvasService {
             this.projectSyncTimeout = null;
             void this.syncProjectToDirectoryNow();
         }, this.projectSyncDebounceMs);
+    }
+
+    private isInteractionInProgress(): boolean {
+        return this.isDraggingCanvas() || this.isDraggingWidget() || this.isResizingWidget();
+    }
+
+    private flushDeferredSnapshotAfterInteraction(): void {
+        if (!this.shouldFlushSnapshotAfterInteraction || this.isInteractionInProgress()) {
+            return;
+        }
+
+        this.shouldFlushSnapshotAfterInteraction = false;
+        this.pendingSnapshot = this.buildSnapshot();
+        this.scheduleSnapshotFlush();
     }
 
     private limitHistory(items: EditorStateSnapshot[]): EditorStateSnapshot[] {
@@ -2580,6 +2617,13 @@ export class CanvasService {
         }
 
         if (source.startsWith('blob:')) {
+            // Look up the MIME type registered when the blob URL was created so that
+            // non-PNG images (e.g. JPEG) get the correct file extension rather than
+            // always falling back to 'png'.
+            const registeredMime = this.blobMimeTypeRegistry.get(source);
+            if (registeredMime) {
+                return this.mimeTypeToExtension(registeredMime);
+            }
             return fallbackExtension;
         }
 
@@ -2593,7 +2637,10 @@ export class CanvasService {
         }
     }
 
-    private async createDirectorySnapshot(directoryHandle: FileSystemDirectoryHandleLike): Promise<EditorStateSnapshot> {
+    private async createDirectorySnapshot(
+        directoryHandle: FileSystemDirectoryHandleLike,
+        options?: {skipCleanup?: boolean},
+    ): Promise<EditorStateSnapshot> {
         const snapshot = this.buildSnapshot();
         const assetsDirectory = await directoryHandle.getDirectoryHandle(this.PROJECT_ASSETS_DIR, {create: true});
         const usedAssetNames = new Set<string>();
@@ -2628,7 +2675,10 @@ export class CanvasService {
             };
         }));
 
-        await this.cleanupUnusedAssetsInDirectory(assetsDirectory, usedAssetNames);
+        // Skip asset cleanup on first sync of a non-empty directory to preserve existing assets
+        if (!options?.skipCleanup) {
+            await this.cleanupUnusedAssetsInDirectory(assetsDirectory, usedAssetNames);
+        }
 
         return {
             canvas: {...snapshot.canvas},
