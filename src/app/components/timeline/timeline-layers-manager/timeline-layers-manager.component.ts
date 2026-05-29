@@ -72,16 +72,21 @@ export class TimelineLayersManagerComponent {
     }
   }
 
-  onLayerDrop(event: DragEvent, targetIndex: number): void {
+  onLayerDrop(event: DragEvent, displayTargetIndex: number): void {
     event.preventDefault();
     if (!this.draggedUuid) return;
 
-    // Find the source index
-    const sourceIndex = this.layers().findIndex(l => l.uuid === this.draggedUuid);
-    if (sourceIndex === -1 || sourceIndex === targetIndex) return;
+    const layers = this.layers();
+    const displaySourceIndex = layers.findIndex(l => l.uuid === this.draggedUuid);
+    if (displaySourceIndex === -1 || displaySourceIndex === displayTargetIndex) return;
 
-    // Reorder through the service
-    this.timelineService.reorderLayers(this.draggedUuid, targetIndex);
+    // layers() is sorted descending by z (display order).
+    // reorderLayerToIndex() works on the ascending-z list inside the service.
+    // Convert display index → ascending index: ascIdx = (n - 1) - displayIdx
+    const n = layers.length;
+    const ascendingTargetIndex = (n - 1) - displayTargetIndex;
+
+    this.timelineService.reorderLayers(this.draggedUuid, ascendingTargetIndex);
     this.draggedUuid = null;
   }
 

@@ -15,18 +15,16 @@
   overflow: hidden;
   background-color: var(--ds-surface-0);
   border-top: 1px solid var(--ds-border-default);
+}
 
-  &--closed {
-    height: auto;
-
-    .timeline-panel__content {
-      display: none;
-    }
-
-    .timeline-panel__toolbar {
-      display: none;
-    }
-  }
+.timeline-panel__resize-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+  z-index: 2;
 }
 
 .timeline-panel__header {

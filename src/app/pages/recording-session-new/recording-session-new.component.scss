@@ -82,11 +82,9 @@ app-timeline-panel {
   grid-column: 1 / -1;
   grid-row: 2;
   min-height: 0;
-  height: 200px;
   min-width: 100%;
   max-height: 60vh;
-  resize: vertical;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .canvas {

@@ -1,10 +1,17 @@
-<div class="timeline-panel" [class.timeline-panel--closed]="!isOpened()">
-  <!-- Header: toggle + title -->
+<div class="timeline-panel">
+  <div
+    class="timeline-panel__resize-handle"
+    role="separator"
+    aria-label="Resize timeline panel"
+    aria-orientation="horizontal"
+    (pointerdown)="onResizeHandlePointerDown($event)"
+  ></div>
+
   <div class="timeline-panel__header">
     <button
       type="button"
       class="timeline-panel__toggle"
-      (click)="onTogglePanel(!isOpened())"
+      (click)="onTogglePanel()"
       [attr.aria-expanded]="isOpened()"
     >
       {{ isOpened() ? '▼' : '▶' }}

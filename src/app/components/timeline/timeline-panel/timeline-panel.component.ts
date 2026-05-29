@@ -4,6 +4,7 @@ import {
   signal,
   computed,
   inject,
+  OnDestroy,
 } from '@angular/core';
 import { TimelineService } from '../../../services/timeline.service';
 import { CanvasService } from '../../../services/canvas.service';
@@ -17,15 +18,26 @@ import { TimelineWidget } from '../../../models/timeline.models';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TimelineToolbarComponent, TimelineLayersManagerComponent, TimelineTrackComponent],
+  host: {
+    '[style.height.px]': 'panelVisualHeight()',
+  },
   templateUrl: './timeline-panel.component.html',
   styleUrl: './timeline-panel.component.scss',
 })
-export class TimelinePanelComponent {
+export class TimelinePanelComponent implements OnDestroy {
   private readonly timelineService = inject(TimelineService);
   private readonly canvasService = inject(CanvasService);
 
+  private readonly defaultPanelHeight = 350;
+  private readonly panelHeaderHeight = 36;
+  private readonly maxPanelViewportRatio = 0.6;
+
+  private resizePointerId: number | null = null;
+  private resizeStartY = 0;
+  private resizeStartHeight = 0;
+
   readonly layers = this.timelineService.layers;
-  readonly isOpened = signal(true);
+  readonly panelHeight = signal(this.defaultPanelHeight);
   readonly layersManagerScrollTop = signal(0);
   readonly trackScrollTop = signal(0);
 
@@ -33,11 +45,34 @@ export class TimelinePanelComponent {
   readonly zoom = this.timelineService.zoom;
   readonly isPlaying = this.timelineService.isPlaying;
   readonly time = this.timelineService.time;
+  readonly isOpened = computed(() => this.panelHeight() > 0);
+  readonly panelVisualHeight = computed(() => Math.max(this.panelHeight(), this.panelHeaderHeight));
 
   readonly anyLayerSelected = computed(() => false); // TODO: integrate with CanvasService selection
 
-  onTogglePanel(opened: boolean): void {
-    this.isOpened.set(opened);
+  ngOnDestroy(): void {
+    this.detachResizeListeners();
+  }
+
+  onTogglePanel(): void {
+    this.panelHeight.update((height) => (height > 0 ? 0 : this.defaultPanelHeight));
+  }
+
+  onResizeHandlePointerDown(event: PointerEvent): void {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.resizePointerId = event.pointerId;
+    this.resizeStartY = event.clientY;
+    this.resizeStartHeight = this.panelHeight();
+
+    window.addEventListener('pointermove', this.onResizePointerMove, { passive: false });
+    window.addEventListener('pointerup', this.onResizePointerUp);
+    window.addEventListener('pointercancel', this.onResizePointerUp);
   }
 
   onLayersManagerScrolled(scrollTop: number): void {
@@ -60,5 +95,37 @@ export class TimelinePanelComponent {
 
   onLayerIsLockedChanged(layer: TimelineWidget): void {
     this.canvasService.setWidgetLocked(layer.uuid, !!layer.locked);
+  }
+
+  private readonly onResizePointerMove = (event: PointerEvent): void => {
+    if (this.resizePointerId !== event.pointerId) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const deltaY = this.resizeStartY - event.clientY;
+    const requestedHeight = this.resizeStartHeight + deltaY;
+    this.panelHeight.set(this.clampHeight(requestedHeight));
+  };
+
+  private readonly onResizePointerUp = (event: PointerEvent): void => {
+    if (this.resizePointerId !== event.pointerId) {
+      return;
+    }
+
+    this.detachResizeListeners();
+    this.resizePointerId = null;
+  };
+
+  private detachResizeListeners(): void {
+    window.removeEventListener('pointermove', this.onResizePointerMove);
+    window.removeEventListener('pointerup', this.onResizePointerUp);
+    window.removeEventListener('pointercancel', this.onResizePointerUp);
+  }
+
+  private clampHeight(height: number): number {
+    const maxHeight = Math.floor(window.innerHeight * this.maxPanelViewportRatio);
+    return Math.max(0, Math.min(Math.round(height), maxHeight));
   }
 }
