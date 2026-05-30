@@ -5,6 +5,7 @@ import {DEFAULT_WIDGET_TEXT_STYLE, WidgetStateList, WidgetStateItem} from '../mo
 describe('CanvasService', () => {
   let service: CanvasService;
   const editorStorageKey = 'video-director.editor-state.v1';
+  const projectDirectoryAutoSyncKey = 'video-director.project-directory-auto-sync.v1';
 
   type WritableLike = { write: (data: Blob) => Promise<void>; close: () => Promise<void> };
 
@@ -150,7 +151,10 @@ describe('CanvasService', () => {
 
   beforeEach(() => {
     localStorage.removeItem(editorStorageKey);
+    localStorage.removeItem(projectDirectoryAutoSyncKey);
     delete (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker;
+    delete (globalThis as unknown as {requestIdleCallback?: unknown}).requestIdleCallback;
+    delete (globalThis as unknown as {cancelIdleCallback?: unknown}).cancelIdleCallback;
     TestBed.configureTestingModule({});
     service = TestBed.inject(CanvasService);
     service.widgetsState.replaceAll(createSeedWidgets());
@@ -1022,6 +1026,49 @@ describe('CanvasService', () => {
 
     await service.syncProjectToDirectoryNow();
     expect(service.projectHasPendingChanges()).toBeFalse();
+  });
+
+  it('keeps folder sync in manual mode until Sync now is requested', async () => {
+    const { canvas, wrapper } = createCanvasElements();
+    service.init({ canvas, canvasWrapper: wrapper });
+
+    const fileMap = new Map<string, Blob>();
+    const directoryHandle = createMemoryDirectoryHandle('video-project', '', fileMap);
+    (globalThis as unknown as {showDirectoryPicker?: unknown}).showDirectoryPicker = jasmine
+      .createSpy('showDirectoryPicker')
+      .and.resolveTo(directoryHandle);
+
+    await service.connectProjectDirectory();
+    fileMap.clear();
+    service.setProjectDirectoryAutoSyncEnabled(false);
+
+    jasmine.clock().install();
+    try {
+      service.setShowGrid(!service.showGrid());
+      await Promise.resolve();
+      jasmine.clock().tick(5000);
+      await Promise.resolve();
+
+      expect(service.projectHasPendingChanges()).toBeTrue();
+      expect(fileMap.has('state.json')).toBeFalse();
+
+      await service.syncProjectToDirectoryNow();
+
+      expect(fileMap.has('state.json')).toBeTrue();
+      expect(service.projectHasPendingChanges()).toBeFalse();
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('restores the saved folder auto-sync preference from localStorage', () => {
+    TestBed.resetTestingModule();
+    localStorage.setItem(projectDirectoryAutoSyncKey, '0');
+
+    TestBed.configureTestingModule({});
+    const restoredService = TestBed.inject(CanvasService);
+
+    expect(restoredService.projectDirectoryAutoSyncEnabled()).toBeFalse();
   });
 
   it('removes stale asset files when synced widgets no longer reference them', async () => {

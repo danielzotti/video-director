@@ -338,6 +338,27 @@
     gap: var(--ds-space-2);
   }
 
+  &__sync-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--ds-space-1);
+    flex-wrap: wrap;
+  }
+
+  &__sync-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(245, 192, 106, 0.35);
+    background: rgba(245, 192, 106, 0.12);
+    color: #f5c06a;
+    font-size: var(--ds-font-xs);
+    white-space: nowrap;
+  }
+
 
   &__import-banner {
     display: flex;

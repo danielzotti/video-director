@@ -1057,7 +1057,12 @@
                     <div class="settings-panel__row settings-panel__row--column">
                         <div class="settings-panel__sync-header">
                             <span class="settings-panel__field-label">Project folder sync</span>
-                            <app-project-sync-badge/>
+                            <div class="settings-panel__sync-status">
+                                @if (!isProjectDirectoryAutoSyncEnabled) {
+                                    <span class="settings-panel__sync-mode-badge" title="Folder sync runs only when you click Sync now">Manual mode</span>
+                                }
+                                <app-project-sync-badge/>
+                            </div>
                         </div>
                         <!-- Storage backend badge: shows which backend is currently active -->
                         <div class="settings-panel__storage-backend">
@@ -1071,6 +1076,14 @@
                         </div>
 
                         @if (isProjectDirectorySyncSupported) {
+                            <div class="settings-panel__row">
+                                <app-ui-toggle
+                                        label="Auto sync folder changes"
+                                        [checked]="isProjectDirectoryAutoSyncEnabled"
+                                        (checkedChange)="setProjectDirectoryAutoSyncEnabled($event)"
+                                />
+                            </div>
+
                             <div class="settings-panel__sync-actions">
                                 @if (!isProjectDirectoryConnected) {
                                     <app-ui-button size="sm" [disabled]="isProjectSyncBusy"
@@ -1094,6 +1107,9 @@
                             </div>
 
                             <span class="settings-panel__help">Folder: {{ projectDirectoryName }}</span>
+                            @if (!isProjectDirectoryAutoSyncEnabled) {
+                                <span class="settings-panel__help">Manual sync only is enabled. Local changes stay in IndexedDB until you click Sync now.</span>
+                            }
                             @if (hasPendingProjectChanges) {
                                 <span class="settings-panel__help">Pending local changes not synced yet.</span>
                             }

@@ -89,6 +89,8 @@ interface FileSystemAccessApi {
         mode?: 'read' | 'readwrite';
         startIn?: string;
     }) => Promise<FileSystemDirectoryHandleLike>;
+    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+    cancelIdleCallback?: (handle: number) => void;
 }
 
 interface CanvasSnapshot {
@@ -239,6 +241,7 @@ export class CanvasService {
     private readonly PROJECT_HANDLE_STORE_NAME = 'handles';
     private readonly PROJECT_HANDLE_KEY = 'project-directory';
     private readonly PROJECT_DIRECTORY_PROMPT_SEEN_KEY = 'video-director.project-directory-connect-prompt.v1';
+    private readonly PROJECT_DIRECTORY_AUTO_SYNC_KEY = 'video-director.project-directory-auto-sync.v1';
     private readonly HISTORY_LIMIT = 100;
     private readonly undoStack = signal<EditorStateSnapshot[]>([]);
     private readonly redoStack = signal<EditorStateSnapshot[]>([]);
@@ -271,10 +274,13 @@ export class CanvasService {
     private currentSnapshotUpdatedAt = 0;
 
     private projectDirectoryHandle: FileSystemDirectoryHandleLike | null = null;
-    private readonly projectSyncDebounceMs = 700;
+    private readonly projectSyncDebounceMs = 2500;
+    private readonly projectSyncIdleTimeoutMs = 1200;
     private projectSyncTimeout: ReturnType<typeof setTimeout> | null = null;
+    private projectSyncIdleCallbackId: number | null = null;
     private isProjectSyncInFlight = false;
     private isProjectSyncQueued = false;
+    private queuedProjectSyncReason: 'auto' | 'manual' = 'auto';
     /** Skip cleanup on the first sync of a non-empty directory to preserve existing assets. */
     private isFirstNonEmptyDirectorySyncForThisSession = false;
 
@@ -285,6 +291,7 @@ export class CanvasService {
     public projectLastSyncedAt = signal<Date | null>(null);
     public projectSyncError = signal<string | null>(null);
     public projectHasPendingChanges = signal(false);
+    public readonly projectDirectoryAutoSyncEnabled = signal(true);
     public importPromptForDirectory = signal(true);
     public projectImportNotice = signal<ProjectImportNotice | null>(null);
     /** Active persistence backend – drives the status badge in the settings panel. */
@@ -295,6 +302,7 @@ export class CanvasService {
     public readonly pendingImportBackupName = computed(() => this.pendingImportBackupFileName());
 
     constructor() {
+        this.restoreProjectDirectoryAutoSyncPreference();
         void this.restoreProjectDirectoryConnection();
 
         effect(() => {
@@ -482,11 +490,7 @@ export class CanvasService {
         this.projectHasPendingChanges.set(false);
         this.isFirstNonEmptyDirectorySyncForThisSession = false;
         void this.clearPersistedProjectDirectoryHandle();
-
-        if (this.projectSyncTimeout) {
-            clearTimeout(this.projectSyncTimeout);
-            this.projectSyncTimeout = null;
-        }
+        this.clearScheduledProjectDirectorySync();
     }
 
     public async loadProjectFromDirectory(): Promise<void> {
@@ -538,14 +542,22 @@ export class CanvasService {
         }
     }
 
-    public async syncProjectToDirectoryNow(): Promise<void> {
+    public async syncProjectToDirectoryNow(options?: {reason?: 'auto' | 'manual'}): Promise<void> {
         const directoryHandle = this.projectDirectoryHandle;
         if (!directoryHandle) {
             throw new Error('No project folder connected.');
         }
 
+        const reason = options?.reason ?? 'manual';
+        if (reason === 'manual') {
+            this.clearScheduledProjectDirectorySync();
+        }
+
         if (this.isProjectSyncInFlight) {
             this.isProjectSyncQueued = true;
+            if (reason === 'manual') {
+                this.queuedProjectSyncReason = 'manual';
+            }
             return;
         }
 
@@ -555,7 +567,7 @@ export class CanvasService {
 
         try {
             const directorySnapshot = await this.createDirectorySnapshot(directoryHandle, {
-                skipCleanup: this.isFirstNonEmptyDirectorySyncForThisSession,
+                skipCleanup: this.isFirstNonEmptyDirectorySyncForThisSession || reason === 'auto',
             });
             await this.writeSnapshotToDirectory(directoryHandle, directorySnapshot);
             this.isFirstNonEmptyDirectorySyncForThisSession = false;
@@ -571,7 +583,9 @@ export class CanvasService {
 
             if (this.isProjectSyncQueued) {
                 this.isProjectSyncQueued = false;
-                void this.syncProjectToDirectoryNow();
+                const queuedReason = this.queuedProjectSyncReason;
+                this.queuedProjectSyncReason = 'auto';
+                void this.syncProjectToDirectoryNow({reason: queuedReason});
             }
         }
     }
@@ -2375,6 +2389,11 @@ export class CanvasService {
 
         this.projectHasPendingChanges.set(true);
 
+        if (!this.projectDirectoryAutoSyncEnabled()) {
+            this.clearScheduledProjectDirectorySync();
+            return;
+        }
+
         // Keep filesystem writes out of hot pointer-move loops.
         if (this.isDraggingCanvas() || this.isDraggingWidget() || this.isResizingWidget() || this.isPointerDragInProgress) {
             return;
@@ -2384,10 +2403,37 @@ export class CanvasService {
             clearTimeout(this.projectSyncTimeout);
         }
 
+        if (this.projectSyncIdleCallbackId !== null) {
+            this.getFileSystemAccessApi()?.cancelIdleCallback?.(this.projectSyncIdleCallbackId);
+            this.projectSyncIdleCallbackId = null;
+        }
+
         this.projectSyncTimeout = setTimeout(() => {
             this.projectSyncTimeout = null;
-            void this.syncProjectToDirectoryNow();
+
+            const fsApi = this.getFileSystemAccessApi();
+            if (fsApi?.requestIdleCallback) {
+                this.projectSyncIdleCallbackId = fsApi.requestIdleCallback(() => {
+                    this.projectSyncIdleCallbackId = null;
+                    void this.syncProjectToDirectoryNow({reason: 'auto'});
+                }, {timeout: this.projectSyncIdleTimeoutMs});
+                return;
+            }
+
+            void this.syncProjectToDirectoryNow({reason: 'auto'});
         }, this.projectSyncDebounceMs);
+    }
+
+    private clearScheduledProjectDirectorySync(): void {
+        if (this.projectSyncTimeout) {
+            clearTimeout(this.projectSyncTimeout);
+            this.projectSyncTimeout = null;
+        }
+
+        if (this.projectSyncIdleCallbackId !== null) {
+            this.getFileSystemAccessApi()?.cancelIdleCallback?.(this.projectSyncIdleCallbackId);
+            this.projectSyncIdleCallbackId = null;
+        }
     }
 
     private isInteractionInProgress(): boolean {
@@ -2821,6 +2867,19 @@ export class CanvasService {
 
     private markProjectDirectoryPromptAsConnectedChoice(): void {
         this.getLocalStorage()?.setItem(this.PROJECT_DIRECTORY_PROMPT_SEEN_KEY, '0');
+    }
+
+    private restoreProjectDirectoryAutoSyncPreference(): void {
+        const value = this.getLocalStorage()?.getItem(this.PROJECT_DIRECTORY_AUTO_SYNC_KEY);
+        if (value === null) {
+            return;
+        }
+
+        this.projectDirectoryAutoSyncEnabled.set(value !== '0');
+    }
+
+    private persistProjectDirectoryAutoSyncPreference(value: boolean): void {
+        this.getLocalStorage()?.setItem(this.PROJECT_DIRECTORY_AUTO_SYNC_KEY, value ? '1' : '0');
     }
 
     private async restoreProjectDirectoryConnection(): Promise<void> {
@@ -3355,6 +3414,20 @@ export class CanvasService {
 
     public setImportPromptForDirectory(value: boolean): void {
         this.importPromptForDirectory.set(value);
+    }
+
+    public setProjectDirectoryAutoSyncEnabled(value: boolean): void {
+        this.projectDirectoryAutoSyncEnabled.set(value);
+        this.persistProjectDirectoryAutoSyncPreference(value);
+
+        if (!value) {
+            this.clearScheduledProjectDirectorySync();
+            return;
+        }
+
+        if (this.projectDirectoryHandle && this.projectHasPendingChanges()) {
+            this.scheduleProjectDirectorySync();
+        }
     }
 
     public dismissProjectImportNotice(): void {

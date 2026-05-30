@@ -405,6 +405,10 @@ export class CanvasSettingsPanelComponent {
     return this.cs.projectHasPendingChanges();
   }
 
+  protected get isProjectDirectoryAutoSyncEnabled(): boolean {
+    return this.cs.projectDirectoryAutoSyncEnabled();
+  }
+
 
   protected get activeStorageBackendLabel(): string {
     const backend = this.cs.activeStorageBackend();
@@ -462,6 +466,10 @@ export class CanvasSettingsPanelComponent {
 
   protected setImportPromptForDirectory(value: boolean): void {
     this.cs.setImportPromptForDirectory(value);
+  }
+
+  protected setProjectDirectoryAutoSyncEnabled(value: boolean): void {
+    this.cs.setProjectDirectoryAutoSyncEnabled(value);
   }
 
   protected dismissProjectImportNotice(): void {
