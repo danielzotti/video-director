@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, computed } from '@angular/core';
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import {
   WidgetImageFitMode,
   WIDGET_IMAGE_FIT_MODES,
@@ -11,7 +11,6 @@ import {
   WIDGET_TEXT_FONT_FAMILIES,
   WidgetContentType,
   WidgetBorderStyle,
-  WIDGET_BORDER_STYLES,
   DEFAULT_WIDGET_OPACITY,
   DEFAULT_WIDGET_BACKGROUND_OPACITY,
   DEFAULT_WIDGET_BORDER,
@@ -29,7 +28,7 @@ type MediaAnchor = 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'ce
   selector: 'app-canvas-settings-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent, UiButtonComponent, UiIconComponent, CoverPositionControlsComponent, CropPositionControlsComponent, ProjectSyncBadgeComponent],
+  imports: [DecimalPipe, UiToggleComponent, UiSelectComponent, UiSeparatorComponent, UiButtonComponent, UiIconComponent, CoverPositionControlsComponent, CropPositionControlsComponent, ProjectSyncBadgeComponent],
   templateUrl: './canvas-settings-panel.component.html',
   styleUrl: './canvas-settings-panel.component.scss',
 })
@@ -55,6 +54,18 @@ export class CanvasSettingsPanelComponent {
      'fira-code': 'Fira Code (Mono)',
    };
 
+  private static readonly MEDIA_ANCHOR_OFFSETS: Record<MediaAnchor, { x: number; y: number }> = {
+    'top-left': { x: 0, y: 0 },
+    'top-center': { x: -50, y: 0 },
+    'top-right': { x: -100, y: 0 },
+    'center-left': { x: 0, y: -50 },
+    center: { x: -50, y: -50 },
+    'center-right': { x: -100, y: -50 },
+    'bottom-left': { x: 0, y: -100 },
+    'bottom-center': { x: -50, y: -100 },
+    'bottom-right': { x: -100, y: -100 },
+  };
+
    isOpen = input<boolean>(false);
   showBackdrop = input<boolean>(true);
   panelMode = input<'popover' | 'sidebar'>('popover');
@@ -64,6 +75,19 @@ export class CanvasSettingsPanelComponent {
   closed = output<void>();
 
   protected cs = inject(CanvasService);
+  private readonly selectedWidgetComputed = computed(() => this.cs.selectedWidget());
+  private readonly selectedTextContentComputed = computed<WidgetTextContent | null>(() => {
+    const widget = this.selectedWidgetComputed();
+    return widget?.content.type === 'text' ? widget.content : null;
+  });
+  private readonly selectedImageContentComputed = computed<WidgetImageContent | null>(() => {
+    const widget = this.selectedWidgetComputed();
+    return widget?.content.type === 'image' ? widget.content : null;
+  });
+  private readonly selectedVideoContentComputed = computed<WidgetVideoContent | null>(() => {
+    const widget = this.selectedWidgetComputed();
+    return widget?.content.type === 'video' ? widget.content : null;
+  });
   protected readonly geometryDraft = signal<Record<WidgetGeometryField, string>>({
     x: '', y: '', width: '', height: '',
   });
@@ -234,22 +258,19 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected get selectedWidget() {
-    return this.cs.selectedWidget();
+    return this.selectedWidgetComputed();
   }
 
   protected get selectedTextContent(): WidgetTextContent | null {
-    const content = this.selectedWidget?.content;
-    return content?.type === 'text' ? content : null;
+    return this.selectedTextContentComputed();
   }
 
   protected get selectedImageContent(): WidgetImageContent | null {
-    const content = this.selectedWidget?.content;
-    return content?.type === 'image' ? content : null;
+    return this.selectedImageContentComputed();
   }
 
   protected get selectedVideoContent(): WidgetVideoContent | null {
-    const content = this.selectedWidget?.content;
-    return content?.type === 'video' ? content : null;
+    return this.selectedVideoContentComputed();
   }
 
   protected get canToggleSelectedVideoPlayback(): boolean {
@@ -383,7 +404,6 @@ export class CanvasSettingsPanelComponent {
     return this.selectedWidget?.opacity ?? DEFAULT_WIDGET_OPACITY;
   }
 
-  protected readonly borderStyleOptions = WIDGET_BORDER_STYLES;
 
   protected get widgetInputStep(): number {
     return this.cs.canSnapToGrid() ? this.cs.snapSize() : 1;
@@ -529,21 +549,21 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected onCanvasWidthChange(event: Event): void {
-    const width = Number((event.target as HTMLInputElement).value);
-    if (!Number.isFinite(width)) {
+    const width = this.readInputNumber(event);
+    if (width === null) {
       return;
     }
 
-    this.cs.canvasResize({ width });
+    this.setCanvasDimension('width', width);
   }
 
   protected onCanvasHeightChange(event: Event): void {
-    const height = Number((event.target as HTMLInputElement).value);
-    if (!Number.isFinite(height)) {
+    const height = this.readInputNumber(event);
+    if (height === null) {
       return;
     }
 
-    this.cs.canvasResize({ height });
+    this.setCanvasDimension('height', height);
   }
 
   protected setContentType(value: string | number): void {
@@ -560,8 +580,8 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected onTextFontSizeChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (!Number.isFinite(value)) {
+    const value = this.readInputNumber(event);
+    if (value === null) {
       return;
     }
 
@@ -614,8 +634,8 @@ export class CanvasSettingsPanelComponent {
     }
 
       protected onTextLineHeightChange(event: Event): void {
-       const value = Number((event.target as HTMLInputElement).value);
-       if (!Number.isFinite(value)) {
+       const value = this.readInputNumber(event);
+       if (value === null) {
          return;
        }
 
@@ -653,23 +673,22 @@ export class CanvasSettingsPanelComponent {
      }
 
      protected onTextShadowBlurChange(event: Event): void {
-       const value = Number((event.target as HTMLInputElement).value);
-       if (Number.isFinite(value)) { this.cs.setSelectedWidgetTextShadowBlur(value); }
+       const value = this.readInputNumber(event);
+       if (value !== null) { this.cs.setSelectedWidgetTextShadowBlur(value); }
      }
 
      protected onTextShadowOffsetXChange(event: Event): void {
-       const value = Number((event.target as HTMLInputElement).value);
-       if (Number.isFinite(value)) { this.cs.setSelectedWidgetTextShadowOffsetX(value); }
+       const value = this.readInputNumber(event);
+       if (value !== null) { this.cs.setSelectedWidgetTextShadowOffsetX(value); }
      }
 
      protected onTextShadowOffsetYChange(event: Event): void {
-       const value = Number((event.target as HTMLInputElement).value);
-       if (Number.isFinite(value)) { this.cs.setSelectedWidgetTextShadowOffsetY(value); }
+       const value = this.readInputNumber(event);
+       if (value !== null) { this.cs.setSelectedWidgetTextShadowOffsetY(value); }
      }
 
    protected openImageFilePicker(input: HTMLInputElement): void {
-    input.value = '';
-    input.click();
+      this.resetAndOpenFilePicker(input);
   }
 
   protected async onImageFileSelected(event: Event): Promise<void> {
@@ -682,16 +701,11 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected onImageDropzoneDragOver(event: DragEvent): void {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'copy';
-    }
-    this.isImageDropzoneActive.set(true);
+    this.handleDropzoneDragOver(event, this.isImageDropzoneActive);
   }
 
   protected onImageDropzoneDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    this.isImageDropzoneActive.set(false);
+    this.handleDropzoneDragLeave(event, this.isImageDropzoneActive);
   }
 
   protected async onImageDropzoneDrop(event: DragEvent): Promise<void> {
@@ -729,7 +743,7 @@ export class CanvasSettingsPanelComponent {
   protected async confirmImageUrlModal(): Promise<void> {
     const url = this.imageUrlDraft().trim();
     if (!url) {
-      this.imageUrlError.set('Inserisci un URL immagine valido.');
+      this.imageUrlError.set('Enter a valid image URL.');
       return;
     }
 
@@ -740,7 +754,7 @@ export class CanvasSettingsPanelComponent {
       this.isImageUrlSaving.set(false);
       this.closeImageUrlModal();
     } catch {
-      this.imageUrlError.set('Impossibile scaricare l\'immagine da questo URL (controlla CORS/URL).');
+      this.imageUrlError.set('Unable to download the image from this URL (check CORS/URL).');
     } finally {
       this.isImageUrlSaving.set(false);
     }
@@ -806,28 +820,22 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected onImageOffsetXChange(value: number | Event): void {
-    const numericValue = value instanceof Event
-      ? Number((value.target as HTMLInputElement).value)
-      : value;
-    if (Number.isFinite(numericValue)) {
+    const numericValue = this.resolveNumericInput(value);
+    if (numericValue !== null) {
       this.cs.setSelectedWidgetImageOffsetX(numericValue);
     }
   }
 
   protected onImageOffsetYChange(value: number | Event): void {
-    const numericValue = value instanceof Event
-      ? Number((value.target as HTMLInputElement).value)
-      : value;
-    if (Number.isFinite(numericValue)) {
+    const numericValue = this.resolveNumericInput(value);
+    if (numericValue !== null) {
       this.cs.setSelectedWidgetImageOffsetY(numericValue);
     }
   }
 
   protected onImageCropZoomChange(value: number | Event): void {
-    const numericValue = value instanceof Event
-      ? Number((value.target as HTMLInputElement).value)
-      : value;
-    if (Number.isFinite(numericValue)) {
+    const numericValue = this.resolveNumericInput(value);
+    if (numericValue !== null) {
       this.cs.setSelectedWidgetImageCropZoom(numericValue);
     }
   }
@@ -857,35 +865,23 @@ export class CanvasSettingsPanelComponent {
   }
 
    protected onVideoOffsetXChange(value: number | Event): void {
-     if (value instanceof Event) {
-       const numValue = Number((value.target as HTMLInputElement).value);
-       if (Number.isFinite(numValue)) {
-         this.cs.setSelectedWidgetVideoOffsetX(numValue);
-       }
-     } else {
-       this.cs.setSelectedWidgetVideoOffsetX(value);
+     const numericValue = this.resolveNumericInput(value);
+     if (numericValue !== null) {
+       this.cs.setSelectedWidgetVideoOffsetX(numericValue);
      }
    }
 
    protected onVideoOffsetYChange(value: number | Event): void {
-     if (value instanceof Event) {
-       const numValue = Number((value.target as HTMLInputElement).value);
-       if (Number.isFinite(numValue)) {
-         this.cs.setSelectedWidgetVideoOffsetY(numValue);
-       }
-     } else {
-       this.cs.setSelectedWidgetVideoOffsetY(value);
+     const numericValue = this.resolveNumericInput(value);
+     if (numericValue !== null) {
+       this.cs.setSelectedWidgetVideoOffsetY(numericValue);
      }
    }
 
    protected onVideoCropZoomChange(value: number | Event): void {
-     if (value instanceof Event) {
-       const numValue = Number((value.target as HTMLInputElement).value);
-       if (Number.isFinite(numValue)) {
-         this.cs.setSelectedWidgetVideoCropZoom(numValue);
-       }
-     } else if (Number.isFinite(value)) {
-       this.cs.setSelectedWidgetVideoCropZoom(value);
+     const numericValue = this.resolveNumericInput(value);
+     if (numericValue !== null) {
+       this.cs.setSelectedWidgetVideoCropZoom(numericValue);
      }
    }
 
@@ -921,7 +917,7 @@ export class CanvasSettingsPanelComponent {
     }
 
     const time = Number((event.target as HTMLInputElement).value);
-    if (isFinite(time)) {
+    if (Number.isFinite(time)) {
       this.cs.seekWidgetVideo(widget.uuid, time);
     }
   }
@@ -933,14 +929,13 @@ export class CanvasSettingsPanelComponent {
     }
 
     const volume = Number((event.target as HTMLInputElement).value);
-    if (isFinite(volume)) {
+    if (Number.isFinite(volume)) {
       this.cs.setWidgetVideoVolume(widget.uuid, volume);
     }
   }
 
   protected openVideoFilePicker(input: HTMLInputElement): void {
-    input.value = '';
-    input.click();
+    this.resetAndOpenFilePicker(input);
   }
 
   protected async onVideoFileSelected(event: Event): Promise<void> {
@@ -953,16 +948,11 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected onVideoDropzoneDragOver(event: DragEvent): void {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'copy';
-    }
-    this.isVideoDropzoneActive.set(true);
+    this.handleDropzoneDragOver(event, this.isVideoDropzoneActive);
   }
 
   protected onVideoDropzoneDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    this.isVideoDropzoneActive.set(false);
+    this.handleDropzoneDragLeave(event, this.isVideoDropzoneActive);
   }
 
   protected async onVideoDropzoneDrop(event: DragEvent): Promise<void> {
@@ -997,8 +987,8 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected onWidgetBackgroundOpacityChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (!Number.isFinite(value)) {
+    const value = this.readInputNumber(event);
+    if (value === null) {
       return;
     }
 
@@ -1050,13 +1040,13 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected onBorderRadiusChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(value)) { this.cs.setSelectedWidgetBorderRadius(value); }
+    const value = this.readInputNumber(event);
+    if (value !== null) { this.cs.setSelectedWidgetBorderRadius(value); }
   }
 
   protected onBorderWidthChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(value)) { this.cs.setSelectedWidgetBorderWidth(value); }
+    const value = this.readInputNumber(event);
+    if (value !== null) { this.cs.setSelectedWidgetBorderWidth(value); }
   }
 
   protected onBorderColorChange(event: Event): void {
@@ -1073,8 +1063,8 @@ export class CanvasSettingsPanelComponent {
   }
 
    protected onPaddingChange(event: Event): void {
-     const value = Number((event.target as HTMLInputElement).value);
-     if (Number.isFinite(value)) { this.cs.setSelectedWidgetPadding(value); }
+     const value = this.readInputNumber(event);
+     if (value !== null) { this.cs.setSelectedWidgetPadding(value); }
    }
 
    protected onShadowColorChange(event: Event): void {
@@ -1083,18 +1073,18 @@ export class CanvasSettingsPanelComponent {
    }
 
    protected onShadowBlurChange(event: Event): void {
-     const value = Number((event.target as HTMLInputElement).value);
-     if (Number.isFinite(value)) { this.cs.setSelectedWidgetShadowBlur(value); }
+     const value = this.readInputNumber(event);
+     if (value !== null) { this.cs.setSelectedWidgetShadowBlur(value); }
    }
 
    protected onShadowOffsetXChange(event: Event): void {
-     const value = Number((event.target as HTMLInputElement).value);
-     if (Number.isFinite(value)) { this.cs.setSelectedWidgetShadowOffsetX(value); }
+     const value = this.readInputNumber(event);
+     if (value !== null) { this.cs.setSelectedWidgetShadowOffsetX(value); }
    }
 
    protected onShadowOffsetYChange(event: Event): void {
-     const value = Number((event.target as HTMLInputElement).value);
-     if (Number.isFinite(value)) { this.cs.setSelectedWidgetShadowOffsetY(value); }
+     const value = this.readInputNumber(event);
+     if (value !== null) { this.cs.setSelectedWidgetShadowOffsetY(value); }
    }
 
    protected setWidgetLocked(value: boolean): void {
@@ -1106,8 +1096,8 @@ export class CanvasSettingsPanelComponent {
   }
 
   protected onWidgetOpacityChange(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (!Number.isFinite(value)) {
+    const value = this.readInputNumber(event);
+    if (value === null) {
       return;
     }
 
@@ -1134,15 +1124,7 @@ export class CanvasSettingsPanelComponent {
       return;
     }
 
-    if (field === 'x') {
-      this.cs.setSelectedWidgetX(value);
-    } else if (field === 'y') {
-      this.cs.setSelectedWidgetY(value);
-    } else if (field === 'width') {
-      this.cs.setSelectedWidgetWidth(value);
-    } else {
-      this.cs.setSelectedWidgetHeight(value);
-    }
+    this.commitWidgetGeometryValue(field, value);
 
     this.syncWidgetFieldValue(input, field);
   }
@@ -1173,18 +1155,58 @@ export class CanvasSettingsPanelComponent {
   }
 
   private getOffsetsFromAnchor(anchor: MediaAnchor): { x: number; y: number } {
-    const offsetMap: Record<MediaAnchor, { x: number; y: number }> = {
-      'top-left': { x: 0, y: 0 },
-      'top-center': { x: -50, y: 0 },
-      'top-right': { x: -100, y: 0 },
-      'center-left': { x: 0, y: -50 },
-      center: { x: -50, y: -50 },
-      'center-right': { x: -100, y: -50 },
-      'bottom-left': { x: 0, y: -100 },
-      'bottom-center': { x: -50, y: -100 },
-      'bottom-right': { x: -100, y: -100 },
-    };
+    return CanvasSettingsPanelComponent.MEDIA_ANCHOR_OFFSETS[anchor];
+  }
 
-    return offsetMap[anchor];
+  private readInputNumber(event: Event): number | null {
+    const value = Number((event.target as HTMLInputElement).value);
+    return Number.isFinite(value) ? value : null;
+  }
+
+  private resetAndOpenFilePicker(input: HTMLInputElement): void {
+    input.value = '';
+    input.click();
+  }
+
+  private handleDropzoneDragOver(event: DragEvent, isActive: { set: (value: boolean) => void }): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+    isActive.set(true);
+  }
+
+  private handleDropzoneDragLeave(event: DragEvent, isActive: { set: (value: boolean) => void }): void {
+    event.preventDefault();
+    isActive.set(false);
+  }
+
+  private setCanvasDimension(dimension: 'width' | 'height', value: number): void {
+    this.cs.canvasResize({ [dimension]: value });
+  }
+
+  private commitWidgetGeometryValue(field: WidgetGeometryField, value: number): void {
+    switch (field) {
+      case 'x':
+        this.cs.setSelectedWidgetX(value);
+        return;
+      case 'y':
+        this.cs.setSelectedWidgetY(value);
+        return;
+      case 'width':
+        this.cs.setSelectedWidgetWidth(value);
+        return;
+      case 'height':
+        this.cs.setSelectedWidgetHeight(value);
+        return;
+    }
+  }
+
+  private resolveNumericInput(value: number | Event): number | null {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+
+    return this.readInputNumber(value);
   }
 }

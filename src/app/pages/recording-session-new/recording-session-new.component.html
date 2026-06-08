@@ -58,7 +58,7 @@
                     <div class="canvas-guide canvas-guide-y" [style.top.px]="canvasService.objectSnapGuides().y"></div>
                 }
 
-                @for (item of widgetList(); track item.uuid) {
+                @for (item of widgetStateService.list(); track item.uuid) {
                     <!--<div>
                        <h6>{{ item.uuid }} - {{ item.type }} [{{ item.mediaStream?.active ? "active" : "inactive" }}]</h6>
                        <div>

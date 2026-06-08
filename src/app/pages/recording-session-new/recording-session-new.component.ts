@@ -7,16 +7,14 @@ import {
     HostListener,
     inject,
     signal,
-    viewChild
+    viewChild,
+    WritableSignal,
 } from '@angular/core';
-import {v4 as uuid} from 'uuid';
 import {WidgetComponent} from '../../components/widget/widget.component';
 import {CanvasWidgetDirective} from '../../directives/canvas-widget.directive';
 import {CanvasDirective} from '../../directives/canvas.directive';
-import {StreamStateItem} from '../../models/stream.model';
 import {CanvasWidgetStateService} from '../../services/canvas-widget-state.service';
 import {CanvasService} from '../../services/canvas.service';
-import {StreamStateService} from '../../services/stream-state.service';
 import {CanvasDebugPanelComponent} from '../../components/canvas-debug-panel/canvas-debug-panel.component';
 import {CanvasSettingsPanelComponent} from '../../layout/canvas-settings-panel/canvas-settings-panel.component';
 import {CanvasLayersPanelComponent} from '../../layout/canvas-layers-panel/canvas-layers-panel.component';
@@ -26,6 +24,17 @@ import {WidgetCreateToolbarComponent} from '../../layout/widget-create-toolbar/w
 import {TimelinePanelComponent} from '../../components/timeline/timeline-panel/timeline-panel.component';
 import {Point2D} from '../../models/geometry.models';
 import {ProjectSyncBadgeComponent} from '../../components/project-sync-badge/project-sync-badge.component';
+
+interface FloatingPanelDragState {
+    position: WritableSignal<Point2D>;
+    dragOffset: Point2D | null;
+    isDragging: boolean;
+    hasPosition: boolean;
+    margin: number;
+    headerSelector: string;
+    anchor: 'top-left' | 'top-right';
+    getPanelElement: () => HTMLElement | null;
+}
 
 @Component({
     selector: 'app-recording-session-new',
@@ -48,7 +57,6 @@ import {ProjectSyncBadgeComponent} from '../../components/project-sync-badge/pro
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecordingSessionNewComponent {
-    streamStateService = inject(StreamStateService);
     widgetStateService = inject(CanvasWidgetStateService);
     public canvasService = inject(CanvasService);
     private readonly editorContentRef = viewChild<ElementRef<HTMLElement>>('editorContent');
@@ -95,50 +103,44 @@ export class RecordingSessionNewComponent {
         return `${maxHeight}px`;
     });
 
-    private floatingPanelDragOffset: Point2D | null = null;
-    private isFloatingPanelDragging = false;
-    private hasFloatingPanelPosition = false;
     private readonly floatingPanelMargin = 12;
-
-    private floatingLayersPanelDragOffset: Point2D | null = null;
-    private isFloatingLayersPanelDragging = false;
-    private hasFloatingLayersPanelPosition = false;
-    private readonly floatingLayersPanelMargin = 12;
+    private readonly settingsPanelDragState: FloatingPanelDragState = {
+        position: this.floatingPanelPosition,
+        dragOffset: null,
+        isDragging: false,
+        hasPosition: false,
+        margin: this.floatingPanelMargin,
+        headerSelector: '.settings-panel__header',
+        anchor: 'top-right',
+        getPanelElement: () => this.floatingPanelRef()?.nativeElement ?? null,
+    };
+    private readonly layersPanelDragState: FloatingPanelDragState = {
+        position: this.floatingLayersPanelPosition,
+        dragOffset: null,
+        isDragging: false,
+        hasPosition: false,
+        margin: this.floatingPanelMargin,
+        headerSelector: '.layers-panel__header',
+        anchor: 'top-left',
+        getPanelElement: () => this.floatingLayersPanelRef()?.nativeElement ?? null,
+    };
     private hasInitialCanvasCentered = false;
     private hasProjectDirectoryPromptBeenEvaluated = false;
 
-    streamList = computed(() => this.streamStateService.list());
-    widgetList = computed(() => this.widgetStateService.list());
-
-    lastUpdate = computed(() => this.streamStateService.lastUpdate());
 
     constructor() {
         effect(() => {
-            this.lastUpdate();
+            this.syncFloatingPanelLayout(
+                this.canvasService.settingsPanelLayout() === 'floating',
+                this.settingsPanelDragState,
+            );
         });
 
         effect(() => {
-            if (this.canvasService.settingsPanelLayout() !== 'floating') {
-                this.isFloatingPanelDragging = false;
-                this.floatingPanelDragOffset = null;
-                return;
-            }
-
-            requestAnimationFrame(() => {
-                this.initializeOrClampFloatingPanel();
-            });
-        });
-
-        effect(() => {
-            if (this.canvasService.layersPanelLayout() !== 'floating') {
-                this.isFloatingLayersPanelDragging = false;
-                this.floatingLayersPanelDragOffset = null;
-                return;
-            }
-
-            requestAnimationFrame(() => {
-                this.initializeOrClampFloatingLayersPanel();
-            });
+            this.syncFloatingPanelLayout(
+                this.canvasService.layersPanelLayout() === 'floating',
+                this.layersPanelDragState,
+            );
         });
 
         effect(() => {
@@ -209,17 +211,71 @@ export class RecordingSessionNewComponent {
 
 
     protected onFloatingPanelPointerDown(event: PointerEvent): void {
-        if (this.canvasService.settingsPanelLayout() !== 'floating' || event.button !== 0) {
+        if (this.canvasService.settingsPanelLayout() !== 'floating') {
+            return;
+        }
+
+        this.startFloatingPanelDrag(this.settingsPanelDragState, event);
+    }
+
+    private clamp(value: number, min: number, max: number): number {
+        return Math.round(Math.min(Math.max(value, min), max));
+    }
+
+    protected onFloatingLayersPanelPointerDown(event: PointerEvent): void {
+        if (this.canvasService.layersPanelLayout() !== 'floating') {
+            return;
+        }
+
+        this.startFloatingPanelDrag(this.layersPanelDragState, event);
+    }
+
+    @HostListener('window:pointermove', ['$event'])
+    protected onWindowPointerMoveHandler(event: PointerEvent): void {
+        this.moveFloatingPanel(this.layersPanelDragState, event);
+        this.moveFloatingPanel(this.settingsPanelDragState, event);
+    }
+
+    @HostListener('window:pointerup')
+    protected onWindowPointerUpHandler(): void {
+        this.stopFloatingPanelDrag(this.layersPanelDragState);
+        this.stopFloatingPanelDrag(this.settingsPanelDragState);
+    }
+
+    @HostListener('window:resize')
+    protected onWindowResizeHandler(): void {
+        if (this.canvasService.layersPanelLayout() === 'floating') {
+            this.initializeOrClampFloatingPanel(this.layersPanelDragState);
+        }
+
+        if (this.canvasService.settingsPanelLayout() === 'floating') {
+            this.initializeOrClampFloatingPanel(this.settingsPanelDragState);
+        }
+    }
+
+    private syncFloatingPanelLayout(isFloating: boolean, state: FloatingPanelDragState): void {
+        if (!isFloating) {
+            this.stopFloatingPanelDrag(state);
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            this.initializeOrClampFloatingPanel(state);
+        });
+    }
+
+    private startFloatingPanelDrag(state: FloatingPanelDragState, event: PointerEvent): void {
+        if (event.button !== 0) {
             return;
         }
 
         const target = event.target as HTMLElement | null;
-        if (!target?.closest('.settings-panel__header')) {
+        if (!target?.closest(state.headerSelector)) {
             return;
         }
 
         const boundaryEl = this.editorContentRef()?.nativeElement;
-        const panelEl = this.floatingPanelRef()?.nativeElement;
+        const panelEl = state.getPanelElement();
         if (!boundaryEl || !panelEl) {
             return;
         }
@@ -227,32 +283,32 @@ export class RecordingSessionNewComponent {
         const boundaryRect = boundaryEl.getBoundingClientRect();
         const panelRect = panelEl.getBoundingClientRect();
 
-        this.isFloatingPanelDragging = true;
-        this.floatingPanelDragOffset = {
+        state.isDragging = true;
+        state.dragOffset = {
             x: event.clientX - panelRect.left,
             y: event.clientY - panelRect.top,
         };
 
         const nextPosition = this.getClampedFloatingPanelPosition(
             {
-                x: event.clientX - boundaryRect.left - this.floatingPanelDragOffset.x,
-                y: event.clientY - boundaryRect.top - this.floatingPanelDragOffset.y,
+                x: event.clientX - boundaryRect.left - state.dragOffset.x,
+                y: event.clientY - boundaryRect.top - state.dragOffset.y,
             },
             boundaryRect,
             panelRect,
         );
 
-        this.floatingPanelPosition.set(nextPosition);
+        state.position.set(nextPosition);
         event.preventDefault();
     }
 
-    private onWindowPointerMove(event: PointerEvent): void {
-        if (!this.isFloatingPanelDragging || !this.floatingPanelDragOffset) {
+    private moveFloatingPanel(state: FloatingPanelDragState, event: PointerEvent): void {
+        if (!state.isDragging || !state.dragOffset) {
             return;
         }
 
         const boundaryEl = this.editorContentRef()?.nativeElement;
-        const panelEl = this.floatingPanelRef()?.nativeElement;
+        const panelEl = state.getPanelElement();
         if (!boundaryEl || !panelEl) {
             return;
         }
@@ -262,32 +318,24 @@ export class RecordingSessionNewComponent {
 
         const nextPosition = this.getClampedFloatingPanelPosition(
             {
-                x: event.clientX - boundaryRect.left - this.floatingPanelDragOffset.x,
-                y: event.clientY - boundaryRect.top - this.floatingPanelDragOffset.y,
+                x: event.clientX - boundaryRect.left - state.dragOffset.x,
+                y: event.clientY - boundaryRect.top - state.dragOffset.y,
             },
             boundaryRect,
             panelRect,
         );
 
-        this.floatingPanelPosition.set(nextPosition);
+        state.position.set(nextPosition);
     }
 
-    private onWindowPointerUp(): void {
-        this.isFloatingPanelDragging = false;
-        this.floatingPanelDragOffset = null;
+    private stopFloatingPanelDrag(state: FloatingPanelDragState): void {
+        state.isDragging = false;
+        state.dragOffset = null;
     }
 
-    private onWindowResize(): void {
-        if (this.canvasService.settingsPanelLayout() !== 'floating') {
-            return;
-        }
-
-        this.initializeOrClampFloatingPanel();
-    }
-
-    private initializeOrClampFloatingPanel(): void {
+    private initializeOrClampFloatingPanel(state: FloatingPanelDragState): void {
         const boundaryEl = this.editorContentRef()?.nativeElement;
-        const panelEl = this.floatingPanelRef()?.nativeElement;
+        const panelEl = state.getPanelElement();
         if (!boundaryEl || !panelEl) {
             return;
         }
@@ -295,24 +343,23 @@ export class RecordingSessionNewComponent {
         const boundaryRect = boundaryEl.getBoundingClientRect();
         const panelRect = panelEl.getBoundingClientRect();
 
-        if (!this.hasFloatingPanelPosition) {
-            this.hasFloatingPanelPosition = true;
-            this.floatingPanelPosition.set(
-                this.getClampedFloatingPanelPosition(
-                    {
-                        x: boundaryRect.width - panelRect.width - this.floatingPanelMargin,
-                        y: this.floatingPanelMargin,
-                    },
-                    boundaryRect,
-                    panelRect,
-                ),
-            );
+        if (!state.hasPosition) {
+            state.hasPosition = true;
+            const initialPosition: Point2D = state.anchor === 'top-right'
+                ? {
+                    x: boundaryRect.width - panelRect.width - state.margin,
+                    y: state.margin,
+                }
+                : {
+                    x: state.margin,
+                    y: state.margin,
+                };
+
+            state.position.set(this.getClampedFloatingPanelPosition(initialPosition, boundaryRect, panelRect));
             return;
         }
 
-        this.floatingPanelPosition.set(
-            this.getClampedFloatingPanelPosition(this.floatingPanelPosition(), boundaryRect, panelRect),
-        );
+        state.position.set(this.getClampedFloatingPanelPosition(state.position(), boundaryRect, panelRect));
     }
 
     private getClampedFloatingPanelPosition(position: Point2D, boundaryRect: DOMRect, panelRect: DOMRect): Point2D {
@@ -325,178 +372,5 @@ export class RecordingSessionNewComponent {
         };
     }
 
-    private clamp(value: number, min: number, max: number): number {
-        return Math.round(Math.min(Math.max(value, min), max));
-    }
-
-    protected onFloatingLayersPanelPointerDown(event: PointerEvent): void {
-        if (this.canvasService.layersPanelLayout() !== 'floating' || event.button !== 0) {
-            return;
-        }
-
-        const target = event.target as HTMLElement | null;
-        if (!target?.closest('.layers-panel__header')) {
-            return;
-        }
-
-        const boundaryEl = this.editorContentRef()?.nativeElement;
-        const panelEl = this.floatingLayersPanelRef()?.nativeElement;
-        if (!boundaryEl || !panelEl) {
-            return;
-        }
-
-        const boundaryRect = boundaryEl.getBoundingClientRect();
-        const panelRect = panelEl.getBoundingClientRect();
-
-        this.isFloatingLayersPanelDragging = true;
-        this.floatingLayersPanelDragOffset = {
-            x: event.clientX - panelRect.left,
-            y: event.clientY - panelRect.top,
-        };
-
-        const nextPosition = this.getClampedFloatingLayersPanelPosition(
-            {
-                x: event.clientX - boundaryRect.left - this.floatingLayersPanelDragOffset.x,
-                y: event.clientY - boundaryRect.top - this.floatingLayersPanelDragOffset.y,
-            },
-            boundaryRect,
-            panelRect,
-        );
-
-        this.floatingLayersPanelPosition.set(nextPosition);
-        event.preventDefault();
-    }
-
-    @HostListener('window:pointermove', ['$event'])
-    protected onWindowPointerMoveHandler(event: PointerEvent): void {
-        // Handle layers panel drag
-        if (this.isFloatingLayersPanelDragging && this.floatingLayersPanelDragOffset) {
-            const boundaryEl = this.editorContentRef()?.nativeElement;
-            const panelEl = this.floatingLayersPanelRef()?.nativeElement;
-            if (!boundaryEl || !panelEl) {
-                return;
-            }
-
-            const boundaryRect = boundaryEl.getBoundingClientRect();
-            const panelRect = panelEl.getBoundingClientRect();
-
-            const nextPosition = this.getClampedFloatingLayersPanelPosition(
-                {
-                    x: event.clientX - boundaryRect.left - this.floatingLayersPanelDragOffset.x,
-                    y: event.clientY - boundaryRect.top - this.floatingLayersPanelDragOffset.y,
-                },
-                boundaryRect,
-                panelRect,
-            );
-
-            this.floatingLayersPanelPosition.set(nextPosition);
-        }
-
-        // Handle settings panel drag
-        this.onWindowPointerMove(event);
-    }
-
-    @HostListener('window:pointerup')
-    protected onWindowPointerUpHandler(): void {
-        this.isFloatingLayersPanelDragging = false;
-        this.floatingLayersPanelDragOffset = null;
-        this.onWindowPointerUp();
-    }
-
-    @HostListener('window:resize')
-    protected onWindowResizeHandler(): void {
-        if (this.canvasService.layersPanelLayout() === 'floating') {
-            this.initializeOrClampFloatingLayersPanel();
-        }
-
-        this.onWindowResize();
-    }
-
-    private initializeOrClampFloatingLayersPanel(): void {
-        const boundaryEl = this.editorContentRef()?.nativeElement;
-        const panelEl = this.floatingLayersPanelRef()?.nativeElement;
-        if (!boundaryEl || !panelEl) {
-            return;
-        }
-
-        const boundaryRect = boundaryEl.getBoundingClientRect();
-        const panelRect = panelEl.getBoundingClientRect();
-
-        if (!this.hasFloatingLayersPanelPosition) {
-            this.hasFloatingLayersPanelPosition = true;
-            this.floatingLayersPanelPosition.set(
-                this.getClampedFloatingLayersPanelPosition(
-                    {
-                        x: this.floatingLayersPanelMargin,
-                        y: this.floatingLayersPanelMargin,
-                    },
-                    boundaryRect,
-                    panelRect,
-                ),
-            );
-            return;
-        }
-
-        this.floatingLayersPanelPosition.set(
-            this.getClampedFloatingLayersPanelPosition(this.floatingLayersPanelPosition(), boundaryRect, panelRect),
-        );
-    }
-
-    private getClampedFloatingLayersPanelPosition(position: Point2D, boundaryRect: DOMRect, panelRect: DOMRect): Point2D {
-        const maxX = Math.max(0, boundaryRect.width - panelRect.width);
-        const maxY = Math.max(0, boundaryRect.height - panelRect.height);
-
-        return {
-            x: this.clamp(position.x, 0, maxX),
-            y: this.clamp(position.y, 0, maxY),
-        };
-    }
-
-
-    async newWebcamStream() {
-        alert('TODO: newWebcamStream');
-    }
-
-    async newCaptureStream() {
-        const mediaStream = await navigator.mediaDevices.getDisplayMedia({
-            video: {
-                displaySurface: 'window',
-            },
-            audio: false,
-        });
-
-        const stream: StreamStateItem = {
-            uuid: uuid(),
-            type: 'screen',
-            mediaStream
-        };
-
-        this.streamStateService.addStream(stream);
-    }
-
-    stopStreamItem(item: StreamStateItem) {
-        this.streamStateService.stopStream(item);
-    }
-
-    takeScreenshot(item: StreamStateItem) {
-        const video: HTMLVideoElement | null = document.getElementById(item.uuid) as HTMLVideoElement;
-
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            return;
-        }
-
-        canvas.width = (item.mediaStream?.getVideoTracks()?.[0]?.getSettings().width ?? 100);
-        canvas.height = (item.mediaStream?.getVideoTracks()?.[0]?.getSettings().height ?? 100);
-
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataURI = canvas.toDataURL('image/png');
-
-        const a = document.createElement('a');
-        a.href = dataURI;
-        a.download = `Image${item.mediaStream?.id ? item.mediaStream.id : ''}.png`;
-        a.click();
-    }
 
 }
