@@ -157,6 +157,44 @@
 
             <app-ui-separator orientation="horizontal"/>
 
+            <!-- TIMELINE section -->
+            <section class="settings-panel__section">
+                <div class="settings-panel__section-label">Timeline</div>
+
+                <div class="settings-panel__geometry-grid">
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-timeline-start">Start (s)</label>
+                        <input
+                                id="widget-timeline-start"
+                                class="settings-panel__input"
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                [value]="timelineDraft().start"
+                                (input)="onTimelineStartInput($event)"
+                                (blur)="commitTimelineStart($event)"
+                                (keydown.enter)="onTimelineStartEnter($event)"
+                        />
+                    </div>
+                    <div class="settings-panel__row settings-panel__row--column">
+                        <label class="settings-panel__field-label" for="widget-timeline-end">End (s)</label>
+                        <input
+                                id="widget-timeline-end"
+                                class="settings-panel__input"
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                [value]="timelineDraft().end"
+                                (input)="onTimelineEndInput($event)"
+                                (blur)="commitTimelineEnd($event)"
+                                (keydown.enter)="onTimelineEndEnter($event)"
+                        />
+                    </div>
+                </div>
+            </section>
+
+            <app-ui-separator orientation="horizontal"/>
+
             <section class="settings-panel__section">
                 <div class="settings-panel__section-label">Background</div>
 

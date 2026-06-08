@@ -16,6 +16,7 @@ import {
   DEFAULT_WIDGET_BORDER,
 } from '../../models/canvas-widget-state.models';
 import { CanvasService } from '../../services/canvas.service';
+import { TimelineService } from '../../services/timeline.service';
 import { SelectOption, UiSelectComponent, UiSeparatorComponent, UiToggleComponent, UiButtonComponent, UiIconComponent } from '../../ui';
 import { CoverPositionControlsComponent } from './cover-position-controls/cover-position-controls.component';
 import { CropPositionControlsComponent } from './crop-position-controls/crop-position-controls.component';
@@ -75,6 +76,7 @@ export class CanvasSettingsPanelComponent {
   closed = output<void>();
 
   protected cs = inject(CanvasService);
+  private readonly timelineService = inject(TimelineService);
   private readonly selectedWidgetComputed = computed(() => this.cs.selectedWidget());
   private readonly selectedTextContentComputed = computed<WidgetTextContent | null>(() => {
     const widget = this.selectedWidgetComputed();
@@ -91,6 +93,7 @@ export class CanvasSettingsPanelComponent {
   protected readonly geometryDraft = signal<Record<WidgetGeometryField, string>>({
     x: '', y: '', width: '', height: '',
   });
+  protected readonly timelineDraft = signal<{ start: string; end: string }>({ start: '0', end: '0' });
   protected readonly isImageDropzoneActive = signal(false);
   protected readonly isVideoDropzoneActive = signal(false);
   protected readonly isImageUrlModalOpen = signal(false);
@@ -131,6 +134,19 @@ export class CanvasSettingsPanelComponent {
         width: String(widget.width),
         height: String(widget.height),
       });
+    });
+
+    // Sync timeline draft
+    effect(() => {
+      const widget = this.selectedWidget;
+      const duration = this.timelineService.duration();
+      if (!widget) {
+        this.timelineDraft.set({ start: '0', end: String(duration / 1000) });
+        return;
+      }
+      const start = (widget.timelineStart ?? 0) / 1000;
+      const end = (widget.timelineEnd ?? duration) / 1000;
+      this.timelineDraft.set({ start: String(start), end: String(end) });
     });
 
     // Sync image cover offset draft
@@ -1102,6 +1118,55 @@ export class CanvasSettingsPanelComponent {
     }
 
     this.cs.setSelectedWidgetOpacity(value);
+  }
+
+  protected onTimelineStartInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.timelineDraft.update(d => ({ ...d, start: value }));
+  }
+
+  protected onTimelineEndInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.timelineDraft.update(d => ({ ...d, end: value }));
+  }
+
+  protected commitTimelineStart(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const widget = this.selectedWidget;
+    if (!widget) return;
+    const sec = Number(input.value);
+    if (!Number.isFinite(sec)) {
+      this.timelineDraft.update(d => ({ ...d, start: String((widget.timelineStart ?? 0) / 1000) }));
+      return;
+    }
+    const endMs = widget.timelineEnd ?? this.timelineService.duration();
+    this.timelineService.updateLayerTiming(widget.uuid, sec * 1000, endMs);
+  }
+
+  protected commitTimelineEnd(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const widget = this.selectedWidget;
+    if (!widget) return;
+    const sec = Number(input.value);
+    if (!Number.isFinite(sec)) {
+      const duration = this.timelineService.duration();
+      this.timelineDraft.update(d => ({ ...d, end: String((widget.timelineEnd ?? duration) / 1000) }));
+      return;
+    }
+    const startMs = widget.timelineStart ?? 0;
+    this.timelineService.updateLayerTiming(widget.uuid, startMs, sec * 1000);
+  }
+
+  protected onTimelineStartEnter(event: Event): void {
+    event.preventDefault();
+    this.commitTimelineStart(event);
+    (event.target as HTMLInputElement).focus();
+  }
+
+  protected onTimelineEndEnter(event: Event): void {
+    event.preventDefault();
+    this.commitTimelineEnd(event);
+    (event.target as HTMLInputElement).focus();
   }
 
   protected deleteSelectedWidget(): void {
