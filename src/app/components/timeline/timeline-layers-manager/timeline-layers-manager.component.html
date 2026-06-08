@@ -14,15 +14,17 @@
       <div
         class="layer-row"
         [class.is-dragging]="draggedUuid === layer.uuid"
+        [class.is-drop-target]="dragOverIndex === $index"
         draggable="true"
         (dragstart)="onLayerDragStart($event, layer)"
-        (dragover)="onLayerDragOver($event)"
+        (dragover)="onLayerDragOver($event, $index)"
         (drop)="onLayerDrop($event, $index)"
         (dragend)="onLayerDragEnd()"
       >
         <app-timeline-layer-item
           [layer]="layer"
           [isMainVideo]="layer.uuid === mainVideoId()"
+          [isDropTarget]="dragOverIndex === $index"
           [isChild]="false"
           [isLastChild]="false"
           (layerClicked)="onLayerClicked($event)"

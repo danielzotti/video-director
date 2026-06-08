@@ -36,7 +36,7 @@ export class TimelineLayersManagerComponent {
   private readonly containerRef = viewChild<ElementRef<HTMLDivElement>>('container');
 
   draggedUuid: string | null = null;
-  private dragOverIndex: number | null = null;
+  dragOverIndex: number | null = null;
 
   constructor() {
     effect(() => {
@@ -65,20 +65,36 @@ export class TimelineLayersManagerComponent {
     }
   }
 
-  onLayerDragOver(event: DragEvent): void {
+  onLayerDragOver(event: DragEvent, displayTargetIndex: number): void {
     event.preventDefault();
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
     }
+
+    if (!this.draggedUuid) {
+      this.dragOverIndex = null;
+      return;
+    }
+
+    const currentLayer = this.layers()[displayTargetIndex];
+    this.dragOverIndex = currentLayer && currentLayer.uuid !== this.draggedUuid
+      ? displayTargetIndex
+      : null;
   }
 
   onLayerDrop(event: DragEvent, displayTargetIndex: number): void {
     event.preventDefault();
-    if (!this.draggedUuid) return;
+    if (!this.draggedUuid) {
+      this.dragOverIndex = null;
+      return;
+    }
 
     const layers = this.layers();
     const displaySourceIndex = layers.findIndex(l => l.uuid === this.draggedUuid);
-    if (displaySourceIndex === -1 || displaySourceIndex === displayTargetIndex) return;
+    if (displaySourceIndex === -1 || displaySourceIndex === displayTargetIndex) {
+      this.dragOverIndex = null;
+      return;
+    }
 
     // layers() is sorted descending by z (display order).
     // reorderLayerToIndex() works on the ascending-z list inside the service.
@@ -88,6 +104,7 @@ export class TimelineLayersManagerComponent {
 
     this.timelineService.reorderLayers(this.draggedUuid, ascendingTargetIndex);
     this.draggedUuid = null;
+    this.dragOverIndex = null;
   }
 
   onLayerDragEnd(): void {

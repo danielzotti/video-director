@@ -4,6 +4,7 @@
   [class.is-hidden]="!isLayerVisible()"
   [class.is-locked]="isLayerLocked()"
   [class.is-selected]="isSelected()"
+  [class.is-drop-target]="isDropTarget()"
   (click)="onLayerClick($event)"
 >
   <div class="layer__name">

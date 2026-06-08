@@ -21,6 +21,7 @@ export class TimelineLayerItemComponent {
   readonly isMainVideo = input(false);
   readonly isChild = input(false);
   readonly isLastChild = input(false);
+  readonly isDropTarget = input(false);
 
   readonly layerIsVisibleChanged = output<TimelineWidget>();
   readonly layerIsLockedChanged = output<TimelineWidget>();

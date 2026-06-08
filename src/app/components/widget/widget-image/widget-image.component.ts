@@ -48,7 +48,7 @@ export class WidgetImageComponent {
       return 'none';
     }
 
-    const zoom = Number.isFinite(content.cropZoom) ? Math.max(1, Math.min(5, content.cropZoom as number)) : 1;
+    const zoom = Number.isFinite(content.cropZoom) ? Math.max(1, Math.min(10, content.cropZoom as number)) : 1;
     return `scale(${zoom})`;
   });
 

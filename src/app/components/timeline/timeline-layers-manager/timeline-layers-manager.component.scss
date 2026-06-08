@@ -58,9 +58,15 @@
 .layer-row {
   position: relative;
   cursor: grab;
+  transition: background-color 0.15s ease;
 
   &.is-dragging {
     opacity: 0.5;
+  }
+
+  &.is-drop-target {
+    background-color: var(--ds-accent-subtle);
+    box-shadow: inset 0 0 0 1px var(--ds-accent);
   }
 
   &:active {

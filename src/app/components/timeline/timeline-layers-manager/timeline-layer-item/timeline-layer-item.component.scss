@@ -46,6 +46,11 @@
       color: var(--ds-accent);
     }
   }
+
+  &.is-drop-target {
+    background-color: var(--ds-accent-subtle);
+    border-color: var(--ds-accent);
+  }
 }
 
 .layer__name {
