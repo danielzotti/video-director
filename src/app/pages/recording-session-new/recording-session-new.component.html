@@ -70,7 +70,7 @@
                        <pre><strong>Capabilities:</strong>{{ item.mediaStream?.getVideoTracks()?.[0]?.getCapabilities() | json }}</pre>
                        <pre><strong>Constraints:</strong>{{ item.constraints | json }}</pre>
                      </div>-->
-                    @if (item.visible ?? true) {
+                    @if ((item.visible ?? true) && visibleWidgetIdsAtTimelineTime().has(item.uuid)) {
                         <app-widget
                                 [appCanvasWidget]="item"
                                 [item]="item"

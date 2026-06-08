@@ -24,6 +24,8 @@ import {WidgetCreateToolbarComponent} from '../../layout/widget-create-toolbar/w
 import {TimelinePanelComponent} from '../../components/timeline/timeline-panel/timeline-panel.component';
 import {Point2D} from '../../models/geometry.models';
 import {ProjectSyncBadgeComponent} from '../../components/project-sync-badge/project-sync-badge.component';
+import {TimelineService} from '../../services/timeline.service';
+import {isWidgetVisibleInTimelineWindow} from '../../utils/timeline-visibility.utils';
 
 interface FloatingPanelDragState {
     position: WritableSignal<Point2D>;
@@ -59,6 +61,7 @@ interface FloatingPanelDragState {
 export class RecordingSessionNewComponent {
     widgetStateService = inject(CanvasWidgetStateService);
     public canvasService = inject(CanvasService);
+    private readonly timelineService = inject(TimelineService);
     private readonly editorContentRef = viewChild<ElementRef<HTMLElement>>('editorContent');
     private readonly floatingPanelRef = viewChild<ElementRef<HTMLElement>>('floatingPanel');
     private readonly floatingLayersPanelRef = viewChild<ElementRef<HTMLElement>>('floatingLayersPanel');
@@ -66,6 +69,21 @@ export class RecordingSessionNewComponent {
     protected readonly floatingPanelPosition = signal<Point2D>({x: 0, y: 0});
     protected readonly floatingLayersPanelPosition = signal<Point2D>({x: 0, y: 0});
     protected readonly isProjectDirectoryPromptOpen = signal(false);
+    protected readonly visibleWidgetIdsAtTimelineTime = computed(() => {
+        const currentTime = this.timelineService.time();
+        const duration = this.timelineService.duration();
+
+        return new Set(
+            this.widgetStateService
+                .list()
+                .filter(widget => isWidgetVisibleInTimelineWindow({
+                    widget,
+                    timeMs: currentTime,
+                    durationMs: duration,
+                }))
+                .map(widget => widget.uuid),
+        );
+    });
 
     // Min height for panels: enough to show header (~50px) + some content
     private readonly minPanelHeight = 120;
