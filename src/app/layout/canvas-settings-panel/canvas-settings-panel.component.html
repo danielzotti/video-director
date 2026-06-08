@@ -35,7 +35,10 @@
             <section class="settings-panel__section">
                 <div class="settings-panel__section-label">
                     Widget
-                    <app-ui-button variant="danger" size="sm" (click)="deleteSelectedWidget()">Delete</app-ui-button>
+                    <div class="settings-panel__section-actions">
+                        <app-ui-button size="sm" (click)="duplicateSelectedWidget()">Duplicate</app-ui-button>
+                        <app-ui-button variant="danger" size="sm" (click)="deleteSelectedWidget()">Delete</app-ui-button>
+                    </div>
                 </div>
                 <div class="settings-panel__row settings-panel__row--column">
                     <label class="settings-panel__field-label" for="widget-name">Name</label>

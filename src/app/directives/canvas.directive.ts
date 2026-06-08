@@ -82,6 +82,22 @@ export class CanvasDirective implements OnInit {
             return;
         }
 
+        if (this.isCopyShortcut(event)) {
+            const handled = this.canvasService.copySelectedWidgetToClipboard();
+            if (handled) {
+                event.preventDefault();
+            }
+            return;
+        }
+
+        if (this.isPasteShortcut(event)) {
+            const handled = this.canvasService.pasteClipboardWidget();
+            if (handled) {
+                event.preventDefault();
+            }
+            return;
+        }
+
         if (event.code === 'Delete' || event.code === 'Backspace') {
             event.preventDefault();
             this.canvasService.deleteSelectedWidget();
@@ -292,6 +308,20 @@ export class CanvasDirective implements OnInit {
         return this.isPrimaryShortcutModifierPressed(event)
             && !event.altKey
             && event.code === 'KeyZ';
+    }
+
+    private isCopyShortcut(event: KeyboardEvent): boolean {
+        return this.isPrimaryShortcutModifierPressed(event)
+            && !event.altKey
+            && !event.shiftKey
+            && event.code === 'KeyC';
+    }
+
+    private isPasteShortcut(event: KeyboardEvent): boolean {
+        return this.isPrimaryShortcutModifierPressed(event)
+            && !event.altKey
+            && !event.shiftKey
+            && event.code === 'KeyV';
     }
 
     private isArrowMoveKey(code: string): code is 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' {

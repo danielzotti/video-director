@@ -260,6 +260,9 @@ export class CanvasService {
      * fall back to the generic 'png' extension even for JPEG (or other) blobs.
      */
     private readonly blobMimeTypeRegistry = new Map<string, string>();
+    private copiedWidgetTemplate: Omit<WidgetStateItem, 'uuid' | 'z'> | null = null;
+    private clipboardPasteCount = 0;
+    private readonly duplicateOffsetPx = 24;
 
     private currentSnapshot: EditorStateSnapshot | null = null;
     private isApplyingSnapshot = false;
@@ -758,6 +761,49 @@ export class CanvasService {
         }
 
         this.objectSnapGuides.set({});
+    }
+
+    public duplicateSelectedWidget(): boolean {
+        const selected = this.selectedWidget();
+        if (!selected) {
+            return false;
+        }
+
+        const sourceTemplate = this.createWidgetTemplateFromSource(selected);
+        const duplicated = this.createWidgetFromTemplate(sourceTemplate, 1);
+        if (!duplicated) {
+            return false;
+        }
+
+        this.copiedWidgetTemplate = this.cloneWidgetTemplate(sourceTemplate);
+        this.clipboardPasteCount = 1;
+        return true;
+    }
+
+    public copySelectedWidgetToClipboard(): boolean {
+        const selected = this.selectedWidget();
+        if (!selected) {
+            return false;
+        }
+
+        this.copiedWidgetTemplate = this.createWidgetTemplateFromSource(selected);
+        this.clipboardPasteCount = 0;
+        return true;
+    }
+
+    public pasteClipboardWidget(): boolean {
+        if (!this.copiedWidgetTemplate) {
+            return false;
+        }
+
+        const pasteIndex = this.clipboardPasteCount + 1;
+        const pasted = this.createWidgetFromTemplate(this.copiedWidgetTemplate, pasteIndex);
+        if (!pasted) {
+            return false;
+        }
+
+        this.clipboardPasteCount = pasteIndex;
+        return true;
     }
 
     public getWidgetRenderZIndex(widget: Pick<WidgetStateItem, 'uuid' | 'z'>): number {
@@ -4202,6 +4248,71 @@ export class CanvasService {
         }
 
         return {width: 480, height: 270};
+    }
+
+    private createWidgetTemplateFromSource(widget: WidgetStateItem): Omit<WidgetStateItem, 'uuid' | 'z'> {
+        const {uuid: _uuid, z: _z, ...template} = widget;
+        return this.cloneWidgetTemplate(template);
+    }
+
+    private cloneWidgetTemplate(template: Omit<WidgetStateItem, 'uuid' | 'z'>): Omit<WidgetStateItem, 'uuid' | 'z'> {
+        if (typeof structuredClone === 'function') {
+            return structuredClone(template);
+        }
+
+        return JSON.parse(JSON.stringify(template)) as Omit<WidgetStateItem, 'uuid' | 'z'>;
+    }
+
+    private createWidgetFromTemplate(
+        template: Omit<WidgetStateItem, 'uuid' | 'z'>,
+        offsetMultiplier: number,
+    ): WidgetStateItem | null {
+        const offsetBase = this.canSnapToGrid() ? Math.max(1, this.snapSize()) : this.duplicateOffsetPx;
+        const offset = offsetBase * Math.max(1, Math.round(offsetMultiplier));
+
+        let rect: Rect2D = {
+            x: template.x + offset,
+            y: template.y + offset,
+            width: template.width,
+            height: template.height,
+        };
+
+        if (this.canSnapToGrid()) {
+            const snapped = snapPointToGrid({
+                point: {x: rect.x, y: rect.y},
+                snap: this.snapSize(),
+            });
+
+            rect = {
+                ...rect,
+                x: snapped.x,
+                y: snapped.y,
+            };
+        }
+
+        if (!this.canExitBorders()) {
+            rect = clampRectInsideCanvas({
+                rect,
+                canvas: {width: this.width(), height: this.height()},
+            });
+        }
+
+        const widgetTemplate = this.cloneWidgetTemplate(template);
+        const widget: WidgetStateItem = {
+            ...widgetTemplate,
+            uuid: uuid(),
+            z: this.getNextWidgetZIndex(),
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+        };
+
+        this.widgetsState.add(widget);
+        this.selectWidget(widget.uuid);
+        this.objectSnapGuides.set({});
+
+        return widget;
     }
 
     private createDefaultWidgetContent(type: WidgetContentType): WidgetStateItem['content'] {

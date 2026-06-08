@@ -23,6 +23,7 @@ export class ActionsToolbarComponent {
     this.cs.redo();
   }
 
+
   protected async exportToFile(): Promise<void> {
       const projectName = this.cs.projectName() || 'canvas';
     await this.cs.exportToFile(projectName);

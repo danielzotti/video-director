@@ -248,6 +248,48 @@ describe('CanvasService', () => {
     expect(service.selectedWidgetId()).toBe(created.uuid);
   });
 
+  it('duplicates selected widget with a new id and offset position', () => {
+    service.selectWidget('1');
+    const before = service.widgetsState.list();
+
+    const duplicated = service.duplicateSelectedWidget();
+
+    const after = service.widgetsState.list();
+    const created = after[after.length - 1];
+
+    expect(duplicated).toBeTrue();
+    expect(after.length).toBe(before.length + 1);
+    expect(created.uuid).not.toBe('1');
+    expect(created.x).toBe(24);
+    expect(created.y).toBe(24);
+    expect(service.selectedWidgetId()).toBe(created.uuid);
+  });
+
+  it('copies and pastes selected widget with incremental offset', () => {
+    service.selectWidget('2');
+
+    const copied = service.copySelectedWidgetToClipboard();
+    const pastedFirst = service.pasteClipboardWidget();
+    const first = service.widgetsState.list().at(-1);
+    const pastedSecond = service.pasteClipboardWidget();
+    const second = service.widgetsState.list().at(-1);
+
+    expect(copied).toBeTrue();
+    expect(pastedFirst).toBeTrue();
+    expect(first?.content.type).toBe('image');
+    expect(first?.x).toBe(124);
+    expect(first?.y).toBe(224);
+
+    expect(pastedSecond).toBeTrue();
+    expect(second?.x).toBe(148);
+    expect(second?.y).toBe(248);
+  });
+
+  it('does not paste when clipboard is empty', () => {
+    const pasted = service.pasteClipboardWidget();
+    expect(pasted).toBeFalse();
+  });
+
   it('auto-rounds geometry values when snap to grid is enabled', () => {
     service.selectWidget('1');
     service.setWidgetResize(true);

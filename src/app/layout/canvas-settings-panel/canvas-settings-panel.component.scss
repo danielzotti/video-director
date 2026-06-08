@@ -141,6 +141,12 @@
     align-items: center;
   }
 
+  &__section-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-1);
+  }
+
   &__row {
     display: flex;
     align-items: center;

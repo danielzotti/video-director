@@ -1108,6 +1108,10 @@ export class CanvasSettingsPanelComponent {
     this.cs.deleteSelectedWidget();
   }
 
+  protected duplicateSelectedWidget(): void {
+    this.cs.duplicateSelectedWidget();
+  }
+
   protected onWidgetGeometryInput(event: Event, field: WidgetGeometryField): void {
     const input = event.target as HTMLInputElement;
     this.updateGeometryDraftValue(field, input.value);
