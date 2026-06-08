@@ -946,6 +946,75 @@
 
                 <app-ui-separator orientation="horizontal"/>
 
+                <!-- TIMELINE DURATION section -->
+                <section class="settings-panel__section">
+                    <div class="settings-panel__section-label">Timeline duration</div>
+
+                    <div class="settings-panel__duration-grid">
+                        <div class="settings-panel__row settings-panel__row--column">
+                            <label class="settings-panel__field-label" for="duration-hours">h</label>
+                            <input
+                                    id="duration-hours"
+                                    class="settings-panel__input"
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    [value]="durationDraft().hours"
+                                    (input)="onDurationPartInput($event, 'hours')"
+                                    (blur)="commitDuration()"
+                                    (keydown.enter)="onDurationPartEnter($event)"
+                            />
+                        </div>
+                        <div class="settings-panel__row settings-panel__row--column">
+                            <label class="settings-panel__field-label" for="duration-minutes">m</label>
+                            <input
+                                    id="duration-minutes"
+                                    class="settings-panel__input"
+                                    type="number"
+                                    min="0"
+                                    max="59"
+                                    step="1"
+                                    [value]="durationDraft().minutes"
+                                    (input)="onDurationPartInput($event, 'minutes')"
+                                    (blur)="commitDuration()"
+                                    (keydown.enter)="onDurationPartEnter($event)"
+                            />
+                        </div>
+                        <div class="settings-panel__row settings-panel__row--column">
+                            <label class="settings-panel__field-label" for="duration-seconds">s</label>
+                            <input
+                                    id="duration-seconds"
+                                    class="settings-panel__input"
+                                    type="number"
+                                    min="0"
+                                    max="59"
+                                    step="1"
+                                    [value]="durationDraft().seconds"
+                                    (input)="onDurationPartInput($event, 'seconds')"
+                                    (blur)="commitDuration()"
+                                    (keydown.enter)="onDurationPartEnter($event)"
+                            />
+                        </div>
+                        <div class="settings-panel__row settings-panel__row--column">
+                            <label class="settings-panel__field-label" for="duration-tenths">1/10</label>
+                            <input
+                                    id="duration-tenths"
+                                    class="settings-panel__input"
+                                    type="number"
+                                    min="0"
+                                    max="9"
+                                    step="1"
+                                    [value]="durationDraft().tenths"
+                                    (input)="onDurationPartInput($event, 'tenths')"
+                                    (blur)="commitDuration()"
+                                    (keydown.enter)="onDurationPartEnter($event)"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <app-ui-separator orientation="horizontal"/>
+
                 <!-- GRID section -->
                 <section class="settings-panel__section">
                     <div class="settings-panel__section-label">Grid</div>

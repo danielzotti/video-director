@@ -33,6 +33,12 @@ export class TimelineService {
       }))
   );
 
+  /**
+   * Minimum zoom level is always 1.
+   * The viewport is scrollable, so long timelines don't need zoom-out compensation.
+   */
+  readonly minZoom = computed(() => 1);
+
   private timer: ReturnType<typeof setInterval> | null = null;
   /** Resolution of the internal playback timer in ms. */
   private readonly tickMs = 100;
@@ -72,9 +78,10 @@ export class TimelineService {
     this._time.set(0);
   }
 
-  /** Set zoom level (clamped to 1..10). */
+  /** Set zoom level (clamped to minZoom..10). */
   setZoom(zoom: number): void {
-    this._zoom.set(Math.max(1, Math.min(10, zoom)));
+    const min = this.minZoom();
+    this._zoom.set(Math.max(min, Math.min(10, zoom)));
   }
 
   /** Set the total duration of the timeline in ms (min 1 000 ms). */

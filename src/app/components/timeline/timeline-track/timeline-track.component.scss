@@ -71,6 +71,15 @@ $layer-height: 40px;
   }
 }
 
+.layer-row > app-timeline-time-markers {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .layers {
   display: block;
   position: relative;
@@ -176,6 +185,7 @@ $layer-height: 40px;
 .layer {
   position: relative;
   flex-grow: 1;
+  z-index: 1;
 }
 
 app-timeline-time-markers {

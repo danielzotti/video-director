@@ -26,6 +26,7 @@ import {
 } from '../utils/canvas-geometry.utils';
 import {strFromU8, strToU8, unzipSync, zipSync} from 'fflate';
 import {v4 as uuid} from 'uuid';
+import {TimelineService} from './timeline.service';
 
 export interface CanvasServiceInitModel {
     canvas: HTMLElement;
@@ -114,6 +115,7 @@ interface CanvasSnapshot {
     layersPanelLayout: LayersPanelLayout;
     selectedWidgetId: string | null;
     projectName: string;
+    timelineDuration?: number;
 }
 
 interface EditorStateSnapshot {
@@ -175,6 +177,7 @@ export class CanvasService {
     private readonly widgetResizeService = inject(CanvasWidgetResizeService);
     private readonly viewportService = inject(CanvasViewportService);
     private readonly mathService = inject(MathService);
+    private readonly timelineService = inject(TimelineService);
 
     public canManageCanvas = signal(false);
     public canExitBorders = signal(false);
@@ -2535,6 +2538,7 @@ export class CanvasService {
                 layersPanelLayout: this.layersPanelLayout(),
                 selectedWidgetId: this.selectedWidgetId(),
                 projectName: this.projectName(),
+                timelineDuration: this.timelineService.duration(),
             },
             widgets: this.widgetsState.list().map((widget) => this.cloneWidget(widget)),
         };
@@ -2551,6 +2555,11 @@ export class CanvasService {
         this.top.set(Math.round(canvas.top));
         this.left.set(Math.round(canvas.left));
         this.snapSize.set(Math.max(1, Math.round(canvas.snapSize)));
+
+        const timelineDuration = Number(canvas.timelineDuration);
+        if (Number.isFinite(timelineDuration)) {
+            this.timelineService.setDuration(Math.max(1000, Math.round(timelineDuration)));
+        }
 
         this.canExitBorders.set(canvas.canExitBorders);
         this.canSnapToGrid.set(canvas.canSnapToGrid);
@@ -2979,8 +2988,29 @@ export class CanvasService {
         this.isHistoryReady = false;
         this.applySnapshot(hydratedSnapshot);
         this.currentSnapshot = this.buildSnapshot();
-        this.writeSnapshotToStorage(this.currentSnapshot);
+        // Keep current persistence metadata: hydration only rewrites media sources.
+
+        // Refresh localStorage with the better data.
+        const ls = this.getLocalStorage();
+        if (ls) {
+            const lsSnapshot = this.createLocalStorageSafeSnapshot(this.currentSnapshot);
+            const lsEnvelope: PersistedStateEnvelope = {
+                ...lsSnapshot,
+                meta: {updatedAt: this.currentSnapshotUpdatedAt, version: this.currentSnapshotVersion},
+            };
+            try {
+                ls.setItem(this.STORAGE_KEY, JSON.stringify(lsEnvelope));
+            } catch { /* ignore quota errors */ }
+        }
+
+        this.undoStack.set([]);
+        this.redoStack.set([]);
         this.isHistoryReady = wasHistoryReady;
+        this.activeStorageBackend.set(this.projectDirectoryHandle ? 'sync-folder' : 'indexeddb');
+
+        if (this.projectDirectoryHandle) {
+            void this.hydrateCurrentSnapshotAssetSourcesFromConnectedDirectory();
+        }
     }
 
     private async resolveDirectoryPermission(

@@ -94,6 +94,9 @@ export class CanvasSettingsPanelComponent {
     x: '', y: '', width: '', height: '',
   });
   protected readonly timelineDraft = signal<{ start: string; end: string }>({ start: '0', end: '0' });
+  protected readonly durationDraft = signal<{ hours: string; minutes: string; seconds: string; tenths: string }>({
+    hours: '0', minutes: '0', seconds: '30', tenths: '0',
+  });
   protected readonly isImageDropzoneActive = signal(false);
   protected readonly isVideoDropzoneActive = signal(false);
   protected readonly isImageUrlModalOpen = signal(false);
@@ -147,6 +150,12 @@ export class CanvasSettingsPanelComponent {
       const start = (widget.timelineStart ?? 0) / 1000;
       const end = (widget.timelineEnd ?? duration) / 1000;
       this.timelineDraft.set({ start: String(start), end: String(end) });
+    });
+
+    // Sync duration draft
+    effect(() => {
+      const ms = this.timelineService.duration();
+      this.durationDraft.set(CanvasSettingsPanelComponent.msToDurationParts(ms));
     });
 
     // Sync image cover offset draft
@@ -1277,5 +1286,59 @@ export class CanvasSettingsPanelComponent {
     }
 
     return this.readInputNumber(value);
+  }
+
+  // --- Timeline duration helpers ---
+
+  private static msToDurationParts(ms: number): { hours: string; minutes: string; seconds: string; tenths: string } {
+    const total = Math.max(0, ms);
+    const hours = Math.floor(total / 3_600_000);
+    const minutes = Math.floor((total % 3_600_000) / 60_000);
+    const seconds = Math.floor((total % 60_000) / 1_000);
+    const tenths = Math.floor((total % 1_000) / 100);
+    return { hours: String(hours), minutes: String(minutes), seconds: String(seconds), tenths: String(tenths) };
+  }
+
+  private static durationPartsToMs(hours: number, minutes: number, seconds: number, tenths: number): number {
+    return (
+      Math.max(0, hours) * 3_600_000 +
+      Math.max(0, minutes) * 60_000 +
+      Math.max(0, seconds) * 1_000 +
+      Math.max(0, tenths) * 100
+    );
+  }
+
+  protected onDurationPartInput(event: Event, part: 'hours' | 'minutes' | 'seconds' | 'tenths'): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.durationDraft.update(d => ({ ...d, [part]: value }));
+  }
+
+  protected commitDuration(): void {
+    const d = this.durationDraft();
+    const hours = Number(d.hours);
+    const minutes = Number(d.minutes);
+    const seconds = Number(d.seconds);
+    const tenths = Number(d.tenths);
+
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes) || !Number.isFinite(seconds) || !Number.isFinite(tenths)) {
+      // Revert draft to current service value
+      this.durationDraft.set(CanvasSettingsPanelComponent.msToDurationParts(this.timelineService.duration()));
+      return;
+    }
+
+    const ms = CanvasSettingsPanelComponent.durationPartsToMs(hours, minutes, seconds, tenths);
+    if (ms < 1000) {
+      // Minimum 1 second — revert
+      this.durationDraft.set(CanvasSettingsPanelComponent.msToDurationParts(this.timelineService.duration()));
+      return;
+    }
+
+    this.timelineService.setDuration(ms);
+  }
+
+  protected onDurationPartEnter(event: Event): void {
+    event.preventDefault();
+    this.commitDuration();
+    (event.target as HTMLInputElement).blur();
   }
 }

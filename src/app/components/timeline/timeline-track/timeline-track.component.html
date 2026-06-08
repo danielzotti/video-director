@@ -8,7 +8,7 @@
           [zoom]="zoom()"
           [maxMs]="maxMs"
           [step]="stepMs"
-          [stepPx]="stepPx"
+          [printEveryMs]="printEveryMs"
         />
       </div>
       <div class="time-labels">
@@ -33,16 +33,15 @@
     <!-- Scrubber input -->
     <input
       id="slider"
-      #slider
       type="range"
       min="0"
       [step]="stepMs"
       [max]="maxMs"
       [value]="time() * zoom()"
-      (mousedown)="onSliderMouseDown($event)"
-      (mouseup)="onSliderMouseUp($event)"
-      (keydown)="onSliderMouseDown($event)"
-      (keyup)="onSliderMouseUp($event)"
+      (mousedown)="onSliderMouseDown()"
+      (mouseup)="onSliderMouseUp()"
+      (keydown)="onSliderMouseDown()"
+      (keyup)="onSliderMouseUp()"
       (input)="onSliderChange($event)"
     />
   </div>
@@ -62,7 +61,7 @@
             [zoom]="zoom()"
             [maxMs]="maxMs"
             [step]="stepMs"
-            [stepPx]="stepPx"
+            [printEveryMs]="printEveryMs"
           />
           <app-timeline-track-layer
             class="layer"
@@ -94,4 +93,3 @@
     ></div>
   </div>
 </div>
-

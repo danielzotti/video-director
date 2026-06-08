@@ -6,9 +6,9 @@ import {
   ElementRef,
   inject,
   input,
-  OnChanges,
+  OnDestroy,
   output,
-  SimpleChanges,
+  signal,
   viewChild,
 } from '@angular/core';
 import { TimelineWidget } from '../../../models/timeline.models';
@@ -25,7 +25,7 @@ import { TimelineTrackLayerComponent } from '../timeline-track-layer/timeline-tr
   templateUrl: './timeline-track.component.html',
   styleUrl: './timeline-track.component.scss',
 })
-export class TimelineTrackComponent implements AfterViewInit, OnChanges {
+export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   private readonly timelineService = inject(TimelineService);
 
   /** Synchronized scroll offset passed from the panel. */
@@ -34,7 +34,6 @@ export class TimelineTrackComponent implements AfterViewInit, OnChanges {
   readonly scrolled = output<number>();
   readonly layerClicked = output<string>();
 
-  private readonly sliderRef = viewChild<ElementRef<HTMLInputElement>>('slider');
   private readonly cursorRef = viewChild<ElementRef<HTMLDivElement>>('cursor');
   private readonly cursorTimeRef = viewChild<ElementRef<HTMLDivElement>>('cursorTime');
   private readonly layersContainerRef = viewChild<ElementRef<HTMLDivElement>>('layersContainer');
@@ -45,8 +44,10 @@ export class TimelineTrackComponent implements AfterViewInit, OnChanges {
   readonly duration = this.timelineService.duration;
   readonly time = this.timelineService.time;
 
+  private resizeObserver: ResizeObserver | null = null;
+  private readonly viewportWidthPx = signal(1);
+
   readonly minStepMs = 100;
-  readonly minStepPx = 5;
 
   hasCursorAnimation = true;
   timelineCursorHeight = '30px';
@@ -70,7 +71,25 @@ export class TimelineTrackComponent implements AfterViewInit, OnChanges {
   }
 
   get printEveryMs(): number {
-    return this.zoom() > 9 ? 100 : this.zoom() > 6 ? 200 : this.zoom() > 3 ? 500 : 1000;
+    // Dynamic label spacing reacts to duration, zoom and viewport width.
+    const minLabelSpacingPx = 40;
+    const duration = Math.max(1, this.duration());
+    const viewport = Math.max(1, this.viewportWidthPx());
+    const zoom = Math.max(1, this.zoom());
+
+    // ms/px at current zoom (zoom=1 => entire timeline fits viewport).
+    const msPerPx = duration / (viewport * zoom);
+    const labelIntervalMs = Math.ceil(msPerPx * minLabelSpacingPx);
+
+    // Human-friendly intervals.
+    const units = [
+      100, 200, 500,
+      1_000, 2_000, 5_000, 10_000, 15_000, 30_000,
+      60_000, 120_000, 300_000, 600_000, 900_000, 1_800_000,
+      3_600_000,
+    ];
+
+    return units.find((u) => u >= labelIntervalMs) ?? units[units.length - 1];
   }
 
   get timelineTotalWidthPx(): string {
@@ -78,7 +97,11 @@ export class TimelineTrackComponent implements AfterViewInit, OnChanges {
   }
 
   get stepPx(): number {
-    return this.minStepPx * this.zoom();
+    // At zoom=1, timeline width matches viewport width. Higher zoom scales from this baseline.
+    const duration = this.duration();
+    const viewport = Math.max(1, this.viewportWidthPx());
+    const baseStepPx = duration > 0 ? (viewport * this.minStepMs) / duration : 1;
+    return Math.max(0.1, baseStepPx) * this.zoom();
   }
 
   get stepMs(): number {
@@ -90,12 +113,20 @@ export class TimelineTrackComponent implements AfterViewInit, OnChanges {
   }
 
   ngAfterViewInit(): void {
+    this.updateViewportWidth();
+    const container = this.containerRef()?.nativeElement;
+    if (container) {
+      this.resizeObserver = new ResizeObserver(() => this.updateViewportWidth());
+      this.resizeObserver.observe(container);
+    }
+
     this.updateCursorPosition(this.time());
     this.updateTimelineCursorHeight();
   }
 
-  ngOnChanges(_changes: SimpleChanges): void {
-    this.updateTimelineCursorHeight();
+  ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
   }
 
   syncTimelineScroll(event: Event): void {
@@ -111,14 +142,14 @@ export class TimelineTrackComponent implements AfterViewInit, OnChanges {
     requestAnimationFrame(() => { this.hasCursorAnimation = true; });
   }
 
-  onSliderMouseDown(_event: Event): void {
+  onSliderMouseDown(): void {
     this.hasCursorAnimation = false;
     if (this.timelineService.isPlaying()) {
       this.timelineService.pause();
     }
   }
 
-  onSliderMouseUp(_event: Event): void {
+  onSliderMouseUp(): void {
     this.hasCursorAnimation = true;
   }
 
@@ -148,5 +179,10 @@ export class TimelineTrackComponent implements AfterViewInit, OnChanges {
     this.timelineCursorHeight = container?.offsetHeight
       ? `${container.offsetHeight}px`
       : '30px';
+  }
+
+  private updateViewportWidth(): void {
+    const width = this.containerRef()?.nativeElement.clientWidth ?? 1;
+    this.viewportWidthPx.set(Math.max(1, width));
   }
 }

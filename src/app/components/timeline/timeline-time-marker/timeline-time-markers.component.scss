@@ -1,20 +1,22 @@
 :host {
   position: relative;
   display: block;
-  text-align: left;
   height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 .marker {
-  fill: var(--ds-border-default);
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: var(--ds-border-default);
+  transform: translateX(-50%);
 
   &.main {
-    fill: var(--ds-border-strong);
+    background: var(--ds-border-strong);
     width: 2px;
   }
 }
 
-.timeline-marker__body {
-  position: absolute;
-  top: 0;
-}

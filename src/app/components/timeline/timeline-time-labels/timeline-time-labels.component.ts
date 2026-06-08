@@ -17,21 +17,34 @@ export class TimelineTimeLabelsComponent {
   readonly precision = input<'m' | 's' | 'ms'>('s');
   readonly printEveryMs = input(1000);
 
-  readonly groups = computed(() => {
-    const count = Math.ceil(this.maxMs() / this.step());
-    return [...Array(Math.max(1, count)).keys()];
+  private readonly visibleLabelsComputed = computed(() => {
+    const zoom = Math.max(1, this.zoom());
+    const maxMs = Math.max(1, this.maxMs());
+    const printEveryRealMs = Math.max(100, this.printEveryMs());
+    const stepScaledMs = printEveryRealMs * zoom;
+
+    const labels: { leftPct: number; text: string }[] = [];
+    for (let scaledMs = 0; scaledMs <= maxMs; scaledMs += stepScaledMs) {
+      labels.push({
+        leftPct: (scaledMs / maxMs) * 100,
+        text: this.printTimeValue(scaledMs),
+      });
+    }
+
+    // Ensure the last time label is always present at timeline end.
+    const lastLabel = labels.at(-1);
+    if (!lastLabel || lastLabel.leftPct < 100) {
+      labels.push({
+        leftPct: 100,
+        text: this.printTimeValue(maxMs),
+      });
+    }
+
+    return labels;
   });
 
-  readonly labelWidth = computed(() => {
-    const count = Math.ceil(this.maxMs() / this.step());
-    return `${100 / Math.max(1, count)}%`;
-  });
-
-  printTimeWithUnit(index: number): string {
-    const ms = index * this.step();
-    return (ms / this.zoom()) % this.printEveryMs() === 0
-      ? this.printTimeValue(ms)
-      : '';
+  visibleLabels(): { leftPct: number; text: string }[] {
+    return this.visibleLabelsComputed();
   }
 
   printTimeValue(timeMs: number): string {
