@@ -11,6 +11,14 @@
   <button class="action" type="button" title="Reset to start" (click)="onResetTimeClick()">
     <app-ui-icon name="undo" />
   </button>
+  <label class="visibility-toggle" title="Ignore timeline visibility windows">
+    <input
+      type="checkbox"
+      [checked]="showAllWidgets()"
+      (change)="onShowAllWidgetsChanged($event)"
+    />
+    <span>Show all</span>
+  </label>
 </div>
 
 <div class="time-container">

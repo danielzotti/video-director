@@ -10,11 +10,13 @@ export class TimelineService {
   private readonly _duration = signal(DEFAULT_TIMELINE_DURATION);
   private readonly _isPlaying = signal(false);
   private readonly _zoom = signal(1);
+  private readonly _showAllWidgets = signal(false);
 
   readonly time = this._time.asReadonly();
   readonly duration = this._duration.asReadonly();
   readonly isPlaying = this._isPlaying.asReadonly();
   readonly zoom = this._zoom.asReadonly();
+  readonly showAllWidgets = this._showAllWidgets.asReadonly();
 
   /**
    * All canvas widgets mapped to TimelineWidget with guaranteed
@@ -78,6 +80,11 @@ export class TimelineService {
   /** Set the total duration of the timeline in ms (min 1 000 ms). */
   setDuration(duration: number): void {
     this._duration.set(Math.max(1000, duration));
+  }
+
+  /** Override timeline visibility and force all canvas widgets to be visible. */
+  setShowAllWidgets(value: boolean): void {
+    this._showAllWidgets.set(value);
   }
 
   /**

@@ -18,6 +18,7 @@ export class TimelineToolbarComponent {
   readonly time = this.timelineService.time;
   readonly duration = this.timelineService.duration;
   readonly zoom = this.timelineService.zoom;
+  readonly showAllWidgets = this.timelineService.showAllWidgets;
 
   readonly maxZoom = 10;
   readonly stepValue = 1;
@@ -33,6 +34,10 @@ export class TimelineToolbarComponent {
 
   onResetTimeClick(): void {
     this.timelineService.resetTime();
+  }
+
+  onShowAllWidgetsChanged(event: Event): void {
+    this.timelineService.setShowAllWidgets((event.target as HTMLInputElement).checked);
   }
 
   onZoomSliderChange(event: Event): void {

@@ -70,12 +70,16 @@ export class RecordingSessionNewComponent {
     protected readonly floatingLayersPanelPosition = signal<Point2D>({x: 0, y: 0});
     protected readonly isProjectDirectoryPromptOpen = signal(false);
     protected readonly visibleWidgetIdsAtTimelineTime = computed(() => {
+        const widgets = this.widgetStateService.list();
+        if (this.timelineService.showAllWidgets()) {
+            return new Set(widgets.map(widget => widget.uuid));
+        }
+
         const currentTime = this.timelineService.time();
         const duration = this.timelineService.duration();
 
         return new Set(
-            this.widgetStateService
-                .list()
+            widgets
                 .filter(widget => isWidgetVisibleInTimelineWindow({
                     widget,
                     timeMs: currentTime,

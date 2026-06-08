@@ -17,9 +17,9 @@ $toolbar-padding: 8px;
 .actions-container {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   white-space: nowrap;
-  width: 80px;
+  min-width: 80px;
 }
 
 .action {
@@ -39,6 +39,22 @@ $toolbar-padding: 8px;
 
   app-ui-icon {
     --ui-icon-size: var(--ds-icon-size-lg);
+  }
+}
+
+.visibility-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ds-text-primary);
+  font-size: var(--ds-font-xs);
+  user-select: none;
+  cursor: pointer;
+
+  input {
+    margin: 0;
+    accent-color: var(--ds-accent);
+    cursor: pointer;
   }
 }
 
