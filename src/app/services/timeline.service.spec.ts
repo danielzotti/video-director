@@ -22,12 +22,6 @@ describe('TimelineService', () => {
   });
 
   it('toggles both snap modes through the shared snap toggle', () => {
-    expect(service.snapEnabled()).toBeFalse();
-    expect(service.snapToSeconds()).toBeFalse();
-    expect(service.snapToLayers()).toBeFalse();
-
-    service.setSnapEnabled(true);
-
     expect(service.snapEnabled()).toBeTrue();
     expect(service.snapToSeconds()).toBeTrue();
     expect(service.snapToLayers()).toBeTrue();
@@ -37,6 +31,12 @@ describe('TimelineService', () => {
     expect(service.snapEnabled()).toBeFalse();
     expect(service.snapToSeconds()).toBeFalse();
     expect(service.snapToLayers()).toBeFalse();
+
+    service.setSnapEnabled(true);
+
+    expect(service.snapEnabled()).toBeTrue();
+    expect(service.snapToSeconds()).toBeTrue();
+    expect(service.snapToLayers()).toBeTrue();
   });
 
   it('keeps legacy snap setters synchronized', () => {
