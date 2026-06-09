@@ -77,6 +77,16 @@ export class TimelineService {
     this._isPlaying.set(false);
   }
 
+  /** Toggle playback state at the current position. */
+  togglePlayback(): void {
+    if (this._isPlaying()) {
+      this.pause();
+      return;
+    }
+
+    this.play();
+  }
+
   /** Move the playhead to a specific time (clamped to 0..duration). */
   setTime(time: number): void {
     this._time.set(Math.max(0, Math.min(time, this._duration())));

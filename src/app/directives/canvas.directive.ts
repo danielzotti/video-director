@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import {CanvasService} from '../services/canvas.service';
 import {MathService} from '../services/math.service';
+import {TimelineService} from '../services/timeline.service';
 
 @Directive({
     selector: '[appCanvas]',
@@ -18,6 +19,7 @@ import {MathService} from '../services/math.service';
 export class CanvasDirective implements OnInit {
     canvasService = inject(CanvasService);
     mathService = inject(MathService);
+    private readonly timelineService = inject(TimelineService);
     private readonly canvasElementRef = inject(ElementRef<HTMLElement>);
     private readonly renderer = inject(Renderer2);
 
@@ -70,70 +72,33 @@ export class CanvasDirective implements OnInit {
             return;
         }
 
-        if (this.isUndoRedoShortcut(event)) {
-            event.preventDefault();
-
-            if (event.shiftKey) {
-                this.canvasService.redo();
-                return;
-            }
-
-            this.canvasService.undo();
+        if (this.handleUndoRedoShortcut(event)) {
             return;
         }
 
-        if (this.isCopyShortcut(event)) {
-            const handled = this.canvasService.copySelectedWidgetToClipboard();
-            if (handled) {
-                event.preventDefault();
-            }
+        if (this.handleCopyShortcut(event)) {
             return;
         }
 
-        if (this.isPasteShortcut(event)) {
-            const handled = this.canvasService.pasteClipboardWidget();
-            if (handled) {
-                event.preventDefault();
-            }
+        if (this.handlePasteShortcut(event)) {
             return;
         }
 
-        if (event.code === 'Delete' || event.code === 'Backspace') {
-            event.preventDefault();
-            this.canvasService.deleteSelectedWidget();
+        if (this.handleDeleteShortcut(event)) {
             return;
         }
 
-        if (event.code === 'Escape' && this.canvasService.selectedWidgetId()) {
-            event.preventDefault();
-            this.canvasService.selectWidget(null);
+        if (this.handleEscapeShortcut(event)) {
             return;
         }
 
-        if (this.isArrowMoveKey(event.code)) {
-            const handled = this.canvasService.moveSelectedWidgetByArrowKey({
-                key: event.code,
-                shiftKey: event.shiftKey,
-            });
-
-            if (handled) {
-                event.preventDefault();
-            }
+        if (this.handleArrowMoveShortcut(event)) {
             return;
         }
 
-        if (event.code !== 'Space') {
-            return;
+        if (event.code === 'Space') {
+            this.handleSpaceKeyDown(event);
         }
-
-        this.syncPointerInsideAreaFromHover();
-
-        if (this.isPointerInsideCanvasArea) {
-            event.preventDefault();
-        }
-
-        this.canvasService.setSpacePressed(true);
-        this.updateCanvasAreaCursor();
     }
 
     @HostListener('window:keyup', ['$event'])
@@ -298,10 +263,105 @@ export class CanvasDirective implements OnInit {
             return false;
         }
 
-        return targetEl instanceof HTMLInputElement
-            || targetEl instanceof HTMLTextAreaElement
-            || targetEl.isContentEditable
+        if (targetEl instanceof HTMLTextAreaElement) {
+            return true;
+        }
+
+        if (targetEl instanceof HTMLInputElement) {
+            return this.isTextEntryInput(targetEl);
+        }
+
+        return targetEl.isContentEditable
             || !!targetEl.closest('[contenteditable]:not([contenteditable="false"])');
+    }
+
+    private isTextEntryInput(input: HTMLInputElement): boolean {
+        const type = (input.type || 'text').toLowerCase();
+        return type === 'text'
+            || type === 'search'
+            || type === 'url'
+            || type === 'tel'
+            || type === 'email'
+            || type === 'password'
+            || type === 'number';
+    }
+
+    private handleUndoRedoShortcut(event: KeyboardEvent): boolean {
+        if (!this.isUndoRedoShortcut(event)) {
+            return false;
+        }
+
+        event.preventDefault();
+        if (event.shiftKey) {
+            this.canvasService.redo();
+            return true;
+        }
+
+        this.canvasService.undo();
+        return true;
+    }
+
+    private handleCopyShortcut(event: KeyboardEvent): boolean {
+        if (!this.isCopyShortcut(event)) {
+            return false;
+        }
+
+        const handled = this.canvasService.copySelectedWidgetToClipboard();
+        if (handled) {
+            event.preventDefault();
+        }
+
+        return true;
+    }
+
+    private handlePasteShortcut(event: KeyboardEvent): boolean {
+        if (!this.isPasteShortcut(event)) {
+            return false;
+        }
+
+        const handled = this.canvasService.pasteClipboardWidget();
+        if (handled) {
+            event.preventDefault();
+        }
+
+        return true;
+    }
+
+    private handleDeleteShortcut(event: KeyboardEvent): boolean {
+        if (event.code !== 'Delete' && event.code !== 'Backspace') {
+            return false;
+        }
+
+        event.preventDefault();
+        this.canvasService.deleteSelectedWidget();
+        return true;
+    }
+
+    private handleEscapeShortcut(event: KeyboardEvent): boolean {
+        if (event.code !== 'Escape' || !this.canvasService.selectedWidgetId()) {
+            return false;
+        }
+
+        event.preventDefault();
+        this.canvasService.selectWidget(null);
+        return true;
+    }
+
+    private handleArrowMoveShortcut(event: KeyboardEvent): boolean {
+        if (!this.isArrowMoveKey(event.code)) {
+            return false;
+        }
+
+        const handled = this.canvasService.moveSelectedWidgetByArrowKey({
+            key: event.code,
+            shiftKey: event.shiftKey,
+        });
+
+        if (handled) {
+            event.preventDefault();
+        }
+
+        return true;
     }
 
     private isUndoRedoShortcut(event: KeyboardEvent): boolean {
@@ -340,6 +400,18 @@ export class CanvasDirective implements OnInit {
         const platform = navigator.platform ?? '';
         const userAgent = navigator.userAgent ?? '';
         return /Mac|iPhone|iPad|iPod/i.test(platform) || /Mac|iPhone|iPad|iPod/i.test(userAgent);
+    }
+
+    private handleSpaceKeyDown(event: KeyboardEvent): void {
+        if (!event.repeat) {
+            this.timelineService.togglePlayback();
+        }
+
+        this.syncPointerInsideAreaFromHover();
+        event.preventDefault();
+
+        this.canvasService.setSpacePressed(true);
+        this.updateCanvasAreaCursor();
     }
 
 

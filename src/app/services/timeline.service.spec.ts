@@ -48,5 +48,15 @@ describe('TimelineService', () => {
     expect(service.snapEnabled()).toBeFalse();
     expect(service.snapToSeconds()).toBeFalse();
   });
+
+  it('toggles playback state', () => {
+    expect(service.isPlaying()).toBeFalse();
+
+    service.togglePlayback();
+    expect(service.isPlaying()).toBeTrue();
+
+    service.togglePlayback();
+    expect(service.isPlaying()).toBeFalse();
+  });
 });
 
