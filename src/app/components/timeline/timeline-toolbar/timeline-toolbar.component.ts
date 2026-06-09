@@ -19,9 +19,9 @@ export class TimelineToolbarComponent {
   readonly duration = this.timelineService.duration;
   readonly zoom = this.timelineService.zoom;
   readonly minZoom = this.timelineService.minZoom;
+  readonly maxZoom = this.timelineService.maxZoom;
   readonly showAllWidgets = this.timelineService.showAllWidgets;
 
-  readonly maxZoom = 10;
   readonly stepValue = 1;
   readonly compactFormat = TIMER_FORMAT.compact;
 
@@ -46,7 +46,7 @@ export class TimelineToolbarComponent {
   }
 
   zoomIn(): void {
-    this.timelineService.setZoom(Math.min(this.maxZoom, this.zoom() + 1));
+    this.timelineService.setZoom(Math.min(this.maxZoom(), this.zoom() + 1));
   }
 
   zoomOut(): void {

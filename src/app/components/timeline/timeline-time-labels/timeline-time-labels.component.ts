@@ -16,29 +16,29 @@ export class TimelineTimeLabelsComponent {
   readonly maxMs = input(DEFAULT_TIMELINE_DURATION);
   readonly precision = input<'m' | 's' | 'ms'>('s');
   readonly printEveryMs = input(1000);
+  readonly visibleStartMs = input(0);
+  readonly visibleEndMs = input(DEFAULT_TIMELINE_DURATION);
+
+  private readonly virtualOverscanMs = computed(() => Math.max(100, this.printEveryMs()));
 
   private readonly visibleLabelsComputed = computed(() => {
-    const zoom = Math.max(1, this.zoom());
     const maxMs = Math.max(1, this.maxMs());
     const printEveryRealMs = Math.max(100, this.printEveryMs());
-    const stepScaledMs = printEveryRealMs * zoom;
+    const stepScaledMs = printEveryRealMs;
+    const overscan = this.virtualOverscanMs();
+    const visibleStart = Math.max(0, this.visibleStartMs() - overscan);
+    const visibleEnd = Math.min(maxMs, this.visibleEndMs() + overscan);
+    const startMs = Math.max(0, Math.floor(visibleStart / stepScaledMs) * stepScaledMs);
+    const endMs = Math.min(maxMs, Math.ceil(visibleEnd / stepScaledMs) * stepScaledMs);
 
     const labels: { leftPct: number; text: string }[] = [];
-    for (let scaledMs = 0; scaledMs <= maxMs; scaledMs += stepScaledMs) {
+    for (let scaledMs = startMs; scaledMs <= endMs; scaledMs += stepScaledMs) {
       labels.push({
         leftPct: (scaledMs / maxMs) * 100,
         text: this.printTimeValue(scaledMs),
       });
     }
 
-    // Ensure the last time label is always present at timeline end.
-    const lastLabel = labels.at(-1);
-    if (!lastLabel || lastLabel.leftPct < 100) {
-      labels.push({
-        leftPct: 100,
-        text: this.printTimeValue(maxMs),
-      });
-    }
 
     return labels;
   });
@@ -66,6 +66,6 @@ export class TimelineTimeLabelsComponent {
         unit = 'ms';
     }
 
-    return `${Math.round((value / this.zoom()) * 10) / 10}${unit}`;
+    return `${Math.round(value * 10) / 10}${unit}`;
   }
 }

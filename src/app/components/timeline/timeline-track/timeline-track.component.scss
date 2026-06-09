@@ -85,6 +85,11 @@ $layer-height: 40px;
   position: relative;
 }
 
+.layer-spacer {
+  width: 100%;
+  pointer-events: none;
+}
+
 #cursor-time {
   position: absolute;
   transform: translateX(-50%);
@@ -119,10 +124,9 @@ $layer-height: 40px;
 }
 
 #slider {
-  --range-margin-fix: -8px;
   -webkit-appearance: none;
-  margin: 0 var(--range-margin-fix);
-  width: calc(100% - (2 * var(--range-margin-fix)));
+  margin: 0;
+  width: 100%;
   background-color: transparent;
   height: 100%;
   outline: none;

@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
@@ -28,6 +29,9 @@ import { TimelineTrackLayerComponent } from '../timeline-track-layer/timeline-tr
 })
 export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   private readonly timelineService = inject(TimelineService);
+  private readonly horizontalVirtualBufferPx = 300;
+  private readonly layerRowHeightPx = 40;
+  private readonly layerVirtualOverscanRows = 5;
 
   /** Synchronized scroll offset passed from the panel. */
   readonly scrollTop = input(0);
@@ -47,6 +51,8 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
 
   private resizeObserver: ResizeObserver | null = null;
   private readonly viewportWidthPx = signal(1);
+  private readonly viewportHeightPx = signal(1);
+  private readonly scrollLeftPx = signal(0);
 
   /** Direction of the active edge-scroll RAF loop: -1=left, 0=none, 1=right. */
   private edgeScrollDirection: -1 | 0 | 1 = 0;
@@ -61,6 +67,21 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
 
   hasCursorAnimation = true;
   timelineCursorHeight = '30px';
+
+  readonly visibleStartMs = computed(() => this.visibleRangeMs().startMs);
+  readonly visibleEndMs = computed(() => this.visibleRangeMs().endMs);
+  readonly visibleLayers = computed(() => {
+    const all = this.layers();
+    const range = this.visibleLayerRange();
+    return all.slice(range.startIndex, range.endExclusiveIndex);
+  });
+  readonly topSpacerHeightPx = computed(() => this.visibleLayerRange().startIndex * this.layerRowHeightPx);
+  readonly bottomSpacerHeightPx = computed(() => {
+    const all = this.layers();
+    const range = this.visibleLayerRange();
+    const hiddenAfter = Math.max(0, all.length - range.endExclusiveIndex);
+    return hiddenAfter * this.layerRowHeightPx;
+  });
 
   constructor() {
     // Update cursor position and height whenever time changes
@@ -84,6 +105,13 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
       this.zoom();
       untracked(() => this.centerCursorInViewport());
     });
+
+    // Update maxZoom whenever viewport width or duration changes
+    effect(() => {
+      const viewportWidth = this.viewportWidthPx();
+      this.duration();
+      this.timelineService.setMaxZoom(viewportWidth);
+    });
   }
 
   get printEveryMs(): number {
@@ -105,11 +133,11 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
       3_600_000,
     ];
 
-    return units.find((u) => u >= labelIntervalMs) ?? units[units.length - 1];
+    return units.find((u) => u >= labelIntervalMs) ?? (units.at(-1) ?? 3_600_000);
   }
 
   get timelineTotalWidthPx(): string {
-    return `${this.stepPx * (this.maxMs / this.stepMs)}px`;
+    return `${this.timelineTotalWidthRawPx()}px`;
   }
 
   get stepPx(): number {
@@ -121,17 +149,47 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   }
 
   get stepMs(): number {
-    return this.minStepMs * this.zoom();
+    return this.minStepMs;
   }
 
   get maxMs(): number {
-    return this.duration() * this.zoom();
+    return this.duration();
   }
+
+  private readonly visibleRangeMs = computed(() => {
+    const duration = Math.max(1, this.duration());
+    const totalWidthPx = Math.max(1, this.timelineTotalWidthRawPx());
+    const viewportWidthPx = Math.max(1, this.viewportWidthPx());
+    const bufferPx = this.horizontalVirtualBufferPx;
+    const startPx = Math.max(0, this.scrollLeftPx() - bufferPx);
+    const endPx = Math.min(totalWidthPx, this.scrollLeftPx() + viewportWidthPx + bufferPx);
+    const msPerPx = duration / totalWidthPx;
+
+    return {
+      startMs: Math.max(0, Math.floor(startPx * msPerPx)),
+      endMs: Math.min(duration, Math.ceil(endPx * msPerPx)),
+    };
+  });
+
+  private readonly visibleLayerRange = computed(() => {
+    const total = this.layers().length;
+    const rowHeight = this.layerRowHeightPx;
+    const overscan = this.layerVirtualOverscanRows;
+    const scrollTop = this.scrollTop();
+    const viewportHeight = Math.max(1, this.viewportHeightPx());
+
+    const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+    const visibleRows = Math.ceil(viewportHeight / rowHeight);
+    const endExclusiveIndex = Math.min(total, startIndex + visibleRows + overscan * 2);
+
+    return { startIndex, endExclusiveIndex };
+  });
 
   ngAfterViewInit(): void {
     this.updateViewportWidth();
     const container = this.containerRef()?.nativeElement;
     if (container) {
+      this.scrollLeftPx.set(container.scrollLeft);
       this.resizeObserver = new ResizeObserver(() => this.updateViewportWidth());
       this.resizeObserver.observe(container);
     }
@@ -147,12 +205,13 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   }
 
   syncTimelineScroll(event: Event): void {
-    this.scrolled.emit((event.target as HTMLElement).scrollTop);
+    const target = event.target as HTMLElement;
+    this.scrolled.emit(target.scrollTop);
+    this.scrollLeftPx.set(target.scrollLeft);
   }
 
   onSliderChange(event: Event): void {
-    const raw = +(event.target as HTMLInputElement).value;
-    const t = raw / this.zoom();
+    const t = +(event.target as HTMLInputElement).value;
     this.hasCursorAnimation = false;
     this.timelineService.setTime(t);
     // Re-enable transition after the immediate paint
@@ -202,8 +261,11 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   }
 
    private updateViewportWidth(): void {
-     const width = this.containerRef()?.nativeElement.clientWidth ?? 1;
-     this.viewportWidthPx.set(Math.max(1, width));
+       const container = this.containerRef()?.nativeElement;
+       const width = container?.clientWidth ?? 1;
+       const height = container?.clientHeight ?? 1;
+       this.viewportWidthPx.set(Math.max(1, width));
+       this.viewportHeightPx.set(Math.max(1, height));
    }
 
   /** Centers the scroll so the playhead cursor is in the middle of the viewport. Used on zoom change. */
@@ -213,11 +275,12 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
 
     const duration = this.duration();
     const cursorPct = duration > 0 ? (this.time() / duration) * 100 : 0;
-    const timelineWidthPx = Number.parseInt(this.timelineTotalWidthPx, 10);
+    const timelineWidthPx = this.timelineTotalWidthRawPx();
     const cursorPx = (timelineWidthPx * cursorPct) / 100;
     const viewportWidth = container.clientWidth;
-
-    container.scrollLeft = Math.max(0, cursorPx - viewportWidth / 2);
+    const nextScrollLeft = Math.max(0, cursorPx - viewportWidth / 2);
+    container.scrollLeft = nextScrollLeft;
+    this.scrollLeftPx.set(nextScrollLeft);
   }
 
   /**
@@ -280,13 +343,20 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const timelineWidthPx = Number.parseInt(this.timelineTotalWidthPx, 10);
+    const timelineWidthPx = this.timelineTotalWidthRawPx();
     const maxScroll = Math.max(0, timelineWidthPx - container.clientWidth);
     const next =
       container.scrollLeft +
       this.edgeScrollDirection * this.edgeScrollSpeedPx * this.edgeScrollSpeedMultiplier;
-    container.scrollLeft = Math.max(0, Math.min(maxScroll, next));
+    const nextScrollLeft = Math.max(0, Math.min(maxScroll, next));
+    container.scrollLeft = nextScrollLeft;
+    this.scrollLeftPx.set(nextScrollLeft);
 
     this.edgeScrollRafId = requestAnimationFrame(() => this.runEdgeScroll());
+  }
+
+  private timelineTotalWidthRawPx(): number {
+    const totalSteps = Math.max(1, this.maxMs / this.stepMs);
+    return Math.max(1, this.stepPx * totalSteps);
   }
 }

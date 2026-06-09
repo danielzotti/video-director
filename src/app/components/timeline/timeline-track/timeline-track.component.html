@@ -9,6 +9,8 @@
           [maxMs]="maxMs"
           [step]="stepMs"
           [printEveryMs]="printEveryMs"
+          [visibleStartMs]="visibleStartMs()"
+          [visibleEndMs]="visibleEndMs()"
         />
       </div>
       <div class="time-labels">
@@ -19,6 +21,8 @@
           [stepPx]="stepPx"
           precision="s"
           [printEveryMs]="printEveryMs"
+          [visibleStartMs]="visibleStartMs()"
+          [visibleEndMs]="visibleEndMs()"
         />
       </div>
     </div>
@@ -37,7 +41,7 @@
       min="0"
       [step]="stepMs"
       [max]="maxMs"
-      [value]="time() * zoom()"
+      [value]="time()"
       (mousedown)="onSliderMouseDown()"
       (mouseup)="onSliderMouseUp()"
       (keydown)="onSliderMouseDown()"
@@ -49,7 +53,8 @@
   <!-- Layer rows -->
   <div #layersContainer class="layers-container" [style.width]="timelineTotalWidthPx">
     <div class="layers">
-      @for (layer of layers(); track trackLayers(0, layer)) {
+      <div class="layer-spacer" [style.height.px]="topSpacerHeightPx()"></div>
+      @for (layer of visibleLayers(); track trackLayers(0, layer)) {
         <div
           class="layer-row"
           [class.is-selected]="false"
@@ -62,6 +67,8 @@
             [maxMs]="maxMs"
             [step]="stepMs"
             [printEveryMs]="printEveryMs"
+            [visibleStartMs]="visibleStartMs()"
+            [visibleEndMs]="visibleEndMs()"
           />
           <app-timeline-track-layer
             class="layer"
@@ -76,6 +83,7 @@
           />
         </div>
       }
+      <div class="layer-spacer" [style.height.px]="bottomSpacerHeightPx()"></div>
     </div>
   </div>
 

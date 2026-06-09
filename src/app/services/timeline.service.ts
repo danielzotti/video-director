@@ -5,18 +5,22 @@ import { DEFAULT_TIMELINE_DURATION, TimelineWidget } from '../models/timeline.mo
 @Injectable({ providedIn: 'root' })
 export class TimelineService {
   private readonly widgetStateService = inject(CanvasWidgetStateService);
+  private readonly minTimelineStepMs = 100;
+  private readonly targetStepPxAtMaxZoom = 50;
 
   private readonly _time = signal(0);
   private readonly _duration = signal(DEFAULT_TIMELINE_DURATION);
   private readonly _isPlaying = signal(false);
   private readonly _zoom = signal(1);
   private readonly _showAllWidgets = signal(false);
+  private readonly _maxZoom = signal(10);
 
   readonly time = this._time.asReadonly();
   readonly duration = this._duration.asReadonly();
   readonly isPlaying = this._isPlaying.asReadonly();
   readonly zoom = this._zoom.asReadonly();
   readonly showAllWidgets = this._showAllWidgets.asReadonly();
+  readonly maxZoom = this._maxZoom.asReadonly();
 
   /**
    * All canvas widgets mapped to TimelineWidget with guaranteed
@@ -78,15 +82,37 @@ export class TimelineService {
     this._time.set(0);
   }
 
-  /** Set zoom level (clamped to minZoom..10). */
+  /** Set zoom level (clamped to minZoom..maxZoom). */
   setZoom(zoom: number): void {
     const min = this.minZoom();
-    this._zoom.set(Math.max(min, Math.min(10, zoom)));
+    const max = this._maxZoom();
+    this._zoom.set(Math.max(min, Math.min(max, zoom)));
+  }
+
+  /**
+   * Update maxZoom based on viewport width and duration.
+   * Formula: maxZoom = ceil((duration * targetStepPx) / (viewportWidth * 100ms)).
+   * At max zoom, a 100ms step is about 50px wide for precise sub-second navigation.
+   */
+  setMaxZoom(viewportWidth: number): void {
+    const duration = this._duration();
+    const safeViewport = Math.max(1, viewportWidth);
+    const calc = Math.ceil(
+      (duration * this.targetStepPxAtMaxZoom) / (safeViewport * this.minTimelineStepMs)
+    );
+    const newMaxZoom = Math.max(1, calc);
+    this._maxZoom.set(newMaxZoom);
+
+    // Clamp current zoom if it exceeds new maxZoom
+    if (this._zoom() > newMaxZoom) {
+      this._zoom.set(newMaxZoom);
+    }
   }
 
   /** Set the total duration of the timeline in ms (min 1 000 ms). */
   setDuration(duration: number): void {
     this._duration.set(Math.max(1000, duration));
+    this.setZoom(this._zoom());
   }
 
   /** Override timeline visibility and force all canvas widgets to be visible. */

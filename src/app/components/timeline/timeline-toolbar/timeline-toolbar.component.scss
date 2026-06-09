@@ -103,3 +103,13 @@ $toolbar-padding: 8px;
   accent-color: var(--ds-accent);
   cursor: pointer;
 }
+
+.zoom-range {
+  font-size: var(--ds-font-xs);
+  color: var(--ds-text-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 30px;
+  text-align: right;
+}
+

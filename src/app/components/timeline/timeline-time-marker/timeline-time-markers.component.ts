@@ -14,10 +14,14 @@ export class TimelineTimeMarkersComponent {
   readonly maxMs = input(DEFAULT_TIMELINE_DURATION);
   readonly isHeader = input(false);
   readonly printEveryMs = input(1000);
+  readonly visibleStartMs = input(0);
+  readonly visibleEndMs = input(DEFAULT_TIMELINE_DURATION);
+
+  private readonly virtualOverscanMs = computed(() => Math.max(this.step(), this.printEveryMs()));
 
   private readonly majorScaledStepMs = computed(() => {
     const quantum = Math.max(1, this.step());
-    const desiredScaled = Math.max(quantum, this.printEveryMs() * Math.max(1, this.zoom()));
+    const desiredScaled = Math.max(quantum, this.printEveryMs());
     return Math.max(quantum, Math.round(desiredScaled / quantum) * quantum);
   });
 
@@ -50,14 +54,16 @@ export class TimelineTimeMarkersComponent {
     const safeInterval = Math.max(1, intervalMs);
     const points: number[] = [];
 
-    for (let ms = 0; ms <= max; ms += safeInterval) {
+    const overscan = this.virtualOverscanMs();
+    const visibleStart = Math.max(0, this.visibleStartMs() - overscan);
+    const visibleEnd = Math.min(max, this.visibleEndMs() + overscan);
+    const startMs = Math.max(0, Math.floor(visibleStart / safeInterval) * safeInterval);
+    const endMs = Math.min(max, Math.ceil(visibleEnd / safeInterval) * safeInterval);
+
+    for (let ms = startMs; ms <= endMs; ms += safeInterval) {
       points.push((ms / max) * 100);
     }
 
-    const last = points.at(-1) ?? 0;
-    if (last < 100) {
-      points.push(100);
-    }
 
     return points;
   }
