@@ -52,6 +52,7 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   private edgeScrollDirection: -1 | 0 | 1 = 0;
   private edgeScrollRafId: number | null = null;
   private readonly edgeScrollSpeedPx = 8;
+  private edgeScrollSpeedMultiplier = 1;
 
   /** True only while the user holds the mouse button down on the timeline scrubber. */
   private isSliderDragging = false;
@@ -222,6 +223,7 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   /**
    * Called by (pointermove) on the container.
    * Starts a continuous RAF scroll when the mouse enters the 0–5% or 95–100% edge zones.
+   * In the outer 0–2% and 98–100% zones, speed is 10x.
    * Stops scroll when mouse is in the central 5%–95% area.
    */
   onContainerPointerMove(event: PointerEvent): void {
@@ -235,10 +237,13 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
     const relativeX = event.clientX - rect.left;
     const viewportWidth = rect.width;
     const edgeThreshold = viewportWidth * 0.05;
+    const turboEdgeThreshold = viewportWidth * 0.02;
 
     if (relativeX < edgeThreshold) {
+      this.edgeScrollSpeedMultiplier = relativeX < turboEdgeThreshold ? 10 : 1;
       this.startEdgeScroll(-1);
     } else if (relativeX > viewportWidth - edgeThreshold) {
+      this.edgeScrollSpeedMultiplier = relativeX > viewportWidth - turboEdgeThreshold ? 10 : 1;
       this.startEdgeScroll(1);
     } else {
       this.stopEdgeScroll();
@@ -260,6 +265,7 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
 
   private stopEdgeScroll(): void {
     this.edgeScrollDirection = 0;
+    this.edgeScrollSpeedMultiplier = 1;
     if (this.edgeScrollRafId !== null) {
       cancelAnimationFrame(this.edgeScrollRafId);
       this.edgeScrollRafId = null;
@@ -276,7 +282,9 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
 
     const timelineWidthPx = Number.parseInt(this.timelineTotalWidthPx, 10);
     const maxScroll = Math.max(0, timelineWidthPx - container.clientWidth);
-    const next = container.scrollLeft + this.edgeScrollDirection * this.edgeScrollSpeedPx;
+    const next =
+      container.scrollLeft +
+      this.edgeScrollDirection * this.edgeScrollSpeedPx * this.edgeScrollSpeedMultiplier;
     container.scrollLeft = Math.max(0, Math.min(maxScroll, next));
 
     this.edgeScrollRafId = requestAnimationFrame(() => this.runEdgeScroll());
