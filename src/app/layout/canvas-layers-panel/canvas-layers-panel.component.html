@@ -59,35 +59,79 @@
                             </div>
                             <div class="layer-item__info">
 
-                                <div class="layer-item__name-container">
-                                    <div class="layer-item__header">
-                                        <span class="layer-item__icon" [title]="getLayerContentType(item.uuid)">
-                                            <app-ui-icon [name]="getLayerContentIcon(item.uuid)"></app-ui-icon>
-                                        </span>
-                                        @if (renamingLayerId === item.uuid) {
-                                            <input
-                                                #renameField
-                                                type="text"
-                                                class="layer-item__rename-input"
-                                                [attr.data-uuid]="item.uuid"
-                                                [value]="renameInput"
-                                                (input)="renameInput = renameField.value"
-                                                (keydown)="onRenameKeydown($event, item.uuid)"
-                                                (blur)="cancelRename()"
-                                            />
-                                        } @else {
-                                            <span class="layer-item__name"
-                                                  (dblclick)="startRename(item.uuid, $event)">{{ getLayerDisplayName(item.uuid) }}</span>
-                                        }
-                                    </div>
-                                    @if (this.cs.debugMode()) {
-<!--                                        <div class="layer-item__preview">{{ getLayerPreview(item.uuid) }}</div>-->
-                                        <div class="layer-item__id-row">
-                                            <span class="layer-item__id-label">ID:</span>
-                                            <span class="layer-item__id">{{ item.uuid }}</span>
-                                        </div>
-                                    }
-                                </div>
+                                    <div class="layer-item__name-container">
+                                     <div class="layer-item__header">
+                                         <span class="layer-item__icon" [title]="getLayerContentType(item.uuid)">
+                                             <app-ui-icon [name]="getLayerContentIcon(item.uuid)"></app-ui-icon>
+                                         </span>
+                                         @if (renamingLayerId === item.uuid) {
+                                             <input
+                                                 #renameField
+                                                 type="text"
+                                                 class="layer-item__rename-input"
+                                                 [attr.data-uuid]="item.uuid"
+                                                 [value]="renameInput"
+                                                 (input)="renameInput = renameField.value"
+                                                 (keydown)="onRenameKeydown($event, item.uuid)"
+                                                 (blur)="cancelRename()"
+                                             />
+                                         } @else {
+                                             <span class="layer-item__name"
+                                                   (dblclick)="startRename(item.uuid, $event)">{{ getLayerDisplayName(item.uuid) }}</span>
+                                         }
+                                     </div>
+
+                                     @if (getLayerContentType(item.uuid) === 'text') {
+                                         @if (getTextContent(item.uuid)) {
+                                             <div class="layer-item__text-preview">{{ getTextContent(item.uuid) }}</div>
+                                         }
+                                     }
+
+                                      @if (getLayerContentType(item.uuid) === 'image') {
+                                          @if (getImageSrc(item.uuid)) {
+                                              <div class="layer-item__image-preview-container">
+                                                  <img
+                                                      [src]="getImageSrc(item.uuid)"
+                                                      alt="preview"
+                                                      class="layer-item__image-preview"
+                                                  />
+                                              </div>
+                                          }
+                                      }
+
+                                      @if (getLayerContentType(item.uuid) === 'video') {
+                                          @if (getVideoPoster(item.uuid)) {
+                                              <div class="layer-item__video-preview-container">
+                                                  <img
+                                                      [src]="getVideoPoster(item.uuid)"
+                                                      alt="poster"
+                                                      class="layer-item__video-preview"
+                                                  />
+                                              </div>
+                                          } @else if (getVideoSrc(item.uuid)) {
+                                              <div class="layer-item__video-preview-container">
+                                                  <video
+                                                      [src]="getVideoSrc(item.uuid)"
+                                                      class="layer-item__video-preview layer-item__video-preview--frame"
+                                                      muted
+                                                      playsinline
+                                                      preload="metadata"
+                                                  ></video>
+                                              </div>
+                                          } @else {
+                                              <div class="layer-item__video-preview-placeholder">
+                                                  <app-ui-icon name="video"></app-ui-icon>
+                                              </div>
+                                          }
+                                      }
+
+                                      @if (this.cs.debugMode()) {
+                                          <div class="layer-item__id-row">
+                                              <span class="layer-item__id-label">ID:</span>
+                                              <span class="layer-item__id">{{ item.uuid }}</span>
+                                          </div>
+                                      }
+                                 </div>
 
                             </div>
                             <div class="layer-item__controls">

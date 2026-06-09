@@ -325,5 +325,37 @@ export class CanvasLayersPanelComponent {
         event.stopPropagation();
         this.widgetsState.moveLayerToBack(uuid);
     }
+
+    protected getTextContent(uuid: string): string {
+        const widget = this.widgetsState.getById(uuid);
+        if (widget?.content.type !== 'text') {
+            return '';
+        }
+        return (widget.content.text || '').trim();
+    }
+
+    protected getImageSrc(uuid: string): string {
+        const widget = this.widgetsState.getById(uuid);
+        if (widget?.content.type !== 'image') {
+            return '';
+        }
+        return (widget.content.src || '').trim();
+    }
+
+    protected getVideoSrc(uuid: string): string {
+        const widget = this.widgetsState.getById(uuid);
+        if (widget?.content.type !== 'video') {
+            return '';
+        }
+        return (widget.content.src || '').trim();
+    }
+
+    protected getVideoPoster(uuid: string): string {
+        const widget = this.widgetsState.getById(uuid);
+        if (widget?.content.type !== 'video') {
+            return '';
+        }
+        return (widget.content.poster || '').trim();
+    }
 }
 
