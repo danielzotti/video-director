@@ -101,10 +101,12 @@ export class WidgetVideoComponent {
 
     this.onVideoReady(event);
     this.ensureFirstFramePreview(element);
+    this.canvasService.syncWidgetVideoToTimeline(this.widgetId());
   }
 
   protected onVideoPlaybackChanged(isPlaying: boolean): void {
     this.canvasService.setWidgetVideoPlaybackState(this.widgetId(), isPlaying);
+    this.canvasService.syncWidgetVideoToTimeline(this.widgetId());
   }
 
   protected onVideoTimeUpdate(event: Event): void {
@@ -114,13 +116,17 @@ export class WidgetVideoComponent {
 
   protected onVideoDurationChange(event: Event): void {
     const element = event.currentTarget as HTMLVideoElement;
-    const duration = isFinite(element.duration) ? element.duration : 0;
+    const duration = Number.isFinite(element.duration) ? element.duration : 0;
     this.canvasService.setWidgetVideoDurationState(this.widgetId(), duration);
   }
 
   protected onVideoVolumeChange(event: Event): void {
     const element = event.currentTarget as HTMLVideoElement;
     this.canvasService.setWidgetVideoVolumeState(this.widgetId(), element.volume);
+  }
+
+  protected onVideoSeeked(): void {
+    this.canvasService.syncWidgetVideoToTimeline(this.widgetId());
   }
 
   private ensureFirstFramePreview(element: HTMLVideoElement): void {

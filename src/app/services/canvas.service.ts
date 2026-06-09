@@ -24,6 +24,7 @@ import {
     screenToCanvasPoint,
     snapPointToGrid,
 } from '../utils/canvas-geometry.utils';
+import {resolveTimelineVideoSyncState} from '../utils/video-timeline-sync.utils';
 import {strFromU8, strToU8, unzipSync, zipSync} from 'fflate';
 import {v4 as uuid} from 'uuid';
 import {TimelineService} from './timeline.service';
@@ -255,6 +256,9 @@ export class CanvasService {
     private readonly widgetVideoTime = signal<Record<string, number>>({});
     private readonly widgetVideoDuration = signal<Record<string, number>>({});
     private readonly widgetVideoVolume = signal<Record<string, number>>({});
+    private readonly widgetVideoPendingPlay = new Set<string>();
+    private readonly widgetVideoSyncSeekToleranceWhilePausedSeconds = 0.01;
+    private readonly widgetVideoSyncSeekToleranceWhilePlayingSeconds = 0.35;
 
     /**
      * Keeps track of blob: URLs created during the current session and their associated
@@ -329,6 +333,27 @@ export class CanvasService {
             const snapshot = this.buildSnapshot();
             this.pendingSnapshot = snapshot;
             this.scheduleSnapshotFlush();
+        });
+
+        effect(() => {
+            const timelineTimeMs = this.timelineService.time();
+            const timelineDurationMs = this.timelineService.duration();
+            const isTimelinePlaying = this.timelineService.isPlaying();
+
+            for (const widget of this.widgetsState.list()) {
+                if (widget.content.type !== 'video') {
+                    continue;
+                }
+
+                const videoWidget = widget as WidgetStateItem & { content: WidgetVideoContent };
+
+                const element = this.widgetVideoElements.get(videoWidget.uuid);
+                if (!element) {
+                    continue;
+                }
+
+                this.syncRegisteredWidgetVideoToTimeline(videoWidget, element, timelineTimeMs, timelineDurationMs, isTimelinePlaying);
+            }
         });
     }
 
@@ -756,6 +781,7 @@ export class CanvasService {
         }
 
         this.unregisterWidgetVideoElement(widgetId);
+        this.clearWidgetVideoControllerState(widgetId);
 
         this.widgetsState.remove({uuid: widgetId});
 
@@ -839,10 +865,17 @@ export class CanvasService {
             return;
         }
 
+        const previousType = widget.content.type;
+
         this.widgetsState.update({
             ...widget,
             content: this.createDefaultWidgetContent(type),
         });
+
+        if (previousType === 'video' && type !== 'video') {
+            this.unregisterWidgetVideoElement(widget.uuid);
+            this.clearWidgetVideoControllerState(widget.uuid);
+        }
     }
 
     public setSelectedWidgetText(text: string) {
@@ -1631,6 +1664,7 @@ export class CanvasService {
         const nextVolume = typeof rememberedVolume === 'number' ? rememberedVolume : element.volume;
         this.setWidgetVideoVolumeState(widgetId, nextVolume);
         this.applyWidgetVideoAudioState(widgetId, element, nextVolume);
+        this.syncWidgetVideoToTimeline(widgetId);
     }
 
     public unregisterWidgetVideoElement(widgetId: string, element?: HTMLVideoElement): void {
@@ -1644,14 +1678,21 @@ export class CanvasService {
         }
 
         this.widgetVideoElements.delete(widgetId);
+        this.widgetVideoPendingPlay.delete(widgetId);
         this.setWidgetVideoPlaybackState(widgetId, false);
-        this.widgetVideoTime.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
-        this.widgetVideoDuration.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
-        this.widgetVideoVolume.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
     }
 
     public isWidgetVideoPlaying(widgetId: string): boolean {
-        return this.widgetVideoPlayback()[widgetId] ?? false;
+        const widget = this.widgetsState.getById(widgetId);
+        if (!widget || widget.content.type !== 'video') {
+            return this.widgetVideoPlayback()[widgetId] ?? false;
+        }
+
+        return this.resolveWidgetVideoSyncState(
+            widget as WidgetStateItem & { content: WidgetVideoContent },
+            this.widgetVideoElements.get(widgetId),
+        ).shouldPlay
+            && this.timelineService.isPlaying();
     }
 
     public canControlWidgetVideo(widgetId: string): boolean {
@@ -1659,7 +1700,15 @@ export class CanvasService {
     }
 
     public getWidgetVideoCurrentTime(widgetId: string): number {
-        return this.widgetVideoTime()[widgetId] ?? 0;
+        const widget = this.widgetsState.getById(widgetId);
+        if (!widget || widget.content.type !== 'video') {
+            return this.widgetVideoTime()[widgetId] ?? 0;
+        }
+
+        return this.resolveWidgetVideoSyncState(
+            widget as WidgetStateItem & { content: WidgetVideoContent },
+            this.widgetVideoElements.get(widgetId),
+        ).mediaTimeSeconds;
     }
 
     public getWidgetVideoDuration(widgetId: string): number {
@@ -1700,15 +1749,26 @@ export class CanvasService {
         });
     }
 
-    public seekWidgetVideo(widgetId: string, time: number): void {
+    public syncWidgetVideoToTimeline(widgetId: string): void {
+        const widget = this.widgetsState.getById(widgetId);
         const element = this.widgetVideoElements.get(widgetId);
-        if (!element) {
+        if (!widget || widget.content.type !== 'video' || !element) {
             return;
         }
 
-        const clamped = Math.max(0, Math.min(time, isFinite(element.duration) ? element.duration : 0));
-        element.currentTime = clamped;
-        this.setWidgetVideoTimeState(widgetId, clamped);
+        this.syncRegisteredWidgetVideoToTimeline(widget as WidgetStateItem & { content: WidgetVideoContent }, element);
+    }
+
+    public seekWidgetVideo(widgetId: string, time: number): void {
+        const widget = this.widgetsState.getById(widgetId);
+        if (!widget || widget.content.type !== 'video' || !Number.isFinite(time)) {
+            return;
+        }
+
+        const startMs = Math.max(0, Math.round(widget.timelineStart ?? 0));
+        const endMs = Math.max(startMs, Math.round(widget.timelineEnd ?? this.timelineService.duration()));
+        const timelineTimeMs = Math.min(startMs + (Math.max(0, time) * 1000), endMs);
+        this.timelineService.setTime(timelineTimeMs);
     }
 
     public setWidgetVideoVolume(widgetId: string, volume: number): void {
@@ -1750,20 +1810,106 @@ export class CanvasService {
             return;
         }
 
-        const element = this.widgetVideoElements.get(widgetId);
-        if (!element) {
+        if (this.timelineService.isPlaying()) {
+            this.timelineService.pause();
             return;
         }
 
-        if (element.paused || element.ended) {
-            void element.play()
-                .then(() => this.setWidgetVideoPlaybackState(widgetId, true))
-                .catch(() => this.setWidgetVideoPlaybackState(widgetId, false));
+        this.timelineService.play();
+    }
+
+    private clearWidgetVideoControllerState(widgetId: string): void {
+        this.widgetVideoPendingPlay.delete(widgetId);
+        this.widgetVideoPlayback.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
+        this.widgetVideoTime.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
+        this.widgetVideoDuration.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
+        this.widgetVideoVolume.update((s) => { const n = {...s}; delete n[widgetId]; return n; });
+    }
+
+    private syncRegisteredWidgetVideoToTimeline(
+        widget: WidgetStateItem & { content: WidgetVideoContent },
+        element: HTMLVideoElement,
+        timelineTimeMs = this.timelineService.time(),
+        timelineDurationMs = this.timelineService.duration(),
+        isTimelinePlaying = this.timelineService.isPlaying(),
+    ): void {
+        const syncState = resolveTimelineVideoSyncState({
+            timelineTimeMs,
+            timelineDurationMs,
+            widgetStartMs: widget.timelineStart,
+            widgetEndMs: widget.timelineEnd,
+            mediaDurationSeconds: this.getKnownWidgetVideoDuration(widget.uuid, element),
+            loop: widget.content.loop,
+        });
+
+        const currentTime = Number.isFinite(element.currentTime) ? element.currentTime : 0;
+        const tolerance = isTimelinePlaying
+            ? this.widgetVideoSyncSeekToleranceWhilePlayingSeconds
+            : this.widgetVideoSyncSeekToleranceWhilePausedSeconds;
+
+        if (Math.abs(currentTime - syncState.mediaTimeSeconds) > tolerance) {
+            try {
+                element.currentTime = syncState.mediaTimeSeconds;
+            } catch {
+                // Ignore currentTime assignment failures until metadata is ready.
+            }
+        }
+
+        this.setWidgetVideoTimeState(
+            widget.uuid,
+            Number.isFinite(element.currentTime) ? element.currentTime : syncState.mediaTimeSeconds,
+        );
+
+        if (isTimelinePlaying && syncState.shouldPlay) {
+            this.playWidgetVideoElement(widget.uuid, element);
             return;
         }
 
-        element.pause();
-        this.setWidgetVideoPlaybackState(widgetId, false);
+        this.widgetVideoPendingPlay.delete(widget.uuid);
+        if (!element.paused) {
+            element.pause();
+        }
+
+        this.setWidgetVideoPlaybackState(widget.uuid, false);
+    }
+
+    private resolveWidgetVideoSyncState(
+        widget: WidgetStateItem & { content: WidgetVideoContent },
+        element?: HTMLVideoElement,
+    ) {
+        return resolveTimelineVideoSyncState({
+            timelineTimeMs: this.timelineService.time(),
+            timelineDurationMs: this.timelineService.duration(),
+            widgetStartMs: widget.timelineStart,
+            widgetEndMs: widget.timelineEnd,
+            mediaDurationSeconds: this.getKnownWidgetVideoDuration(widget.uuid, element),
+            loop: widget.content.loop,
+        });
+    }
+
+    private getKnownWidgetVideoDuration(widgetId: string, element?: HTMLVideoElement): number {
+        if (element && Number.isFinite(element.duration) && element.duration > 0) {
+            return element.duration;
+        }
+
+        return this.widgetVideoDuration()[widgetId] ?? 0;
+    }
+
+    private playWidgetVideoElement(widgetId: string, element: HTMLVideoElement): void {
+        if (!element.paused && !element.ended) {
+            this.setWidgetVideoPlaybackState(widgetId, true);
+            return;
+        }
+
+        if (this.widgetVideoPendingPlay.has(widgetId)) {
+            return;
+        }
+
+        this.widgetVideoPendingPlay.add(widgetId);
+        void element.play()
+            .then(() => this.setWidgetVideoPlaybackState(widgetId, true))
+            .catch(() => this.setWidgetVideoPlaybackState(widgetId, false))
+            .finally(() => this.widgetVideoPendingPlay.delete(widgetId));
     }
 
     /**

@@ -20,6 +20,7 @@
         (pause)="onVideoPlaybackChanged(false)"
         (ended)="onVideoPlaybackChanged(false)"
         (timeupdate)="onVideoTimeUpdate($event)"
+        (seeked)="onVideoSeeked()"
         (durationchange)="onVideoDurationChange($event)"
         (volumechange)="onVideoVolumeChange($event)"
     ></video>

@@ -1,9 +1,11 @@
 import {TestBed} from '@angular/core/testing';
 import {CanvasService} from './canvas.service';
 import {DEFAULT_WIDGET_TEXT_STYLE, WidgetStateList, WidgetStateItem} from '../models/canvas-widget-state.models';
+import {TimelineService} from './timeline.service';
 
 describe('CanvasService', () => {
   let service: CanvasService;
+  let timelineService: TimelineService;
   const editorStorageKey = 'video-director.editor-state.v1';
   const projectDirectoryAutoSyncKey = 'video-director.project-directory-auto-sync.v1';
 
@@ -157,6 +159,7 @@ describe('CanvasService', () => {
     delete (globalThis as unknown as {cancelIdleCallback?: unknown}).cancelIdleCallback;
     TestBed.configureTestingModule({});
     service = TestBed.inject(CanvasService);
+    timelineService = TestBed.inject(TimelineService);
     service.widgetsState.replaceAll(createSeedWidgets());
   });
 
@@ -621,13 +624,45 @@ describe('CanvasService', () => {
     expect(service.isValidVideoUrl('blob:https://example.com/1234-5678')).toBeTrue();
   });
 
-  it('toggles video playback through registered video element', async () => {
+  it('toggles the master timeline when toggling a video widget playback control', () => {
     service.selectWidget('2');
     service.setSelectedWidgetContentType('video');
 
+    expect(timelineService.isPlaying()).toBeFalse();
+
+    service.toggleWidgetVideoPlayback('2');
+
+    expect(timelineService.isPlaying()).toBeTrue();
+
+    service.toggleWidgetVideoPlayback('2');
+
+    expect(timelineService.isPlaying()).toBeFalse();
+  });
+
+  it('syncs a registered video currentTime from the timeline offset and timeline playback state', async () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetContentType('video');
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('video');
+    service.widgetsState.update({
+      ...widget!,
+      timelineStart: 3_000,
+      timelineEnd: 12_000,
+    });
+
     const videoElement = document.createElement('video');
+    let currentTimeValue = 0;
+    Object.defineProperty(videoElement, 'currentTime', {
+      get: () => currentTimeValue,
+      set: (value: number) => {
+        currentTimeValue = value;
+      },
+      configurable: true,
+    });
     Object.defineProperty(videoElement, 'paused', {value: true, writable: true, configurable: true});
     Object.defineProperty(videoElement, 'ended', {value: false, writable: true, configurable: true});
+    Object.defineProperty(videoElement, 'duration', {value: 10, writable: true, configurable: true});
 
     const playSpy = spyOn(videoElement, 'play').and.callFake(async () => {
       Object.defineProperty(videoElement, 'paused', {value: false, writable: true, configurable: true});
@@ -636,20 +671,44 @@ describe('CanvasService', () => {
       Object.defineProperty(videoElement, 'paused', {value: true, writable: true, configurable: true});
     });
 
+    timelineService.setTime(4_000);
     service.registerWidgetVideoElement('2', videoElement);
-    expect(service.canControlWidgetVideo('2')).toBeTrue();
+
+    expect(currentTimeValue).toBeCloseTo(1, 6);
+    expect(service.getWidgetVideoCurrentTime('2')).toBeCloseTo(1, 6);
     expect(service.isWidgetVideoPlaying('2')).toBeFalse();
 
-    service.toggleWidgetVideoPlayback('2');
+    timelineService.play();
+    TestBed.flushEffects();
     await Promise.resolve();
 
     expect(playSpy).toHaveBeenCalled();
     expect(service.isWidgetVideoPlaying('2')).toBeTrue();
 
-    service.toggleWidgetVideoPlayback('2');
+    timelineService.pause();
+    TestBed.flushEffects();
 
     expect(pauseSpy).toHaveBeenCalled();
     expect(service.isWidgetVideoPlaying('2')).toBeFalse();
+  });
+
+  it('seeks the timeline when seeking a video widget', () => {
+    service.selectWidget('2');
+    service.setSelectedWidgetContentType('video');
+
+    const widget = service.widgetsState.getById('2');
+    expect(widget?.content.type).toBe('video');
+    service.widgetsState.update({
+      ...widget!,
+      timelineStart: 3_000,
+      timelineEnd: 6_000,
+    });
+
+    service.seekWidgetVideo('2', 1.5);
+    expect(timelineService.time()).toBe(4_500);
+
+    service.seekWidgetVideo('2', 10);
+    expect(timelineService.time()).toBe(6_000);
   });
 
   it('cleans registered video controller state when widget is deleted', () => {
