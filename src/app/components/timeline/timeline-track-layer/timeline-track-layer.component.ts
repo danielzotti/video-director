@@ -142,7 +142,7 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
     const fixedRight = this.dragState.startLeft + this.dragState.startWidth;
     const config = this.buildSnapConfig();
     const snappedLeft = snapEdgePx(rawLeft, config);
-    const result = this.clampStyle({ left: snappedLeft, width: fixedRight - snappedLeft, action: 'resize' });
+    const result = this.clampResizeLeft(snappedLeft, fixedRight);
     this.setStyle(result);
     this.snapGuidesChanged.emit(this.computeSnapGuides(rawLeft, 0, config));
     this.layerChangedSubject.next();
@@ -288,5 +288,13 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
     }
 
     return { left: newLeft, width: Math.max(minWidth, newWidth) };
+  }
+
+  /** Keep the right edge fixed while resizing from the left handle. */
+  private clampResizeLeft(left: number, fixedRight: number): { left: number; width: number } {
+    const minWidth = this.stepPx();
+    const clampedRight = Math.min(this.maxPx, Math.max(minWidth, fixedRight));
+    const newLeft = Math.max(0, Math.min(left, clampedRight - minWidth));
+    return { left: newLeft, width: clampedRight - newLeft };
   }
 }
