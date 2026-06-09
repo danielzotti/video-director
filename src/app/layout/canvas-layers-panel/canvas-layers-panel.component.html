@@ -96,6 +96,10 @@
                                                       class="layer-item__image-preview"
                                                   />
                                               </div>
+                                          } @else {
+                                              <div class="layer-item__media-preview-placeholder">
+                                                  <app-ui-icon name="image"></app-ui-icon>
+                                              </div>
                                           }
                                       }
 
@@ -119,7 +123,7 @@
                                                   ></video>
                                               </div>
                                           } @else {
-                                              <div class="layer-item__video-preview-placeholder">
+                                              <div class="layer-item__media-preview-placeholder">
                                                   <app-ui-icon name="video"></app-ui-icon>
                                               </div>
                                           }
