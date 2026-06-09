@@ -1,12 +1,14 @@
 import { Pipe, PipeTransform } from '@angular/core';
+import { formatAdaptiveTimelineTime } from '../utils/time-format.utils';
 
-export type TimerFormatType = 'default' | 'compact' | 'dynamic';
+export type TimerFormatType = 'default' | 'compact' | 'dynamic' | 'timeline';
 
 /** Token object so templates can reference format keys without magic strings. */
 export const TIMER_FORMAT: Record<TimerFormatType, TimerFormatType> = {
   default: 'default',
   compact: 'compact',
   dynamic: 'dynamic',
+  timeline: 'timeline',
 };
 
 /**
@@ -15,6 +17,7 @@ export const TIMER_FORMAT: Record<TimerFormatType, TimerFormatType> = {
  * - default → `MM:SS.d`  (e.g. "01:05.3")
  * - compact → `Xs`       (e.g. "65.3s")
  * - dynamic → `h:mm:ss` or `m:ss` depending on length (e.g. "1:30:00" or "2:10")
+ * - timeline → adaptive `h:mm:ss.d` / `m:ss.d` / `s.d` (e.g. "1:02:25.2", "2:25.2", "25.2")
  */
 @Pipe({
   name: 'timer',
@@ -45,6 +48,10 @@ export class TimerPipe implements PipeTransform {
         return `${hours}:${pad(minutes)}:${pad(seconds)}`;
       }
       return `${minutes}:${pad(seconds)}`;
+    }
+
+    if (format === 'timeline') {
+      return formatAdaptiveTimelineTime(ms);
     }
 
     // default: MM:SS.d

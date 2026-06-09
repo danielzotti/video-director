@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { DEFAULT_TIMELINE_DURATION } from '../../../models/timeline.models';
+import { formatAdaptiveTimelineTime } from '../../../utils/time-format.utils';
 
 @Component({
   selector: 'app-timeline-time-labels',
@@ -14,7 +15,7 @@ export class TimelineTimeLabelsComponent {
   readonly step = input(100); // ms
   readonly stepPx = input(5); // px
   readonly maxMs = input(DEFAULT_TIMELINE_DURATION);
-  readonly precision = input<'m' | 's' | 'ms'>('s');
+  readonly precision = input<'m' | 's' | 'ms' | 'timeline'>('s');
   readonly printEveryMs = input(1000);
   readonly visibleStartMs = input(0);
   readonly visibleEndMs = input(DEFAULT_TIMELINE_DURATION);
@@ -60,6 +61,9 @@ export class TimelineTimeLabelsComponent {
         value = timeMs / 1000;
         unit = 's';
         break;
+      case 'timeline': {
+        return formatAdaptiveTimelineTime(timeMs);
+      }
       case 'ms':
       default:
         value = timeMs;
