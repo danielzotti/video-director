@@ -65,24 +65,27 @@ $toolbar-padding: 8px;
   flex-shrink: 0;
 }
 
-.snap-toggle {
+.toggle-action {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  background: none;
+  border: none;
   color: var(--ds-text-secondary);
-  font-size: var(--ds-font-xs);
-  user-select: none;
   cursor: pointer;
-  white-space: nowrap;
+  padding: 4px;
+  border-radius: var(--ds-radius-xs);
 
-  input {
-    margin: 0;
-    accent-color: var(--ds-accent);
-    cursor: pointer;
+  &:hover {
+    background: var(--ds-surface-3);
   }
 
-  &:has(input:checked) {
+  &.active {
     color: var(--ds-accent);
+  }
+
+  app-ui-icon {
+    --ui-icon-size: var(--ds-icon-size-md);
   }
 }
 

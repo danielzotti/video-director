@@ -38,8 +38,11 @@ export type UiIconName =
   | 'export-image'
   | 'trash'
   | 'play'
+  | 'play-back'
   | 'pause'
   | 'volume'
+  | 'clock'
+  | 'layers'
   | 'text-bold'
   | 'text-italic'
   | 'text-underline';
@@ -248,6 +251,10 @@ export type UiIconName =
                @case ('play') {
                    <polygon points="8 6 18 12 8 18" fill="currentColor" stroke="none"/>
                }
+               @case ('play-back') {
+                   <line x1="6" y1="6" x2="6" y2="18"/>
+                   <polygon points="17 6 9 12 17 18" fill="currentColor" stroke="none"/>
+               }
                @case ('pause') {
                    <rect x="7" y="6" width="3" height="12" fill="currentColor" stroke="none" rx="0.5"/>
                    <rect x="14" y="6" width="3" height="12" fill="currentColor" stroke="none" rx="0.5"/>
@@ -256,6 +263,16 @@ export type UiIconName =
                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19" fill="currentColor" stroke="none"/>
                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+               }
+               @case ('clock') {
+                   <circle cx="12" cy="12" r="9"/>
+                   <line x1="12" y1="12" x2="12" y2="8"/>
+                   <line x1="12" y1="12" x2="15" y2="14"/>
+               }
+               @case ('layers') {
+                   <polygon points="12 4 3 8.5 12 13 21 8.5"/>
+                   <polyline points="3 12.5 12 17 21 12.5"/>
+                   <polyline points="3 16.5 12 21 21 16.5"/>
                }
                @case ('text-bold') {
                    <text x="12" y="16" text-anchor="middle" font-weight="bold" font-size="14" fill="currentColor" stroke="none">B</text>

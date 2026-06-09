@@ -9,7 +9,7 @@
     </button>
   }
   <button class="action" type="button" title="Reset to start" (click)="onResetTimeClick()">
-    <app-ui-icon name="undo" />
+    <app-ui-icon name="play-back" />
   </button>
   <label class="visibility-toggle" title="Ignore timeline visibility windows">
     <input
@@ -22,22 +22,24 @@
 
   <div class="snap-divider"></div>
 
-  <label class="snap-toggle" title="Snap to whole seconds">
-    <input
-      type="checkbox"
-      [checked]="snapToSeconds()"
-      (change)="onSnapToSecondsChanged($event)"
-    />
-    <span>Snap 1s</span>
-  </label>
-  <label class="snap-toggle" title="Snap to start/end of other layers">
-    <input
-      type="checkbox"
-      [checked]="snapToLayers()"
-      (change)="onSnapToLayersChanged($event)"
-    />
-    <span>Snap layers</span>
-  </label>
+  <button
+    class="toggle-action"
+    type="button"
+    title="Snap to whole seconds"
+    [class.active]="snapToSeconds()"
+    (click)="onSnapToSecondsChanged()"
+  >
+    <app-ui-icon name="clock" />
+  </button>
+  <button
+    class="toggle-action"
+    type="button"
+    title="Snap to start/end of other layers"
+    [class.active]="snapToLayers()"
+    (click)="onSnapToLayersChanged()"
+  >
+    <app-ui-icon name="layers" />
+  </button>
 </div>
 
 <div class="time-container">

@@ -47,12 +47,12 @@ export class TimelineToolbarComponent {
     this.timelineService.setShowAllWidgets((event.target as HTMLInputElement).checked);
   }
 
-  onSnapToSecondsChanged(event: Event): void {
-    this.timelineService.setSnapToSeconds((event.target as HTMLInputElement).checked);
+  onSnapToSecondsChanged(): void {
+    this.timelineService.setSnapToSeconds(!this.snapToSeconds());
   }
 
-  onSnapToLayersChanged(event: Event): void {
-    this.timelineService.setSnapToLayers((event.target as HTMLInputElement).checked);
+  onSnapToLayersChanged(): void {
+    this.timelineService.setSnapToLayers(!this.snapToLayers());
   }
 
   onZoomSliderChange(event: Event): void {
