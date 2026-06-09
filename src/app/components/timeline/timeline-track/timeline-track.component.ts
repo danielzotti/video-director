@@ -9,6 +9,7 @@ import {
   OnDestroy,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { TimelineWidget } from '../../../models/timeline.models';
@@ -47,13 +48,21 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   private resizeObserver: ResizeObserver | null = null;
   private readonly viewportWidthPx = signal(1);
 
+  /** Direction of the active edge-scroll RAF loop: -1=left, 0=none, 1=right. */
+  private edgeScrollDirection: -1 | 0 | 1 = 0;
+  private edgeScrollRafId: number | null = null;
+  private readonly edgeScrollSpeedPx = 8;
+
+  /** True only while the user holds the mouse button down on the timeline scrubber. */
+  private isSliderDragging = false;
+
   readonly minStepMs = 100;
 
   hasCursorAnimation = true;
   timelineCursorHeight = '30px';
 
-  /** Cursor moves immediately when time signal changes. */
   constructor() {
+    // Update cursor position and height whenever time changes
     effect(() => {
       const t = this.time();
       this.updateCursorPosition(t);
@@ -67,6 +76,12 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
       if (el && el.scrollTop !== top) {
         el.scrollTop = top;
       }
+    });
+
+    // Center scrollbar on cursor when zoom changes (untracked to avoid reacting to time/duration)
+    effect(() => {
+      this.zoom();
+      untracked(() => this.centerCursorInViewport());
     });
   }
 
@@ -127,6 +142,7 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    this.stopEdgeScroll();
   }
 
   syncTimelineScroll(event: Event): void {
@@ -143,6 +159,7 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   }
 
   onSliderMouseDown(): void {
+    this.isSliderDragging = true;
     this.hasCursorAnimation = false;
     if (this.timelineService.isPlaying()) {
       this.timelineService.pause();
@@ -150,7 +167,9 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   }
 
   onSliderMouseUp(): void {
+    this.isSliderDragging = false;
     this.hasCursorAnimation = true;
+    this.stopEdgeScroll();
   }
 
   onLayerClicked(layer: TimelineWidget): void {
@@ -181,8 +200,85 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
       : '30px';
   }
 
-  private updateViewportWidth(): void {
-    const width = this.containerRef()?.nativeElement.clientWidth ?? 1;
-    this.viewportWidthPx.set(Math.max(1, width));
+   private updateViewportWidth(): void {
+     const width = this.containerRef()?.nativeElement.clientWidth ?? 1;
+     this.viewportWidthPx.set(Math.max(1, width));
+   }
+
+  /** Centers the scroll so the playhead cursor is in the middle of the viewport. Used on zoom change. */
+  private centerCursorInViewport(): void {
+    const container = this.containerRef()?.nativeElement;
+    if (!container) return;
+
+    const duration = this.duration();
+    const cursorPct = duration > 0 ? (this.time() / duration) * 100 : 0;
+    const timelineWidthPx = Number.parseInt(this.timelineTotalWidthPx, 10);
+    const cursorPx = (timelineWidthPx * cursorPct) / 100;
+    const viewportWidth = container.clientWidth;
+
+    container.scrollLeft = Math.max(0, cursorPx - viewportWidth / 2);
+  }
+
+  /**
+   * Called by (pointermove) on the container.
+   * Starts a continuous RAF scroll when the mouse enters the 0–5% or 95–100% edge zones.
+   * Stops scroll when mouse is in the central 5%–95% area.
+   */
+  onContainerPointerMove(event: PointerEvent): void {
+    const container = this.containerRef()?.nativeElement;
+    if (!container || !this.isSliderDragging) {
+      this.stopEdgeScroll();
+      return;
+    }
+
+    const rect = container.getBoundingClientRect();
+    const relativeX = event.clientX - rect.left;
+    const viewportWidth = rect.width;
+    const edgeThreshold = viewportWidth * 0.05;
+
+    if (relativeX < edgeThreshold) {
+      this.startEdgeScroll(-1);
+    } else if (relativeX > viewportWidth - edgeThreshold) {
+      this.startEdgeScroll(1);
+    } else {
+      this.stopEdgeScroll();
+    }
+  }
+
+  /** Called by (pointerleave) on the container – cancels any active edge scroll. */
+  onContainerPointerLeave(): void {
+    this.stopEdgeScroll();
+  }
+
+  private startEdgeScroll(direction: -1 | 1): void {
+    if (this.edgeScrollDirection === direction) return; // already running in this direction
+    this.edgeScrollDirection = direction;
+    if (this.edgeScrollRafId === null) {
+      this.runEdgeScroll();
+    }
+  }
+
+  private stopEdgeScroll(): void {
+    this.edgeScrollDirection = 0;
+    if (this.edgeScrollRafId !== null) {
+      cancelAnimationFrame(this.edgeScrollRafId);
+      this.edgeScrollRafId = null;
+    }
+  }
+
+  /** RAF loop: scrolls by edgeScrollSpeedPx each frame while mouse stays in an edge zone. */
+  private runEdgeScroll(): void {
+    const container = this.containerRef()?.nativeElement;
+    if (!container || this.edgeScrollDirection === 0) {
+      this.edgeScrollRafId = null;
+      return;
+    }
+
+    const timelineWidthPx = Number.parseInt(this.timelineTotalWidthPx, 10);
+    const maxScroll = Math.max(0, timelineWidthPx - container.clientWidth);
+    const next = container.scrollLeft + this.edgeScrollDirection * this.edgeScrollSpeedPx;
+    container.scrollLeft = Math.max(0, Math.min(maxScroll, next));
+
+    this.edgeScrollRafId = requestAnimationFrame(() => this.runEdgeScroll());
   }
 }

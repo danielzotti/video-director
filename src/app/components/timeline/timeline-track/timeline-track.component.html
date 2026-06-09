@@ -1,4 +1,4 @@
-<div class="timeline" #container (scroll)="syncTimelineScroll($event)">
+<div class="timeline" #container (scroll)="syncTimelineScroll($event)" (pointermove)="onContainerPointerMove($event)" (pointerleave)="onContainerPointerLeave()">
   <!-- Sticky header: time markers + labels + scrubber -->
   <div class="header-container" [style.width]="timelineTotalWidthPx">
     <div class="time-row">
