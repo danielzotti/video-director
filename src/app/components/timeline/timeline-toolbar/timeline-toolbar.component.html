@@ -29,14 +29,14 @@
   <button type="button" class="zoom-control" title="Zoom out" (click)="zoomOut()" [disabled]="zoom() <= minZoom()">
     <app-ui-icon name="zoom-out" />
   </button>
-  <span class="zoom-range">{{ zoom() }} / {{ maxZoom() }}</span>
+  <span class="zoom-range">{{ zoomDisplay() }} / {{ maxZoom() }}</span>
   <input
     id="timeline-zoom-slider"
     type="range"
-    [min]="minZoom()"
-    [max]="maxZoom()"
+    [min]="sliderMin"
+    [max]="sliderMax"
     [step]="stepValue"
-    [value]="zoom()"
+    [value]="zoomSliderValue()"
     (input)="onZoomSliderChange($event)"
   />
   <button type="button" class="zoom-control" title="Zoom in" (click)="zoomIn()" [disabled]="zoom() >= maxZoom()">
