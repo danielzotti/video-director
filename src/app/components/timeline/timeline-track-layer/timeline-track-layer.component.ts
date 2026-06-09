@@ -153,7 +153,7 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   }
 
   private initStyle(): void {
-    this.maxPx = this.maxMs() * (this.stepPx() / this.step());
+    this.maxPx = this.msToPixels(this.maxMs());
     const width = this.msToPixels(this.layer().timelineEnd - this.layer().timelineStart);
     const left = this.msToPixels(this.layer().timelineStart);
     this.setStyle({ left, width });
@@ -171,11 +171,11 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   }
 
   private msToPixels(ms: number): number {
-    return Math.round((ms * this.stepPx() * this.zoom()) / this.step());
+    return Math.round((ms * this.stepPx()) / this.step());
   }
 
   private pixelsToMs(px: number): number {
-    return Math.round((px * this.step()) / (this.stepPx() * this.zoom()));
+    return Math.round((px * this.step()) / this.stepPx());
   }
 
   private pixelsToStartEnd(): { start: number; end: number } {
