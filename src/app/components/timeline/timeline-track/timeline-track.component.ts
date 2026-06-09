@@ -62,6 +62,8 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
 
   /** True only while the user holds the mouse button down on the timeline scrubber. */
   private isSliderDragging = false;
+  /** True while a timeline layer is being moved or resized. */
+  private isLayerDragging = false;
 
   readonly minStepMs = 100;
 
@@ -240,6 +242,13 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
     this.timelineService.updateLayerTiming(layer.uuid, layer.timelineStart, layer.timelineEnd);
   }
 
+  onLayerDragActiveChanged(isActive: boolean): void {
+    this.isLayerDragging = isActive;
+    if (!isActive) {
+      this.stopEdgeScroll();
+    }
+  }
+
   trackLayers(_i: number, item: TimelineWidget): string {
     return item.uuid;
   }
@@ -291,7 +300,7 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
    */
   onContainerPointerMove(event: PointerEvent): void {
     const container = this.containerRef()?.nativeElement;
-    if (!container || !this.isSliderDragging) {
+    if (!container || (!this.isSliderDragging && !this.isLayerDragging)) {
       this.stopEdgeScroll();
       return;
     }

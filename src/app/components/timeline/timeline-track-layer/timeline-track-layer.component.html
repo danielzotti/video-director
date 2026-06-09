@@ -5,6 +5,7 @@
   (pointerdown)="onMovePointerDown($event)"
   (pointermove)="onMovePointerMove($event)"
   (pointerup)="onMovePointerUp($event)"
+  (pointercancel)="onMovePointerUp($event)"
 >
   <div class="layer__line"></div>
 
@@ -15,12 +16,14 @@
       (pointerdown)="onResizeLeftPointerDown($event)"
       (pointermove)="onResizeLeftPointerMove($event)"
       (pointerup)="onResizeLeftPointerUp($event)"
+      (pointercancel)="onResizeLeftPointerUp($event)"
     ></div>
     <div
       class="layer__resize-handler end"
       (pointerdown)="onResizeRightPointerDown($event)"
       (pointermove)="onResizeRightPointerMove($event)"
       (pointerup)="onResizeRightPointerUp($event)"
+      (pointercancel)="onResizeRightPointerUp($event)"
     ></div>
   }
 </div>

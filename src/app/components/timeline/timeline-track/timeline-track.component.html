@@ -79,6 +79,7 @@
             [step]="stepMs"
             [zoom]="zoom()"
             (layerChanged)="onLayerChanged($event)"
+            (dragActiveChanged)="onLayerDragActiveChanged($event)"
             (pointerdown)="onLayerClicked(layer)"
           />
         </div>

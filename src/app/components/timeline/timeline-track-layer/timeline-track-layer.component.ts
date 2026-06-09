@@ -23,6 +23,7 @@ interface DragState {
   startClientX: number;
   startLeft: number;
   startWidth: number;
+  startScrollLeft: number;
 }
 
 @Component({
@@ -41,6 +42,7 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   readonly maxMs = input(30_000);
 
   readonly layerChanged = output<TimelineWidget>();
+  readonly dragActiveChanged = output<boolean>();
 
   left = 0;
   width = 0;
@@ -79,14 +81,20 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
     if (this.isLocked() || this.layer().locked) return;
     if ((event.target as HTMLElement).classList.contains('layer__resize-handler')) return;
     this.currentAction = 'move';
-    this.dragState = { startClientX: event.clientX, startLeft: this.left, startWidth: this.width };
+    this.dragState = {
+      startClientX: event.clientX,
+      startLeft: this.left,
+      startWidth: this.width,
+      startScrollLeft: this.resolveTimelineScrollLeft(event.currentTarget),
+    };
+    this.dragActiveChanged.emit(true);
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     event.preventDefault();
   }
 
   onMovePointerMove(event: PointerEvent): void {
     if (this.currentAction !== 'move' || !this.dragState) return;
-    const dx = event.clientX - this.dragState.startClientX;
+    const dx = this.getScrollAdjustedDx(event, this.dragState);
     const result = this.clampStyle({ left: this.dragState.startLeft + dx, width: this.width, action: 'move' });
     this.setStyle(result);
     this.layerChangedSubject.next();
@@ -102,7 +110,13 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   onResizeLeftPointerDown(event: PointerEvent): void {
     if (this.isLocked() || this.layer().locked) return;
     this.currentAction = 'resize-left';
-    this.dragState = { startClientX: event.clientX, startLeft: this.left, startWidth: this.width };
+    this.dragState = {
+      startClientX: event.clientX,
+      startLeft: this.left,
+      startWidth: this.width,
+      startScrollLeft: this.resolveTimelineScrollLeft(event.currentTarget),
+    };
+    this.dragActiveChanged.emit(true);
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     event.stopPropagation();
     event.preventDefault();
@@ -110,7 +124,7 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
 
   onResizeLeftPointerMove(event: PointerEvent): void {
     if (this.currentAction !== 'resize-left' || !this.dragState) return;
-    const dx = event.clientX - this.dragState.startClientX;
+    const dx = this.getScrollAdjustedDx(event, this.dragState);
     const result = this.clampStyle({ left: this.dragState.startLeft + dx, width: this.dragState.startWidth - dx, action: 'resize' });
     this.setStyle(result);
     this.layerChangedSubject.next();
@@ -126,7 +140,13 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   onResizeRightPointerDown(event: PointerEvent): void {
     if (this.isLocked() || this.layer().locked) return;
     this.currentAction = 'resize-right';
-    this.dragState = { startClientX: event.clientX, startLeft: this.left, startWidth: this.width };
+    this.dragState = {
+      startClientX: event.clientX,
+      startLeft: this.left,
+      startWidth: this.width,
+      startScrollLeft: this.resolveTimelineScrollLeft(event.currentTarget),
+    };
+    this.dragActiveChanged.emit(true);
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     event.stopPropagation();
     event.preventDefault();
@@ -134,7 +154,7 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
 
   onResizeRightPointerMove(event: PointerEvent): void {
     if (this.currentAction !== 'resize-right' || !this.dragState) return;
-    const dx = event.clientX - this.dragState.startClientX;
+    const dx = this.getScrollAdjustedDx(event, this.dragState);
     const result = this.clampStyle({ left: this.left, width: this.dragState.startWidth + dx, action: 'resize' });
     this.setStyle(result);
     this.layerChangedSubject.next();
@@ -148,8 +168,22 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   // ---- Private helpers -------------------------------------------
 
   private clearDrag(): void {
+    if (this.currentAction !== null) {
+      this.dragActiveChanged.emit(false);
+    }
     this.currentAction = null;
     this.dragState = null;
+  }
+
+  private getScrollAdjustedDx(event: PointerEvent, dragState: DragState): number {
+    const pointerDx = event.clientX - dragState.startClientX;
+    const scrollDx = this.resolveTimelineScrollLeft(event.currentTarget) - dragState.startScrollLeft;
+    return pointerDx + scrollDx;
+  }
+
+  private resolveTimelineScrollLeft(target: EventTarget | null): number {
+    if (!(target instanceof HTMLElement)) return 0;
+    return target.closest('.timeline')?.scrollLeft ?? 0;
   }
 
   private initStyle(): void {
