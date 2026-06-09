@@ -15,10 +15,8 @@ export class TimelineService {
   private readonly _showAllWidgets = signal(false);
   private readonly _maxZoom = signal(10);
 
-  /** Snap layer edges to whole-second boundaries. */
-  private readonly _snapToSeconds = signal(false);
-  /** Snap layer edges to the start/end of other layers. */
-  private readonly _snapToLayers = signal(false);
+  /** Master toggle for all timeline snapping modes. */
+  private readonly _snapEnabled = signal(true);
 
   readonly time = this._time.asReadonly();
   readonly duration = this._duration.asReadonly();
@@ -26,8 +24,9 @@ export class TimelineService {
   readonly zoom = this._zoom.asReadonly();
   readonly showAllWidgets = this._showAllWidgets.asReadonly();
   readonly maxZoom = this._maxZoom.asReadonly();
-  readonly snapToSeconds = this._snapToSeconds.asReadonly();
-  readonly snapToLayers = this._snapToLayers.asReadonly();
+  readonly snapEnabled = this._snapEnabled.asReadonly();
+  readonly snapToSeconds = computed(() => this._snapEnabled());
+  readonly snapToLayers = computed(() => this._snapEnabled());
 
   /**
    * All canvas widgets mapped to TimelineWidget with guaranteed
@@ -127,14 +126,19 @@ export class TimelineService {
     this._showAllWidgets.set(value);
   }
 
-  /** Toggle snapping to whole-second boundaries. */
-  setSnapToSeconds(value: boolean): void {
-    this._snapToSeconds.set(value);
+  /** Toggle all timeline snapping modes at once. */
+  setSnapEnabled(value: boolean): void {
+    this._snapEnabled.set(value);
   }
 
-  /** Toggle snapping to the start/end edges of other layers. */
+  /** Toggle snapping to whole-second boundaries. Kept for API compatibility. */
+  setSnapToSeconds(value: boolean): void {
+    this.setSnapEnabled(value);
+  }
+
+  /** Toggle snapping to the start/end edges of other layers. Kept for API compatibility. */
   setSnapToLayers(value: boolean): void {
-    this._snapToLayers.set(value);
+    this.setSnapEnabled(value);
   }
 
   /**

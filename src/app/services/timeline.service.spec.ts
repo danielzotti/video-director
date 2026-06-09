@@ -20,5 +20,33 @@ describe('TimelineService', () => {
     service.setShowAllWidgets(false);
     expect(service.showAllWidgets()).toBeFalse();
   });
+
+  it('toggles both snap modes through the shared snap toggle', () => {
+    expect(service.snapEnabled()).toBeFalse();
+    expect(service.snapToSeconds()).toBeFalse();
+    expect(service.snapToLayers()).toBeFalse();
+
+    service.setSnapEnabled(true);
+
+    expect(service.snapEnabled()).toBeTrue();
+    expect(service.snapToSeconds()).toBeTrue();
+    expect(service.snapToLayers()).toBeTrue();
+
+    service.setSnapEnabled(false);
+
+    expect(service.snapEnabled()).toBeFalse();
+    expect(service.snapToSeconds()).toBeFalse();
+    expect(service.snapToLayers()).toBeFalse();
+  });
+
+  it('keeps legacy snap setters synchronized', () => {
+    service.setSnapToSeconds(true);
+    expect(service.snapEnabled()).toBeTrue();
+    expect(service.snapToLayers()).toBeTrue();
+
+    service.setSnapToLayers(false);
+    expect(service.snapEnabled()).toBeFalse();
+    expect(service.snapToSeconds()).toBeFalse();
+  });
 });
 

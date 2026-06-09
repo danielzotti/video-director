@@ -10,11 +10,13 @@
     <button
       type="button"
       class="timeline-panel__toggle"
+      [class.is-collapsed]="!isOpened()"
       (pointerdown)="$event.stopPropagation()"
       (click)="onTogglePanel()"
       [attr.aria-expanded]="isOpened()"
+      [attr.aria-label]="isOpened() ? 'Collapse timeline panel' : 'Expand timeline panel'"
     >
-      {{ isOpened() ? '▼' : '▶' }}
+      <app-ui-icon name="chevron-down" />
     </button>
     <h3 class="timeline-panel__title">Timeline</h3>
   </div>

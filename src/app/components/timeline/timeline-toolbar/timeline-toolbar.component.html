@@ -1,66 +1,59 @@
 <div class="actions-container">
-  @if (!isPlaying()) {
-    <button class="action" type="button" title="Play" (click)="onPlayClick()">
-      <app-ui-icon name="play" />
+    <button class="action" type="button" title="Reset to start" (click)="onResetTimeClick()">
+        <app-ui-icon name="play-back"/>
     </button>
-  } @else {
-    <button class="action" type="button" title="Pause" (click)="onPauseClick()">
-      <app-ui-icon name="pause" />
+    @if (!isPlaying()) {
+        <button class="action" type="button" title="Play" (click)="onPlayClick()">
+            <app-ui-icon name="play"/>
+        </button>
+    } @else {
+        <button class="action" type="button" title="Pause" (click)="onPauseClick()">
+            <app-ui-icon name="pause"/>
+        </button>
+    }
+    <div class="snap-divider"></div>
+
+    <label class="visibility-toggle" title="Ignore timeline visibility windows">
+        <input
+                type="checkbox"
+                [checked]="showAllWidgets()"
+                (change)="onShowAllWidgetsChanged($event)"
+        />
+        <span>Show all</span>
+    </label>
+
+    <div class="snap-divider"></div>
+
+    <button
+            class="toggle-action"
+            type="button"
+            title="Snap to timeline and other layers"
+            [class.active]="snapEnabled()"
+            (click)="onSnapChanged()"
+    >
+        <app-ui-icon name="magnet"/>
     </button>
-  }
-  <button class="action" type="button" title="Reset to start" (click)="onResetTimeClick()">
-    <app-ui-icon name="play-back" />
-  </button>
-  <label class="visibility-toggle" title="Ignore timeline visibility windows">
-    <input
-      type="checkbox"
-      [checked]="showAllWidgets()"
-      (change)="onShowAllWidgetsChanged($event)"
-    />
-    <span>Show all</span>
-  </label>
-
-  <div class="snap-divider"></div>
-
-  <button
-    class="toggle-action"
-    type="button"
-    title="Snap to whole seconds"
-    [class.active]="snapToSeconds()"
-    (click)="onSnapToSecondsChanged()"
-  >
-    <app-ui-icon name="clock" />
-  </button>
-  <button
-    class="toggle-action"
-    type="button"
-    title="Snap to start/end of other layers"
-    [class.active]="snapToLayers()"
-    (click)="onSnapToLayersChanged()"
-  >
-    <app-ui-icon name="layers" />
-  </button>
 </div>
 
 <div class="time-container">
-  <div class="time">{{ time() | timer: 'timeline' }}&nbsp;/&nbsp;{{ duration() | timer: 'timeline' }}</div>
+    <div class="time">{{ time() | timer: 'timeline' }}&nbsp;/&nbsp;{{ duration() | timer: 'timeline' }}</div>
 </div>
 
 <div class="zoom-container">
-  <button type="button" class="zoom-control" title="Zoom out" (click)="zoomOut()" [disabled]="zoom() <= minZoom()">
-    <app-ui-icon name="zoom-out" />
-  </button>
-  <span class="zoom-range">{{ zoomDisplay() }} / {{ maxZoom() }}</span>
-  <input
-    id="timeline-zoom-slider"
-    type="range"
-    [min]="sliderMin"
-    [max]="sliderMax"
-    [step]="stepValue"
-    [value]="zoomSliderValue()"
-    (input)="onZoomSliderChange($event)"
-  />
-  <button type="button" class="zoom-control" title="Zoom in" (click)="zoomIn()" [disabled]="zoom() >= maxZoom()">
-    <app-ui-icon name="zoom-in" />
-  </button>
+    <button type="button" class="zoom-control" title="Zoom out" (click)="zoomOut()" [disabled]="zoom() <= minZoom()">
+        <app-ui-icon name="zoom-out"/>
+    </button>
+<!--    <span class="zoom-range">{{ zoomDisplay() }} / {{ maxZoom() }}</span>-->
+    <input
+            id="timeline-zoom-slider"
+            type="range"
+            [min]="sliderMin"
+            [max]="sliderMax"
+            [step]="stepValue"
+            [value]="zoomSliderValue()"
+            (input)="onZoomSliderChange($event)"
+    />
+    <button type="button" class="zoom-control" title="Zoom in" (click)="zoomIn()" [disabled]="zoom() >= maxZoom()">
+        <app-ui-icon name="zoom-in"/>
+    </button>
 </div>

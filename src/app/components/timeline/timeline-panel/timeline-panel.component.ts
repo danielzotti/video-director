@@ -14,12 +14,13 @@ import { TimelineToolbarComponent } from '../timeline-toolbar/timeline-toolbar.c
 import { TimelineLayersManagerComponent } from '../timeline-layers-manager/timeline-layers-manager.component';
 import { TimelineTrackComponent } from '../timeline-track/timeline-track.component';
 import { TimelineWidget } from '../../../models/timeline.models';
+import { UiIconComponent } from '../../../ui/icon/ui-icon.component';
 
 @Component({
   selector: 'app-timeline-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TimelineToolbarComponent, TimelineLayersManagerComponent, TimelineTrackComponent],
+  imports: [TimelineToolbarComponent, TimelineLayersManagerComponent, TimelineTrackComponent, UiIconComponent],
   host: {
     '[style.height.px]': 'panelVisualHeight()',
   },

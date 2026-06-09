@@ -30,13 +30,30 @@
 }
 
 .timeline-panel__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--ds-text-primary);
   cursor: pointer;
-  padding: 0;
-  font-size: 12px;
+  padding: 2px;
+  border-radius: var(--ds-radius-xs);
   flex-shrink: 0;
+
+  &:hover {
+    background: var(--ds-surface-3);
+  }
+
+  app-ui-icon {
+    --ui-icon-size: var(--ds-icon-size-sm);
+    transition: transform 120ms ease;
+  }
+
+  &.is-collapsed app-ui-icon {
+    transform: rotate(-180deg);
+
+  }
 }
 
 .timeline-panel__title {

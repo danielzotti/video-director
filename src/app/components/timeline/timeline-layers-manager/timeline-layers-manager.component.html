@@ -1,38 +1,32 @@
 <div class="layers-manager" #container (scroll)="syncTimelineScroll($event)">
-  <div class="layers-headers">
-    <span class="layer__name">Layer</span>
-    <span class="layer__is-visible" title="Visibility">
-      <app-ui-icon name="eye"></app-ui-icon>
-    </span>
-    <span class="layer__is-locked" title="Lock status">
-      <app-ui-icon name="lock"></app-ui-icon>
-    </span>
-  </div>
+    <div class="layers-headers">
+        <span class="layer__name">Layer</span>
+    </div>
 
-  <div class="layers-container">
-    @for (layer of layers(); track trackLayers(0, layer)) {
-      <div
-        class="layer-row"
-        [class.is-dragging]="draggedUuid === layer.uuid"
-        [class.is-drop-target]="dragOverIndex === $index"
-        draggable="true"
-        (dragstart)="onLayerDragStart($event, layer)"
-        (dragover)="onLayerDragOver($event, $index)"
-        (drop)="onLayerDrop($event, $index)"
-        (dragend)="onLayerDragEnd()"
-      >
-        <app-timeline-layer-item
-          [layer]="layer"
-          [isMainVideo]="layer.uuid === mainVideoId()"
-          [isDropTarget]="dragOverIndex === $index"
-          [isChild]="false"
-          [isLastChild]="false"
-          (layerClicked)="onLayerClicked($event)"
-          (layerMultiClicked)="onLayerMultiClicked($event)"
-          (layerIsVisibleChanged)="onLayerIsVisibleChanged($event)"
-          (layerIsLockedChanged)="onLayerIsLockedChanged($event)"
-        />
-      </div>
-    }
-  </div>
+    <div class="layers-container">
+        @for (layer of layers(); track trackLayers(0, layer)) {
+            <div
+                    class="layer-row"
+                    [class.is-dragging]="draggedUuid === layer.uuid"
+                    [class.is-drop-target]="dragOverIndex === $index"
+                    draggable="true"
+                    (dragstart)="onLayerDragStart($event, layer)"
+                    (dragover)="onLayerDragOver($event, $index)"
+                    (drop)="onLayerDrop($event, $index)"
+                    (dragend)="onLayerDragEnd()"
+            >
+                <app-timeline-layer-item
+                        [layer]="layer"
+                        [isMainVideo]="layer.uuid === mainVideoId()"
+                        [isDropTarget]="dragOverIndex === $index"
+                        [isChild]="false"
+                        [isLastChild]="false"
+                        (layerClicked)="onLayerClicked($event)"
+                        (layerMultiClicked)="onLayerMultiClicked($event)"
+                        (layerIsVisibleChanged)="onLayerIsVisibleChanged($event)"
+                        (layerIsLockedChanged)="onLayerIsLockedChanged($event)"
+                />
+            </div>
+        }
+    </div>
 </div>
