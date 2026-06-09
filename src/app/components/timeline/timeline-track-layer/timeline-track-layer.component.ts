@@ -11,6 +11,7 @@ import {
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { TimelineWidget } from '../../../models/timeline.models';
+import { LayerTiming, getSnapGuidePx, snapEdgePx, snapMovePx, TimelineSnapConfig } from '../../../utils/timeline-snap.utils';
 
 interface LayerStyle {
   left: string;
@@ -40,9 +41,16 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   readonly step = input(100);
   readonly zoom = input(1);
   readonly maxMs = input(30_000);
+  readonly snapToSeconds = input(false);
+  readonly snapToLayers = input(false);
+  readonly allLayerTimings = input<LayerTiming[]>([]);
+
+  private readonly snapThresholdPx = 8;
 
   readonly layerChanged = output<TimelineWidget>();
   readonly dragActiveChanged = output<boolean>();
+  /** Emits px positions of active snap guides during drag; empty array when drag ends. */
+  readonly snapGuidesChanged = output<number[]>();
 
   left = 0;
   width = 0;
@@ -95,8 +103,12 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   onMovePointerMove(event: PointerEvent): void {
     if (this.currentAction !== 'move' || !this.dragState) return;
     const dx = this.getScrollAdjustedDx(event, this.dragState);
-    const result = this.clampStyle({ left: this.dragState.startLeft + dx, width: this.width, action: 'move' });
+    const rawLeft = this.dragState.startLeft + dx;
+    const config = this.buildSnapConfig();
+    const snappedLeft = snapMovePx(rawLeft, this.width, config);
+    const result = this.clampStyle({ left: snappedLeft, width: this.width, action: 'move' });
     this.setStyle(result);
+    this.snapGuidesChanged.emit(this.computeSnapGuides(rawLeft, this.width, config));
     this.layerChangedSubject.next();
   }
 
@@ -125,8 +137,14 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   onResizeLeftPointerMove(event: PointerEvent): void {
     if (this.currentAction !== 'resize-left' || !this.dragState) return;
     const dx = this.getScrollAdjustedDx(event, this.dragState);
-    const result = this.clampStyle({ left: this.dragState.startLeft + dx, width: this.dragState.startWidth - dx, action: 'resize' });
+    const rawLeft = this.dragState.startLeft + dx;
+    // Right edge is fixed during left-resize
+    const fixedRight = this.dragState.startLeft + this.dragState.startWidth;
+    const config = this.buildSnapConfig();
+    const snappedLeft = snapEdgePx(rawLeft, config);
+    const result = this.clampStyle({ left: snappedLeft, width: fixedRight - snappedLeft, action: 'resize' });
     this.setStyle(result);
+    this.snapGuidesChanged.emit(this.computeSnapGuides(rawLeft, 0, config));
     this.layerChangedSubject.next();
   }
 
@@ -155,8 +173,13 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   onResizeRightPointerMove(event: PointerEvent): void {
     if (this.currentAction !== 'resize-right' || !this.dragState) return;
     const dx = this.getScrollAdjustedDx(event, this.dragState);
-    const result = this.clampStyle({ left: this.left, width: this.dragState.startWidth + dx, action: 'resize' });
+    const rawRight = this.dragState.startLeft + this.dragState.startWidth + dx;
+    // Left edge is fixed during right-resize
+    const config = this.buildSnapConfig();
+    const snappedRight = snapEdgePx(rawRight, config);
+    const result = this.clampStyle({ left: this.left, width: snappedRight - this.left, action: 'resize' });
     this.setStyle(result);
+    this.snapGuidesChanged.emit(this.computeSnapGuides(rawRight, 0, config));
     this.layerChangedSubject.next();
   }
 
@@ -167,9 +190,37 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
 
   // ---- Private helpers -------------------------------------------
 
+  private buildSnapConfig(): TimelineSnapConfig {
+    return {
+      snapToSeconds: this.snapToSeconds(),
+      snapToLayers: this.snapToLayers(),
+      excludeUuid: this.layer().uuid,
+      layerTimings: this.allLayerTimings(),
+      thresholdPx: this.snapThresholdPx,
+      stepPx: this.stepPx(),
+      stepMs: this.step(),
+    };
+  }
+
+  /**
+   * Returns the pixel positions of active snap guides for the given edge(s).
+   * Pass widthPx > 0 for move (tests both edges), 0 for single-edge resize.
+   */
+  private computeSnapGuides(edgePx: number, widthPx: number, config: TimelineSnapConfig): number[] {
+    const guides: number[] = [];
+    const leftGuide = getSnapGuidePx(edgePx, config);
+    if (leftGuide !== null) guides.push(leftGuide);
+    if (widthPx > 0) {
+      const rightGuide = getSnapGuidePx(edgePx + widthPx, config);
+      if (rightGuide !== null && rightGuide !== leftGuide) guides.push(rightGuide);
+    }
+    return guides;
+  }
+
   private clearDrag(): void {
     if (this.currentAction !== null) {
       this.dragActiveChanged.emit(false);
+      this.snapGuidesChanged.emit([]);
     }
     this.currentAction = null;
     this.dragState = null;
@@ -209,7 +260,9 @@ export class TimelineTrackLayerComponent implements OnInit, OnChanges, OnDestroy
   }
 
   private pixelsToMs(px: number): number {
-    return Math.round((px * this.step()) / this.stepPx());
+    const raw = (px * this.step()) / this.stepPx();
+    // Always round to the nearest 100ms (tenth-of-second is the minimum precision).
+    return Math.round(raw / 100) * 100;
   }
 
   private pixelsToStartEnd(): { start: number; end: number } {

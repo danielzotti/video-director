@@ -12,12 +12,12 @@ import {
   signal,
   untracked,
   viewChild,
-} from '@angular/core';
-import { TimelineWidget } from '../../../models/timeline.models';
+} from '@angular/core';import { TimelineWidget } from '../../../models/timeline.models';
 import { TimelineService } from '../../../services/timeline.service';
 import { TimelineTimeMarkersComponent } from '../timeline-time-marker/timeline-time-markers.component';
 import { TimelineTimeLabelsComponent } from '../timeline-time-labels/timeline-time-labels.component';
 import { TimelineTrackLayerComponent } from '../timeline-track-layer/timeline-track-layer.component';
+import { LayerTiming } from '../../../utils/timeline-snap.utils';
 
 @Component({
   selector: 'app-timeline-track',
@@ -48,6 +48,13 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   readonly zoom = this.timelineService.zoom;
   readonly duration = this.timelineService.duration;
   readonly time = this.timelineService.time;
+  readonly snapToSeconds = this.timelineService.snapToSeconds;
+  readonly snapToLayers = this.timelineService.snapToLayers;
+
+  /** Pre-computed timing data for all layers, used by each layer's snap logic. */
+  readonly allLayerTimings = computed<LayerTiming[]>(() =>
+    this.layers().map(l => ({ uuid: l.uuid, startMs: l.timelineStart, endMs: l.timelineEnd }))
+  );
 
   private resizeObserver: ResizeObserver | null = null;
   private readonly viewportWidthPx = signal(1);
@@ -64,6 +71,9 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
   private isSliderDragging = false;
   /** True while a timeline layer is being moved or resized. */
   private isLayerDragging = false;
+
+  /** Snap guide pixel positions emitted by the currently-dragging layer. */
+  readonly snapGuides = signal<number[]>([]);
 
   readonly minStepMs = 100;
 
@@ -246,7 +256,12 @@ export class TimelineTrackComponent implements AfterViewInit, OnDestroy {
     this.isLayerDragging = isActive;
     if (!isActive) {
       this.stopEdgeScroll();
+      this.snapGuides.set([]);
     }
+  }
+
+  onLayerSnapGuidesChanged(guides: number[]): void {
+    this.snapGuides.set(guides);
   }
 
   trackLayers(_i: number, item: TimelineWidget): string {

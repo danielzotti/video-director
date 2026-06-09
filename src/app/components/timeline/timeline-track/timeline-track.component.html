@@ -78,8 +78,12 @@
             [maxMs]="maxMs"
             [step]="stepMs"
             [zoom]="zoom()"
+            [snapToSeconds]="snapToSeconds()"
+            [snapToLayers]="snapToLayers()"
+            [allLayerTimings]="allLayerTimings()"
             (layerChanged)="onLayerChanged($event)"
             (dragActiveChanged)="onLayerDragActiveChanged($event)"
+            (snapGuidesChanged)="onLayerSnapGuidesChanged($event)"
             (pointerdown)="onLayerClicked(layer)"
           />
         </div>
@@ -100,5 +104,10 @@
       [class.cursor-animation]="hasCursorAnimation"
       [style.height]="timelineCursorHeight"
     ></div>
+
+    <!-- Snap guide lines (visible during drag when snapping to 1s or layer edges) -->
+    @for (guide of snapGuides(); track guide) {
+      <div class="snap-guide" [style.left.px]="guide" [style.height]="timelineCursorHeight"></div>
+    }
   </div>
 </div>

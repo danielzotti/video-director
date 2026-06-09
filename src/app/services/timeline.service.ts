@@ -15,12 +15,19 @@ export class TimelineService {
   private readonly _showAllWidgets = signal(false);
   private readonly _maxZoom = signal(10);
 
+  /** Snap layer edges to whole-second boundaries. */
+  private readonly _snapToSeconds = signal(false);
+  /** Snap layer edges to the start/end of other layers. */
+  private readonly _snapToLayers = signal(false);
+
   readonly time = this._time.asReadonly();
   readonly duration = this._duration.asReadonly();
   readonly isPlaying = this._isPlaying.asReadonly();
   readonly zoom = this._zoom.asReadonly();
   readonly showAllWidgets = this._showAllWidgets.asReadonly();
   readonly maxZoom = this._maxZoom.asReadonly();
+  readonly snapToSeconds = this._snapToSeconds.asReadonly();
+  readonly snapToLayers = this._snapToLayers.asReadonly();
 
   /**
    * All canvas widgets mapped to TimelineWidget with guaranteed
@@ -120,18 +127,30 @@ export class TimelineService {
     this._showAllWidgets.set(value);
   }
 
+  /** Toggle snapping to whole-second boundaries. */
+  setSnapToSeconds(value: boolean): void {
+    this._snapToSeconds.set(value);
+  }
+
+  /** Toggle snapping to the start/end edges of other layers. */
+  setSnapToLayers(value: boolean): void {
+    this._snapToLayers.set(value);
+  }
+
   /**
    * Persist updated start/end times for a widget.
-   * Values are clamped to [0, duration].
+   * Values are clamped to [0, duration] and rounded to the nearest 100ms
+   * (tenth-of-second precision is the minimum granularity for all layers).
    */
   updateLayerTiming(uuid: string, timelineStart: number, timelineEnd: number): void {
     const widget = this.widgetStateService.getById(uuid);
     if (!widget) return;
 
+    const roundTo100 = (ms: number) => Math.round(ms / 100) * 100;
     this.widgetStateService.update({
       ...widget,
-      timelineStart: Math.max(0, Math.round(timelineStart)),
-      timelineEnd: Math.min(Math.round(timelineEnd), this._duration()),
+      timelineStart: Math.max(0, roundTo100(timelineStart)),
+      timelineEnd: Math.min(roundTo100(timelineEnd), this._duration()),
     });
   }
 

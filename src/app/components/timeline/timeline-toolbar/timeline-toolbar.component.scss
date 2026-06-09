@@ -58,6 +58,34 @@ $toolbar-padding: 8px;
   }
 }
 
+.snap-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--ds-border-default);
+  flex-shrink: 0;
+}
+
+.snap-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-font-xs);
+  user-select: none;
+  cursor: pointer;
+  white-space: nowrap;
+
+  input {
+    margin: 0;
+    accent-color: var(--ds-accent);
+    cursor: pointer;
+  }
+
+  &:has(input:checked) {
+    color: var(--ds-accent);
+  }
+}
+
 .time-container {
   flex-grow: 1;
   text-align: center;

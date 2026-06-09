@@ -186,6 +186,25 @@ $layer-height: 40px;
   transition: left 100ms linear;
 }
 
+.snap-guide {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  background-color: var(--ds-accent);
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 10;
+  // Dashed effect to distinguish from the playhead cursor
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--ds-accent) 0px,
+    var(--ds-accent) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  background-color: transparent;
+}
+
 .layer {
   position: relative;
   flex-grow: 1;

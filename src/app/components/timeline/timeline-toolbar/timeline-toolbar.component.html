@@ -19,6 +19,25 @@
     />
     <span>Show all</span>
   </label>
+
+  <div class="snap-divider"></div>
+
+  <label class="snap-toggle" title="Snap to whole seconds">
+    <input
+      type="checkbox"
+      [checked]="snapToSeconds()"
+      (change)="onSnapToSecondsChanged($event)"
+    />
+    <span>Snap 1s</span>
+  </label>
+  <label class="snap-toggle" title="Snap to start/end of other layers">
+    <input
+      type="checkbox"
+      [checked]="snapToLayers()"
+      (change)="onSnapToLayersChanged($event)"
+    />
+    <span>Snap layers</span>
+  </label>
 </div>
 
 <div class="time-container">

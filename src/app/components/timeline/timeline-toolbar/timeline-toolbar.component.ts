@@ -23,6 +23,8 @@ export class TimelineToolbarComponent {
   readonly minZoom = this.timelineService.minZoom;
   readonly maxZoom = this.timelineService.maxZoom;
   readonly showAllWidgets = this.timelineService.showAllWidgets;
+  readonly snapToSeconds = this.timelineService.snapToSeconds;
+  readonly snapToLayers = this.timelineService.snapToLayers;
 
   readonly stepValue = 1;
   readonly compactFormat = TIMER_FORMAT.compact;
@@ -43,6 +45,14 @@ export class TimelineToolbarComponent {
 
   onShowAllWidgetsChanged(event: Event): void {
     this.timelineService.setShowAllWidgets((event.target as HTMLInputElement).checked);
+  }
+
+  onSnapToSecondsChanged(event: Event): void {
+    this.timelineService.setSnapToSeconds((event.target as HTMLInputElement).checked);
+  }
+
+  onSnapToLayersChanged(event: Event): void {
+    this.timelineService.setSnapToLayers((event.target as HTMLInputElement).checked);
   }
 
   onZoomSliderChange(event: Event): void {
